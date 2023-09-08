@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -86,8 +86,13 @@ class APPSTREAMQT_EXPORT Component {
             UrlKindFaq,
             UrlKindHelp,
             UrlKindDonation,
-            UrlTranslate,
-            UrlKindContact
+            UrlKindTranslate,
+            UrlKindContact,
+            UrlKindVcsBrowser,
+            UrlKindContribute,
+
+            // deprecated
+            UrlTranslate   [[deprecated]] = UrlKindTranslate,
         };
         Q_ENUM(UrlKind)
 
@@ -191,8 +196,13 @@ class APPSTREAMQT_EXPORT Component {
         QList<AppStream::Component> addons() const;
         void addAddon(const AppStream::Component& addon);
 
+        QStringList replaces() const;
+        void addReplaces(const QString& cid);
+
+        Q_DECL_DEPRECATED QList<AppStream::Relation> requires() const;
+        QList<AppStream::Relation> requirements() const;
         QList<AppStream::Relation> recommends() const;
-        QList<AppStream::Relation> requires() const;
+        QList<AppStream::Relation> supports() const;
         void addRelation(const AppStream::Relation &relation);
 
         QStringList languages() const;
@@ -256,6 +266,12 @@ class APPSTREAMQT_EXPORT Component {
         QString nameVariantSuffix() const;
         void setNameVariantSuffix(const QString& variantSuffix, const QString& lang = {});
 
+        bool hasTag(const QString &ns, const QString &tagName);
+        bool addTag(const QString &ns, const QString &tagName);
+        void removeTag(const QString &ns, const QString &tagName);
+        void clearTags();
+
+        bool isFree() const;
         bool isIgnored() const;
         bool isValid() const;
 

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2017-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2017-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -216,11 +216,8 @@ as_launchable_to_xml_node (AsLaunchable *launchable, AsContext *ctx, xmlNode *ro
 		if (entry == NULL)
 			continue;
 
-		n = xmlNewTextChild (root, NULL,
-				     (xmlChar*) "launchable",
-				     (xmlChar*) entry);
-		xmlNewProp (n, (xmlChar*) "type",
-			    (xmlChar*) as_launchable_kind_to_string (priv->kind));
+		n = as_xml_add_text_node (root, "launchable", entry);
+		as_xml_add_text_prop (n, "type", as_launchable_kind_to_string (priv->kind));
 	}
 }
 

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -45,32 +45,70 @@ struct _AsValidatorClass
 	void (*_as_reserved6)	(void);
 };
 
-AsValidator	*as_validator_new (void);
+/**
+ * AsValidatorError:
+ * @AS_VALIDATOR_ERROR_FAILED:			Generic failure
+ * @AS_VALIDATOR_ERROR_OVERRIDE_INVALID:	The issue override was not accepted.
+ * @AS_VALIDATOR_ERROR_INVALID_FILENAME:	The filename was invalid.
+ *
+ * The error type.
+ **/
+typedef enum {
+	AS_VALIDATOR_ERROR_FAILED,
+	AS_VALIDATOR_ERROR_OVERRIDE_INVALID,
+	AS_VALIDATOR_ERROR_INVALID_FILENAME,
+	/*< private >*/
+	AS_VALIDATOR_ERROR_LAST
+} AsValidatorError;
 
-void		as_validator_clear_issues (AsValidator *validator);
-gboolean	as_validator_validate_file (AsValidator *validator,
-						GFile* metadata_file);
-gboolean	as_validator_validate_bytes (AsValidator *validator,
-						GBytes *metadata);
-gboolean	as_validator_validate_data (AsValidator *validator,
-						const gchar *metadata);
-gboolean	as_validator_validate_tree (AsValidator *validator,
-						const gchar *root_dir);
+#define	AS_VALIDATOR_ERROR	as_validator_error_quark ()
+GQuark		 	as_validator_error_quark (void);
 
-GList		*as_validator_get_issues (AsValidator *validator);
-GHashTable	*as_validator_get_issues_per_file (AsValidator *validator);
-gboolean	as_validator_get_report_yaml (AsValidator *validator,
-					      gchar **yaml_report);
+AsValidator		*as_validator_new (void);
 
-gboolean	as_validator_get_check_urls (AsValidator *validator);
-void		as_validator_set_check_urls (AsValidator *validator,
-						gboolean value);
+void			as_validator_clear_issues (AsValidator *validator);
+gboolean		as_validator_validate_file (AsValidator *validator,
+							GFile *metadata_file);
+gboolean		as_validator_validate_bytes (AsValidator *validator,
+							GBytes *metadata);
+gboolean		as_validator_validate_data (AsValidator *validator,
+							const gchar *metadata);
+gboolean		as_validator_validate_tree (AsValidator *validator,
+							const gchar *root_dir);
 
-const gchar	*as_validator_get_tag_explanation (AsValidator *validator,
-						   const gchar *tag);
-AsIssueSeverity	as_validator_get_tag_severity (AsValidator *validator,
-					       const gchar *tag);
-gchar		**as_validator_get_tags (AsValidator *validator);
+void			as_validator_clear_release_data (AsValidator *validator);
+gboolean		as_validator_add_release_bytes (AsValidator *validator,
+							const gchar *release_fname,
+							GBytes *release_metadata,
+							GError **error);
+gboolean		as_validator_add_release_file (AsValidator *validator,
+						       GFile *release_file,
+						       GError **error);
+
+guint			as_validator_get_issue_files_count (AsValidator *validator);
+GList			*as_validator_get_issues (AsValidator *validator);
+GHashTable		*as_validator_get_issues_per_file (AsValidator *validator);
+gboolean		as_validator_get_report_yaml (AsValidator *validator,
+							gchar **yaml_report);
+
+gboolean		as_validator_get_check_urls (AsValidator *validator);
+void			as_validator_set_check_urls (AsValidator *validator,
+							gboolean value);
+
+gboolean		as_validator_get_strict (AsValidator *validator);
+void			as_validator_set_strict (AsValidator *validator,
+							gboolean is_strict);
+
+gboolean		as_validator_add_override (AsValidator *validator,
+						   const gchar *tag,
+						   AsIssueSeverity severity_override,
+						   GError **error);
+
+const gchar		*as_validator_get_tag_explanation (AsValidator *validator,
+								const gchar *tag);
+AsIssueSeverity		as_validator_get_tag_severity (AsValidator *validator,
+							const gchar *tag);
+gchar			**as_validator_get_tags (AsValidator *validator);
 
 G_END_DECLS
 

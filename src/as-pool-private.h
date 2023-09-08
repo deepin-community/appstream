@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -23,27 +23,28 @@
 
 #include "as-pool.h"
 #include "as-settings-private.h"
+#include "as-file-monitor.h"
 
 G_BEGIN_DECLS
 #pragma GCC visibility push(hidden)
 
-time_t			as_pool_get_system_cache_age (AsPool *pool);
-
-AS_INTERNAL_VISIBLE
-void			as_cache_file_save (const gchar *fname,
-						const gchar *locale,
-						GPtrArray *cpts,
-						GError **error);
-
-AS_INTERNAL_VISIBLE
-GPtrArray		*as_cache_file_read (const gchar *fname,
-						GError **error);
+time_t			as_pool_get_os_metadata_cache_age (AsPool *pool);
 
 AS_INTERNAL_VISIBLE
 gboolean		as_pool_refresh_system_cache (AsPool *pool,
-						      gboolean force,
-						      gboolean cleanup_old,
-						      GError **error);
+							gboolean force,
+							gboolean *caches_updated,
+							GError **error);
+
+AS_INTERNAL_VISIBLE
+void			as_pool_override_cache_locations (AsPool *pool,
+							  const gchar *dir_sys,
+							  const gchar *dir_user);
+
+AS_INTERNAL_VISIBLE
+gboolean		as_pool_print_std_data_locations_info_private (AsPool *pool,
+									gboolean print_os_data,
+									gboolean print_extra_data);
 
 #pragma GCC visibility pop
 G_END_DECLS

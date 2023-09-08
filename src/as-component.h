@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -42,6 +42,7 @@
 #include "as-relation.h"
 #include "as-agreement.h"
 #include "as-review.h"
+#include "as-branding.h"
 
 G_BEGIN_DECLS
 
@@ -194,7 +195,29 @@ typedef enum /*< skip >*/ __attribute__((__packed__)) {
 	AS_SEARCH_TOKEN_MATCH_LAST		= 0xffff
 } AsSearchTokenMatch;
 
+/* DEPRECATED */
 #define AS_SEARCH_TOKEN_MATCH_MIMETYPE AS_SEARCH_TOKEN_MATCH_MEDIATYPE
+
+/**
+ * AsReleasesKind:
+ * @AS_RELEASES_KIND_UNKNOWN:		Unknown releases type
+ * @AS_RELEASES_KIND_EMBEDDED:		Release info is embedded in metainfo file
+ * @AS_RELEASES_KIND_EXTERNAL:		Release info is split to a separate file
+ *
+ * The kind of a releases block.
+ *
+ * Since: 0.16.0
+ **/
+typedef enum {
+	AS_RELEASES_KIND_UNKNOWN,
+	AS_RELEASES_KIND_EMBEDDED,
+	AS_RELEASES_KIND_EXTERNAL,
+	/*< private >*/
+	AS_RELEASES_KIND_LAST
+} AsReleasesKind;
+
+const gchar	*as_releases_kind_to_string (AsReleasesKind kind);
+AsReleasesKind	as_releases_kind_from_string (const gchar *kind_str);
 
 AsComponent		*as_component_new (void);
 
@@ -217,6 +240,11 @@ void			as_component_set_data_id (AsComponent *cpt,
 AsComponentKind		as_component_get_kind (AsComponent *cpt);
 void			as_component_set_kind (AsComponent *cpt,
 						AsComponentKind value);
+
+const gchar		*as_component_get_date_eol (AsComponent *cpt);
+void			as_component_set_date_eol (AsComponent *cpt,
+						   const gchar *date);
+guint64			as_component_get_timestamp_eol (AsComponent *cpt);
 
 const gchar		*as_component_get_origin (AsComponent *cpt);
 void			as_component_set_origin (AsComponent *cpt,
@@ -304,6 +332,7 @@ GPtrArray		*as_component_get_icons (AsComponent *cpt);
 AsIcon			*as_component_get_icon_by_size (AsComponent *cpt,
 							guint width,
 							guint height);
+AsIcon			*as_component_get_icon_stock (AsComponent *cpt);
 void			as_component_add_icon (AsComponent *cpt,
 						AsIcon *icon);
 
@@ -322,9 +351,24 @@ void			as_component_add_url (AsComponent *cpt,
 						AsUrlKind url_kind,
 						const gchar *url);
 
+gboolean		as_component_load_releases_from_bytes (AsComponent *cpt,
+								GBytes *bytes,
+								GError **error);
+gboolean		as_component_load_releases (AsComponent *cpt,
+						    gboolean reload,
+						    gboolean allow_net,
+						    GError **error);
 GPtrArray		*as_component_get_releases (AsComponent *cpt);
 void			as_component_add_release (AsComponent *cpt,
-							AsRelease* release);
+						  AsRelease* release);
+
+AsReleasesKind		as_component_get_releases_kind (AsComponent *cpt);
+void			as_component_set_releases_kind (AsComponent *cpt,
+							AsReleasesKind kind);
+
+const gchar		*as_component_get_releases_url (AsComponent *cpt);
+void			as_component_set_releases_url (AsComponent *cpt,
+						       const gchar *url);
 
 GPtrArray		*as_component_get_extends (AsComponent *cpt);
 void			as_component_add_extends (AsComponent *cpt,
@@ -392,15 +436,36 @@ AsContentRating		*as_component_get_content_rating (AsComponent *cpt,
 void			as_component_add_content_rating (AsComponent *cpt,
 							 AsContentRating *content_rating);
 
-GPtrArray		*as_component_get_recommends (AsComponent *cpt);
 GPtrArray		*as_component_get_requires (AsComponent *cpt);
+GPtrArray		*as_component_get_recommends (AsComponent *cpt);
+GPtrArray		*as_component_get_supports (AsComponent *cpt);
 void			as_component_add_relation (AsComponent *cpt,
 						   AsRelation *relation);
 
+GPtrArray		*as_component_get_replaces (AsComponent *cpt);
+void			as_component_add_replaces (AsComponent *cpt,
+						    const gchar *cid);
+
+GPtrArray		*as_component_get_agreements (AsComponent *cpt);
 void			as_component_add_agreement (AsComponent *cpt,
 						    AsAgreement *agreement);
 AsAgreement		*as_component_get_agreement_by_kind (AsComponent *cpt,
 							     AsAgreementKind kind);
+
+AsBranding		*as_component_get_branding (AsComponent *cpt);
+void			as_component_set_branding (AsComponent *cpt,
+						    AsBranding *branding);
+
+void			as_component_clear_tags (AsComponent *cpt);
+gboolean		as_component_add_tag (AsComponent *cpt,
+					      const gchar *ns,
+					      const gchar *tag);
+gboolean		as_component_remove_tag (AsComponent *cpt,
+						 const gchar *ns,
+						 const gchar *tag);
+gboolean		as_component_has_tag (AsComponent *cpt,
+					      const gchar *ns,
+					      const gchar *tag);
 
 const gchar		*as_component_get_name_variant_suffix (AsComponent *cpt);
 void			as_component_set_name_variant_suffix (AsComponent *cpt,
@@ -420,6 +485,8 @@ AsContext		*as_component_get_context (AsComponent *cpt);
 GHashTable		*as_component_get_name_table (AsComponent *cpt);
 GHashTable		*as_component_get_summary_table (AsComponent *cpt);
 GHashTable		*as_component_get_keywords_table (AsComponent *cpt);
+
+gboolean		as_component_is_free (AsComponent *cpt);
 
 gboolean		as_component_load_from_bytes (AsComponent *cpt,
 						      AsContext *context,

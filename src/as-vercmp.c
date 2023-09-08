@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2020-2021 Matthias Klumpp <mak@debian.org>
+ * Copyright (C) 2020-2022 Matthias Klumpp <mak@debian.org>
  * Copyright (C) 2010 Julian Andres Klode <jak@debian.org>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -217,6 +217,47 @@ gint
 as_vercmp_simple (const gchar* a, const gchar *b)
 {
 	return as_vercmp (a, b, AS_VERCMP_FLAG_NONE);
+}
+
+/**
+ * as_vercmp_test_match:
+ * @ver1: first version number
+ * @compare: the comparison operator
+ * @ver2: second version number
+ * @flags: the #AsVercmpFlags to use
+ *
+ * Compare two version numbers and check if the given version comparator matches.
+ *
+ * Returns: %TRUE if the version comparison matches, %FALSE otherwise.
+ *
+ * Since: 0.16.0
+ */
+gboolean
+as_vercmp_test_match (const gchar *ver1,
+		      AsRelationCompare compare,
+		      const gchar *ver2,
+		      AsVercmpFlags flags)
+{
+	gint rc;
+	g_return_val_if_fail (compare != AS_RELATION_COMPARE_UNKNOWN, FALSE);
+
+	rc = as_vercmp (ver1, ver2, flags);
+	switch (compare) {
+	case AS_RELATION_COMPARE_EQ:
+		return rc == 0;
+	case AS_RELATION_COMPARE_NE:
+		return rc != 0;
+	case AS_RELATION_COMPARE_LT:
+		return rc < 0;
+	case AS_RELATION_COMPARE_GT:
+		return rc > 0;
+	case AS_RELATION_COMPARE_LE:
+		return rc <= 0;
+	case AS_RELATION_COMPARE_GE:
+		return rc >= 0;
+	default:
+		return FALSE;
+	}
 }
 
 /**

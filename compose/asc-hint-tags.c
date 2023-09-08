@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -50,6 +50,11 @@ AscHintTagStatic asc_hint_tag_list[] =  {
 	  "Dummy info hint for the testsuite. Var1: {{var1}}."
 	},
 
+	{ "unit-read-error",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "Error while reading data from unit <code>{{name}}</code>: {{msg}}",
+	},
+
 	{ "ancient-metadata",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  "The AppStream metadata should be updated to follow a more recent version of the specification.<br/>"
@@ -66,6 +71,19 @@ AscHintTagStatic asc_hint_tag_list[] =  {
 	  AS_ISSUE_SEVERITY_ERROR,
 	  "Could not determine an ID for the component in <code>{{fname}}</code>. The AppStream MetaInfo file likely lacks an <code>&lt;id/&gt;</code> tag.<br/>"
           "The identifier tag is essential for AppStream metadata, and must not be missing."
+	},
+
+	{ "metainfo-no-name",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "Component has no name specified. Ensure that the AppStream MetaInfo file or the .desktop file (if there is any) specify a component name."
+	},
+
+	{ "metainfo-no-summary",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "Component does not contain a short summary. Ensure that the components MetaInfo file has a <code>summary</code> tag, or that its .desktop file "
+	  "has a <code>Comment=</code> field set.<br/>"
+	  "More information can be found in the <a href=\"http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s05.html\">Desktop Entry specification</a> "
+	  "and the <a href=\"https://www.freedesktop.org/software/appstream/docs/sect-Metadata-Application.html#tag-dapp-summary\">MetaInfo specification</a>."
 	},
 
 	{ "metainfo-license-invalid",
@@ -85,6 +103,16 @@ AscHintTagStatic asc_hint_tag_list[] =  {
 	  "<code>type=</code> property of the component root-node in the MetaInfo XML file does not contain a spelling mistake."
 	},
 
+	{ "metainfo-releases-download-failed",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  "Unable to download release information from <code>{{url}}</code>. The error message was: {{msg}}."
+	},
+
+	{ "metainfo-releases-read-failed",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "Unable to read release information from <code>{{path}}</code>. The error message was: {{msg}}."
+	},
+
 	{ "file-read-error",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  "Unable to read data from file <code>{{fname}}</code>: {{msg}}",
@@ -95,36 +123,16 @@ AscHintTagStatic asc_hint_tag_list[] =  {
 	  "Unable to read data from .desktop file: {{msg}}",
 	},
 
-	{ "desktop-entry-bad-data",
+	{ "desktop-entry-hidden-set",
 	  AS_ISSUE_SEVERITY_WARNING,
-	  "Error while reading some data from the desktop-entry file: {{hint}}",
-	},
-
-	{ "desktop-entry-category-invalid",
-	  AS_ISSUE_SEVERITY_WARNING,
-	  "The category name {{hint}} is invalid. The software can not be shown in this category.",
-	},
-
-	{ "desktop-entry-value-invalid-chars",
-	  AS_ISSUE_SEVERITY_WARNING,
-	  "The desktop-entry field value for {{hint}} contains invalid or non-printable UTF-8 characters, which can not be properly displayed.",
-	},
-
-	{ "desktop-file-hidden-set",
-	  AS_ISSUE_SEVERITY_WARNING,
-	  "This .desktop file has the 'Hidden' property set. This is wrong for vendor-installed .desktop files, and "
+	  "The desktop-entry file `{{location}}` has the 'Hidden' property set. This is wrong for vendor-installed .desktop files, and "
 	  "nullifies all effects this .desktop file has (including MIME associations), which most certainly is not intentional. "
 	  "See <a href=\"https://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html\">the specification</a> for details."
 	},
 
-	{ "desktop-entry-value-quoted",
-	  AS_ISSUE_SEVERITY_WARNING,
-	  "The desktop entry field value {{hint}} is quoted, which is likely unintentional."
-	},
-
 	{ "desktop-entry-empty-onlyshowin",
 	  AS_ISSUE_SEVERITY_WARNING,
-	  "This .desktop file has the 'OnlyShowIn' property set with an empty value. This might not be intended, as this will hide "
+	  "The desktop-entry file `{{location}}` has the 'OnlyShowIn' property set with an empty value. This might not be intended, as this will hide "
 	  "the application from all desktops. If you do want to hide the application from all desktops, using 'NoDisplay=true' is more explicit. "
 	  "See <a href=\"https://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html\">the specification</a> for details."
 	},
@@ -216,6 +224,85 @@ AscHintTagStatic asc_hint_tag_list[] =  {
 	  AS_ISSUE_SEVERITY_WARNING,
 	  "The video codec '{{codec}}' or container '{{container}}' of '{{fname}}' are not supported. Please encode the video "
 	  "as VP9 or AV1 using the WebM or Matroska container."
+	},
+
+	{ "screenshot-video-too-big",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  "The video '{{fname}}' exceeds the maximum allowed file size of {{max_size}} (its size is {{size}}). Please try to make a shorter screencast."
+	},
+
+	{ "screenshot-image-too-big",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  "The image '{{fname}}' exceeds the maximum allowed file size of {{max_size}} (its size is {{size}}). Please create a smaller screenshot image."
+	},
+
+	{ "font-load-error",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "Unable to load font '{{fname}}' from unit '{{unit_name}}: {{error}}"
+	},
+
+	{ "font-metainfo-but-no-font",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "A MetaInfo file with component-type <code>font</code> was found, but we could not find any matching font file (TrueType or OpenType) in the package.<br/> "
+	  "This can mean that the <code>&lt;provides&gt; - &lt;font&gt;</code> tags contain wrong values that we could not map to the actual fonts, or that the package simply contained no fonts at all.<br/> "
+	  "Fonts in this package: <em>{{font_names}}</em>"
+	},
+
+	{ "font-render-error",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  "Unable to render image for font '{{name}}': {{error}}"
+	},
+
+	{ "gui-app-without-icon",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "The component is a GUI application (application which has a .desktop file for the XDG menu and <code>Type=Application</code>), "
+	  "but we could not find a matching icon for this application."
+	},
+
+	{ "web-app-without-icon",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "The component is a GUI web application, but it either has no icon set in its MetaInfo file, "
+	  "or we could not find a matching icon for this application."
+	},
+
+	{ "font-without-icon",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  "The component is a font, but somehow we failed to automatically generate an icon for it, and no custom icon was set explicitly. "
+	  "Is there a font file in the analyzed package, and does the MetaInfo file set the right font name to look for?"
+	},
+
+	{ "os-without-icon",
+	  AS_ISSUE_SEVERITY_INFO,
+	  "The component is an operating system, but no icon was found for it. Setting an icon would improve the look of this component in GUIs."
+	},
+
+	{ "no-valid-category",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "This software component is no member of any valid category."
+	},
+
+	{ "description-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "Software components of type '{{kind}}' require a long description, and we were unable to find one. Please add one via a MetaInfo file."
+	},
+
+	{ "no-metainfo",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  "This software component is missing a <a href=\"https://freedesktop.org/software/appstream/docs/chap-Metadata.html#sect-Metadata-GenericComponent\">MetaInfo file</a> "
+	  "as metadata source.<br/>"
+	  "To synthesize suitable metadata anyway, we took some data from its desktop-entry file.<br/>"
+	  "This has many disadvantages, like low-quality and incomplete metadata. Therefore clients may ignore this component entirely due to poor metadata.<br/>"
+	  "Additionally, a lot of software from desktop-entry files should either not be installable and searchable via the software catalog "
+	  "(like desktop-specific settings applications) or be tagged accordingly via MetaInfo files.<br/>"
+	  "Please consider to either hide this .desktop file from AppStream by adding a <code>X-AppStream-Ignore=true</code> field to it, or to write a MetaInfo file for this component.<br/>"
+	  "You can consult the <a href=\"http://freedesktop.org/software/appstream/docs/chap-Quickstart.html\">MetaInfo quickstart guides</a> for more information "
+	  "on how to write a MetaInfo file, or file a bug with the upstream author of this software component."
+	},
+
+	{ "filters-but-no-output",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  "Component filters were set, but no output was generated at all. Likely none of the filtered components were found, "
+	  "try to relax the filters and ensure the input data is valid."
 	},
 
 	{ NULL, AS_ISSUE_SEVERITY_UNKNOWN, NULL }

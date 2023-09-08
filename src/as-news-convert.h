@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2018-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2018-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -35,6 +35,7 @@ G_BEGIN_DECLS
  * @AS_NEWS_FORMAT_KIND_UNKNOWN:	Unknown release info format.
  * @AS_NEWS_FORMAT_KIND_YAML:		YAML release information.
  * @AS_NEWS_FORMAT_KIND_TEXT:		Pure text release information.
+ * @AS_NEWS_FORMAT_KIND_MARKDOWN:	Release information formatted in Markdown.
  *
  * Format of a NEWS file.
  **/
@@ -42,6 +43,7 @@ typedef enum {
 	AS_NEWS_FORMAT_KIND_UNKNOWN,
 	AS_NEWS_FORMAT_KIND_YAML,
 	AS_NEWS_FORMAT_KIND_TEXT,
+	AS_NEWS_FORMAT_KIND_MARKDOWN,
 	/*< private >*/
 	AS_NEWS_FORMAT_KIND_LAST
 } AsNewsFormatKind;

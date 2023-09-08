@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -42,8 +42,7 @@
 gchar*
 as_xml_get_node_value (const xmlNode *node)
 {
-	gchar *content;
-	content = (gchar*) xmlNodeGetContent (node);
+	gchar *content = as_xml_get_node_value_raw (node);
 	if (content != NULL)
 		as_strstripnl (content);
 
@@ -60,8 +59,7 @@ as_xml_get_node_value (const xmlNode *node)
 GRefString*
 as_xml_get_node_value_refstr (const xmlNode *node)
 {
-	g_autofree gchar *content = NULL;
-	content = (gchar*) xmlNodeGetContent (node);
+	g_autofree gchar *content = as_xml_get_node_value_raw (node);
 	if (content != NULL)
 		as_strstripnl (content);
 	if (content == NULL)
@@ -141,8 +139,7 @@ as_xml_get_node_locale_match (AsContext *ctx, xmlNode *node)
 	/* If we are here, we haven't found a matching locale.
 	 * In that case, we return %NULL to indicate that this element should not be added.
 	 */
-	g_free (lang);
-	lang = NULL;
+	g_free (g_steal_pointer (&lang));
 
 out:
 	return lang;
@@ -424,12 +421,14 @@ static xmlNode*
 as_xml_markup_parse_helper_export_node (AsXMLMarkupParseHelper *helper, xmlNode *parent, gboolean localized)
 {
 	if ((helper->tag_id == AS_TAG_P) || (helper->tag_id == AS_TAG_LI)) {
+		/* add node and subnodes */
 		xmlNode *cn = xmlAddChild (parent, xmlCopyNode (helper->node, TRUE));
 		if (helper->localized && localized) {
 			xmlNewProp (cn,
 				    (xmlChar*) "xml:lang",
 				    (xmlChar*) helper->locale);
 		}
+
 		return cn;
 	}
 
@@ -450,7 +449,7 @@ typedef struct
  * as_xml_metainfo_desc_parse_helper_new: (skip)
  **/
 static AsXMLMetaInfoDescParseHelper*
-as_xml_metainfo_desc_parse_helper_new ()
+as_xml_metainfo_desc_parse_helper_new (void)
 {
 	AsXMLMetaInfoDescParseHelper *helper = g_slice_new0 (AsXMLMetaInfoDescParseHelper);
 	helper->data = g_string_new ("");
@@ -600,12 +599,12 @@ as_xml_parse_metainfo_description_node (AsContext *ctx, xmlNode *node, GHashTabl
 }
 
 /**
- * as_xml_add_description_collection_mode_helper:
+ * as_xml_add_description_catalog_mode_helper:
  *
- * Add the description markup for AppStream collection XML to the tree.
+ * Add the description markup for AppStream catalog XML to the tree.
  */
 static gboolean
-as_xml_add_description_collection_mode_helper (xmlNode *parent, const gchar *description_markup, const gchar *lang)
+as_xml_add_description_catalog_mode_helper (xmlNode *parent, const gchar *description_markup, const gchar *lang)
 {
 	xmlNode *dnode;
 	xmlNode *cnode;
@@ -698,7 +697,7 @@ as_xml_add_description_node (AsContext *ctx, xmlNode *root, GHashTable *desc_tab
 
 		dnode = xmlNewChild (root, NULL, (xmlChar*) "description", NULL);
 		if (!mi_translatable)
-			as_xml_add_text_prop (dnode, "translatable", "no");
+			as_xml_add_text_prop (dnode, "translate", "no");
 
 		cnode = dnode;
 		do {
@@ -742,7 +741,7 @@ as_xml_add_description_node (AsContext *ctx, xmlNode *root, GHashTable *desc_tab
 			} while (as_xml_markup_parse_helper_next (helper));
 		}
 	} else {
-		/* we have a collection XML file, so write in that format (which is much faster and easier to do) */
+		/* we have a catalog XML file, so write in that format (which is much faster and easier to do) */
 		for (GList *link = keys; link != NULL; link = link->next) {
 			const gchar *locale = (const gchar*) link->data;
 			const gchar *desc_markup = g_hash_table_lookup (desc_table, locale);
@@ -750,7 +749,7 @@ as_xml_add_description_node (AsContext *ctx, xmlNode *root, GHashTable *desc_tab
 			if (as_is_cruft_locale (locale))
 				continue;
 
-			as_xml_add_description_collection_mode_helper (root, desc_markup, locale);
+			as_xml_add_description_catalog_mode_helper (root, desc_markup, locale);
 		}
 	}
 }
@@ -1090,7 +1089,7 @@ as_xml_parse_document (const gchar *data, gssize len, GError **error)
 }
 
 /**
- * as_xml_node_to_str:
+ * as_xml_node_free_to_str:
  * @root: The document root node.
  *
  * Converts an XML node into its textural representation.
@@ -1100,7 +1099,7 @@ as_xml_parse_document (const gchar *data, gssize len, GError **error)
  * Returns: XML metadata.
  */
 gchar*
-as_xml_node_to_str (xmlNode *root, GError **error)
+as_xml_node_free_to_str (xmlNode *root, GError **error)
 {
 	xmlDoc *doc;
 	gchar *xmlstr = NULL;
@@ -1117,12 +1116,14 @@ as_xml_node_to_str (xmlNode *root, GError **error)
 	if (error_msg_str != NULL) {
 		if (error == NULL) {
 			g_warning ("Could not serialize XML document: %s", error_msg_str);
+			g_free (g_steal_pointer (&xmlstr));
 			goto out;
 		} else {
 			g_set_error (error,
 					AS_METADATA_ERROR,
 					AS_METADATA_ERROR_FAILED,
 					"Could not serialize XML document: %s", error_msg_str);
+			g_free (g_steal_pointer (&xmlstr));
 			goto out;
 		}
 	}

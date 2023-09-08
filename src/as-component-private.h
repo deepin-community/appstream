@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -34,7 +34,7 @@ G_BEGIN_DECLS
  * AsOriginKind:
  * @AS_ORIGIN_KIND_UNKNOWN:		Unknown origin kind.
  * @AS_ORIGIN_KIND_METAINFO:		Origin was a metainfo file.
- * @AS_ORIGIN_KIND_COLLECTION:		Origin was an AppStream collection file.
+ * @AS_ORIGIN_KIND_CATALOG:		Origin was an AppStream catalog file.
  * @AS_ORIGIN_KIND_DESKTOP_ENTRY:	Origin was a .desktop file.
  *
  * Scope of the #AsComponent (system-wide or user-scope)
@@ -42,7 +42,7 @@ G_BEGIN_DECLS
 typedef enum {
 	AS_ORIGIN_KIND_UNKNOWN,
 	AS_ORIGIN_KIND_METAINFO,
-	AS_ORIGIN_KIND_COLLECTION,
+	AS_ORIGIN_KIND_CATALOG,
 	AS_ORIGIN_KIND_DESKTOP_ENTRY,
 	/*< private >*/
 	AS_ORIGIN_KIND_LAST
@@ -53,6 +53,9 @@ typedef guint16		AsTokenType; /* big enough for both bitshifts */
 void			as_component_complete (AsComponent *cpt,
 						gchar *scr_base_url,
 						GPtrArray *icon_paths);
+
+gint			as_component_releases_compare (gconstpointer a,
+						       gconstpointer b);
 
 AS_INTERNAL_VISIBLE
 GHashTable		*as_component_get_languages_table (AsComponent *cpt);
@@ -67,10 +70,8 @@ const gchar		*as_component_get_architecture (AsComponent *cpt);
 void			 as_component_set_architecture (AsComponent *cpt,
 							const gchar *arch);
 
-void			 as_component_create_token_cache (AsComponent *cpt);
-GHashTable		*as_component_get_token_cache_table (AsComponent *cpt);
-void			 as_component_set_token_cache_valid (AsComponent *cpt,
-							     gboolean valid);
+GPtrArray		*as_component_generate_tokens_for (AsComponent *cpt,
+							   AsSearchTokenMatch token_kind);
 
 void			as_component_set_ignored (AsComponent *cpt,
 						  gboolean ignore);

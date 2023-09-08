@@ -19,10 +19,10 @@
 		</para>
 	</section>
 
-	<section id="spec-addoncdata-example">
+	<section id="spec-addondata-example">
 		<title>Example file</title>
 		<para>
-			A addon meta-info file should look like this:
+			A addon metainfo file should look like this:
 		</para>
 		<programlisting language="XML">
 <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
@@ -58,10 +58,10 @@
 			<term>&lt;extends/&gt;</term>
 			<listitem>
 				<para>
-					This tag is refers to the ID of the component this addon is extending.
+					This tag refers to the ID of the component this addon is extending.
 				</para>
 				<para>
-					For example, if there is a plugin "kipi" which extens the application "Gwenview", it needs to be referred to as:
+					For example, if there is a plugin "kipi" which extends the application "Gwenview", it needs to be referred to as:
 				</para>
 				<programlisting language="XML"><![CDATA[<extends>org.kde.Gwenview</extends>]]></programlisting>
 				<para>

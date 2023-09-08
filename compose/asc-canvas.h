@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -35,9 +35,10 @@ G_DECLARE_FINAL_TYPE (AscCanvas, asc_canvas, ASC, CANVAS, GObject)
 
 /**
  * AscCanvasError:
- * @ASC_CANVAS_ERROR_FAILED:	Generic failure.
- * @ASC_CANVAS_ERROR_DRAWING:	Drawing operation failed.
- * @ASC_CANVAS_ERROR_FONT:	Issue with font or font selection.
+ * @ASC_CANVAS_ERROR_FAILED:	  Generic failure.
+ * @ASC_CANVAS_ERROR_DRAWING:	  Drawing operation failed.
+ * @ASC_CANVAS_ERROR_FONT:	  Issue with font or font selection.
+ * @ASC_CANVAS_ERROR_UNSUPPORTED: The requested action was not supported.
  *
  * A drawing error.
  **/
@@ -45,6 +46,7 @@ typedef enum {
 	ASC_CANVAS_ERROR_FAILED,
 	ASC_CANVAS_ERROR_DRAWING,
 	ASC_CANVAS_ERROR_FONT,
+	ASC_CANVAS_ERROR_UNSUPPORTED,
 	/*< private >*/
 	ASC_CANVAS_ERROR_LAST
 } AscCanvasError;
@@ -61,18 +63,6 @@ guint		asc_canvas_get_height (AscCanvas *canvas);
 gboolean	asc_canvas_render_svg (AscCanvas* canvas,
 					GInputStream *stream,
 					GError** error);
-
-gboolean	asc_canvas_draw_text_line (AscCanvas *canvas,
-					   AscFont *font,
-					   const gchar *text,
-					   gint border_width,
-					   GError **error);
-gboolean	asc_canvas_draw_text (AscCanvas *canvas,
-					AscFont *font,
-					const gchar *text,
-					gint border_width,
-					gint line_pad,
-					GError **error);
 
 gboolean	asc_canvas_save_png (AscCanvas *canvas,
 					const gchar *fname,

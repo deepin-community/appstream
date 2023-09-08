@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -61,6 +61,7 @@ void			asc_unit_set_bundle_kind (AscUnit *unit,
 						    AsBundleKind kind);
 
 const gchar		*asc_unit_get_bundle_id (AscUnit *unit);
+const gchar		*asc_unit_get_bundle_id_safe (AscUnit *unit);
 void			asc_unit_set_bundle_id (AscUnit *unit,
 						  const gchar *id);
 

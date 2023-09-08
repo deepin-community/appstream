@@ -1,7 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  * Copyright (C) 2018 Richard Hughes <richard@hughsie.com>
- * Copyright (C) 2018-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2018-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -295,13 +295,13 @@ as_agreement_load_from_xml (AsAgreement *agreement, AsContext *ctx, xmlNode *nod
 	/* propagate context */
 	as_agreement_set_context (agreement, ctx);
 
-	prop = (gchar*) xmlGetProp (node, (xmlChar*) "type");
+	prop = as_xml_get_prop_value (node, "type");
 	if (prop != NULL) {
 		priv->kind = as_agreement_kind_from_string (prop);
 		g_free (prop);
 	}
 
-	prop = (gchar*) xmlGetProp (node, (xmlChar*) "version_id");
+	prop = as_xml_get_prop_value (node, "version_id");
 	if (prop != NULL) {
 		as_agreement_set_version_id (agreement, prop);
 		g_free (prop);
@@ -339,10 +339,9 @@ as_agreement_to_xml_node (AsAgreement *agreement, AsContext *ctx, xmlNode *root)
 	xmlNode *agnode;
 	guint i;
 
-	agnode = xmlNewChild (root, NULL, (xmlChar*) "agreement", (xmlChar*) "");
-	xmlNewProp (agnode, (xmlChar*) "type",
-		    (xmlChar*) as_agreement_kind_to_string (priv->kind));
-	xmlNewProp (agnode, (xmlChar*) "version_id", (xmlChar*) priv->version_id);
+	agnode = as_xml_add_node (root, "agreement");
+	as_xml_add_text_prop (agnode, "type", as_agreement_kind_to_string (priv->kind));
+	as_xml_add_text_prop (agnode, "version_id", priv->version_id);
 
 	for (i = 0; i < priv->sections->len; i++) {
 		AsAgreementSection *agsec = AS_AGREEMENT_SECTION (g_ptr_array_index (priv->sections, i));
@@ -374,7 +373,7 @@ as_agreement_load_from_yaml (AsAgreement *agreement, AsContext *ctx, GNode *node
 
 		if (g_strcmp0 (key, "type") == 0) {
 			priv->kind = as_agreement_kind_from_string (value);
-		} else if (g_strcmp0 (key, "version_id") == 0) {
+		} else if (g_strcmp0 (key, "version-id") == 0) {
 			as_agreement_set_version_id (agreement, value);
 		} else if (g_strcmp0 (key, "sections") == 0) {
 			GNode *sn;
@@ -414,9 +413,7 @@ as_agreement_emit_yaml (AsAgreement *agreement, AsContext *ctx, yaml_emitter_t *
 	as_yaml_emit_entry (emitter, "type", as_agreement_kind_to_string (priv->kind));
 
 	/* version */
-	as_yaml_emit_entry (emitter, "version_id", priv->version_id);
-
-
+	as_yaml_emit_entry (emitter, "version-id", priv->version_id);
 
 	as_yaml_emit_scalar (emitter, "sections");
 	as_yaml_sequence_start (emitter);

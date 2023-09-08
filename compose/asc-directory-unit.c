@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -133,7 +133,7 @@ static gboolean
 asc_directory_unit_open (AscUnit *unit, GError **error)
 {
 	AscDirectoryUnitPrivate *priv = GET_PRIVATE (ASC_DIRECTORY_UNIT (unit));
-	g_autoptr(GPtrArray) contents;
+	g_autoptr(GPtrArray) contents = NULL;
 	GPtrArray *relevant_paths;
 	guint root_dir_len = (guint) strlen (priv->root_dir);
 

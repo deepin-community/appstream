@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -108,10 +108,14 @@ static void
 asc_globals_init (AscGlobals *globals)
 {
 	AscGlobalsPrivate *priv = GET_PRIVATE (globals);
+	g_autofree gchar *tmp_str1 = NULL;
+	g_autofree gchar *tmp_str2 = NULL;
 	g_assert (g_globals == NULL);
 	g_globals = globals;
 
-	priv->tmp_dir = g_build_filename (g_get_tmp_dir (), "as-compose", NULL);
+	tmp_str1 = as_random_alnum_string (6);
+	tmp_str2 = g_strconcat ("as-compose_", tmp_str1, NULL);
+	priv->tmp_dir = g_build_filename (g_get_tmp_dir (), tmp_str2, NULL);
 
 	priv->optipng_bin = g_find_program_in_path ("optipng");
 	if (priv->optipng_bin != NULL)
@@ -327,7 +331,7 @@ asc_globals_get_pangrams_for (const gchar *lang)
  * on the hint tag table mutex.
  */
 static void
-asc_globals_create_hint_tag_table ()
+asc_globals_create_hint_tag_table (void)
 {
 	AscGlobalsPrivate *priv = asc_globals_get_priv ();
 	g_return_if_fail (priv->hint_tags == NULL);
@@ -340,9 +344,10 @@ asc_globals_create_hint_tag_table ()
 	/* add compose issue hint tags */
 	for (guint i = 0; asc_hint_tag_list[i].tag != NULL; i++) {
 		AscHintTag *htag;
+		gboolean r;
 		const AscHintTagStatic s = asc_hint_tag_list[i];
 		htag = asc_hint_tag_new (s.tag, s.severity, s.explanation);
-		gboolean r = g_hash_table_insert (priv->hint_tags,
+		r = g_hash_table_insert (priv->hint_tags,
 							g_ref_string_new_intern (asc_hint_tag_list[i].tag),
 							htag);
 		if (G_UNLIKELY (!r))

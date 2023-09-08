@@ -20,7 +20,7 @@
 			A web application metainfo file is special in the regard that it is usually not combined with the software it is describing and that it has no
 			installable.
 			It usually is equivalent to a weblink that gets special treatment by software centers. Web application metainfo files are therefore
-			injected directly into the collection metadata generation process, or can be installed as usual into <filename>/usr/share/metainfo/%{id}.metainfo.xml</filename>.
+			injected directly into the catalog metadata generation process, or can be installed as usual into <filename>/usr/share/metainfo/%{id}.metainfo.xml</filename>.
 		</para>
 		<para>
 			Software centers may display web applications in special, chrome-less web browser windows to achieve better desktop integration and
@@ -67,7 +67,7 @@
 			<term>&lt;name/&gt;</term>
 			<listitem>
 				<para>
-					A <literal>name</literal> must be present for console applications. See <xref linkend="tag-name"/> for a detailed description of this tag.
+					A <literal>name</literal> must be present for web applications. See <xref linkend="tag-name"/> for a detailed description of this tag.
 				</para>
 			</listitem>
 			</varlistentry>
@@ -76,7 +76,7 @@
 			<term>&lt;summary/&gt;</term>
 			<listitem>
 				<para>
-					A <literal>summary</literal> must be present for console applications. See <xref linkend="tag-summary"/> for a detailed description of this tag.
+					A <literal>summary</literal> must be present for web applications. See <xref linkend="tag-summary"/> for a detailed description of this tag.
 				</para>
 			</listitem>
 			</varlistentry>

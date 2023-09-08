@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2014 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -83,7 +83,7 @@ as_image_init (AsImage *image)
 AsImageKind
 as_image_kind_from_string (const gchar *kind)
 {
-	if (g_strcmp0 (kind, "source") == 0)
+	if (g_strcmp0 (kind, "source") == 0 || kind == NULL || g_strcmp0 (kind, "") == 0)
 		return AS_IMAGE_KIND_SOURCE;
 	if (g_strcmp0 (kind, "thumbnail") == 0)
 		return AS_IMAGE_KIND_THUMBNAIL;
@@ -295,7 +295,7 @@ as_image_load_from_xml (AsImage *image, AsContext *ctx, xmlNode *node, GError **
 		return FALSE;
 	as_image_set_locale (image, lang);
 
-	str = (gchar*) xmlGetProp (node, (xmlChar*) "width");
+	str = as_xml_get_prop_value (node, "width");
 	if (str == NULL) {
 		priv->width = 0;
 	} else {
@@ -303,7 +303,7 @@ as_image_load_from_xml (AsImage *image, AsContext *ctx, xmlNode *node, GError **
 		g_free (str);
 	}
 
-	str = (gchar*) xmlGetProp (node, (xmlChar*) "height");
+	str = as_xml_get_prop_value (node, "height");
 	if (str == NULL) {
 		priv->height = 0;
 	} else {
@@ -311,14 +311,14 @@ as_image_load_from_xml (AsImage *image, AsContext *ctx, xmlNode *node, GError **
 		g_free (str);
 	}
 
-	stype = (gchar*) xmlGetProp (node, (xmlChar*) "type");
+	stype = as_xml_get_prop_value (node, "type");
 	if (g_strcmp0 (stype, "thumbnail") == 0)
 		priv->kind = AS_IMAGE_KIND_THUMBNAIL;
 	else
 		priv->kind = AS_IMAGE_KIND_SOURCE;
 
 	/* discard invalid elements */
-	if (as_context_get_style (ctx) == AS_FORMAT_STYLE_COLLECTION) {
+	if (as_context_get_style (ctx) == AS_FORMAT_STYLE_CATALOG) {
 		/* no sizes are okay for upstream XML, but not for distro XML */
 		if ((priv->width == 0) || (priv->height == 0)) {
 			if (priv->kind != AS_IMAGE_KIND_SOURCE) {
@@ -359,29 +359,27 @@ as_image_to_xml_node (AsImage *image, AsContext *ctx, xmlNode *root)
 	AsImagePrivate *priv = GET_PRIVATE (image);
 	xmlNode* n_image = NULL;
 
-	n_image = xmlNewTextChild (root, NULL,
-				   (xmlChar*) "image",
-				   (xmlChar*) priv->url);
+	n_image = as_xml_add_text_node (root, "image", priv->url);
 
 	if (priv->kind == AS_IMAGE_KIND_THUMBNAIL)
-		xmlNewProp (n_image, (xmlChar*) "type", (xmlChar*) "thumbnail");
+		as_xml_add_text_prop (n_image, "type", "thumbnail");
 	else
-		xmlNewProp (n_image, (xmlChar*) "type", (xmlChar*) "source");
+		as_xml_add_text_prop (n_image, "type", "source");
 
 	if ((priv->width > 0) && (priv->height > 0)) {
 		gchar *size;
 
 		size = g_strdup_printf("%i", priv->width);
-		xmlNewProp (n_image, (xmlChar*) "width", (xmlChar*) size);
+		as_xml_add_text_prop (n_image, "width", size);
 		g_free (size);
 
 		size = g_strdup_printf("%i", priv->height);
-		xmlNewProp (n_image, (xmlChar*) "height", (xmlChar*) size);
+		as_xml_add_text_prop (n_image, "height", size);
 		g_free (size);
 	}
 
 	if ((priv->locale != NULL) && (g_strcmp0 (priv->locale, "C") != 0))
-		xmlNewProp (n_image, (xmlChar*) "xml:lang", (xmlChar*) priv->locale);
+		as_xml_add_text_prop (n_image, "xml:lang", priv->locale);
 
 	xmlAddChild (root, n_image);
 }

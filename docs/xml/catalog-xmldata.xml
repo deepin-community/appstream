@@ -5,13 +5,13 @@
 ]>
 
 <section id="sect-AppStream-XML">
-	<title>AppStream collection XML</title>
+	<title>AppStream Catalog XML</title>
 
 	<section id="spec-asxml-introduction">
 		<title>Introduction</title>
 
 		<para>
-			AppStream collection XML files are text files describing all available software components a software repository (usually
+			AppStream catalog XML files are text files describing all available software components a software repository (usually
 			from a Linux distributor) offers for installation.
 			The XML files might be compressed with GZip.
 		</para>
@@ -26,12 +26,21 @@
 			3rd-party repositories use a vendor name and repository-name combination, for example Ubuntu PPAs might get <filename>ppa-ubuntu12.04-username-foobar.xml</filename>.
 		</para>
 		<para>
-			There are two valid locations to store AppStream XML data. <filename>/usr/share/app-info/xmls</filename> stores all AppStream data which
-			has been installed via software packages, while <filename>/var/cache/app-info/xmls</filename> stores application data which was downloaded
+			There are two valid locations to store AppStream XML data. <filename>/usr/share/swcatalog/xml</filename> stores all AppStream data which
+			has been installed via software packages, while <filename>/var/lib/swcatalog/xml</filename> stores application data which was downloaded
 			by the package manager or placed there by other tools (for example, Limba).
 			The XML files can either be plain files or be compressed with gzip. It is always a good idea to compress the files, because they tend to become
 			quite large.
 		</para>
+
+		<important>
+			<title>Legacy Path</title>
+			<para>
+				AppStream tools scan the paths <filename>/usr/share/app-info/(xml|xmls)</filename> / <filename>/var/lib/app-info/(xml|xmls)</filename> path for legacy
+				compatibility as well. If possible, the old locations and old layouts should not be used anymore.
+				Support for the legacy path will likely be dropped completely with a future AppStream 1.0 release.
+			</para>
+		</important>
 	</section>
 
 	<section id="spec-asxml-general">
@@ -74,6 +83,16 @@
 			</varlistentry>
 
 			<varlistentry>
+			<term>media_baseurl</term>
+			<listitem>
+				<para>
+					The base URL for media (screenshots, icons, ...) referenced in the metadata file.
+					If this is set, all urls in the document referencing media will be treated relative to the base url.
+				</para>
+			</listitem>
+			</varlistentry>
+
+			<varlistentry>
 			<term>architecture</term>
 			<listitem>
 				<para>
@@ -92,13 +111,13 @@
 			is described in the AppStream metadata.
 		</para>
 		<para>
-			Additionally to the <literal>type</literal> property, every <literal>&lt;component/&gt;</literal> tag in AppStream collection data
+			Additionally to the <literal>type</literal> property, every <literal>&lt;component/&gt;</literal> tag in AppStream catalog data
 			may have a <literal>priority</literal> property, defining the priority of this specific metadata over other metadata from different
 			AppStream XML files (for example, from a different repository) which have the same component-id. The value of this tag is an integer, if the
 			property is missing, a value of <code>"0"</code> is assumed.
 		</para>
 		<para>
-			In order to <emphasis>merge</emphasis> metadata, each component in collection data may also have a <literal>merge</literal> property, assuming the
+			In order to <emphasis>merge</emphasis> metadata, each component in catalog data may also have a <literal>merge</literal> property, assuming the
 			values <code>append</code>, <code>replace</code> or <code>remove-component</code>. If the value is <code>append</code>, all data this component describes will be appended
 			to data of the component with the same ID. If the value is <code>replace</code> the fields of the target component will be replaced with the
 			ones present in the merge component. If the merge type is <code>remove-component</code>, the entore component matching the ID of the merge-component should
@@ -130,7 +149,7 @@
 					<important>
 						<para>
 							The preferred way is to create metapackages containing the component metadata, and referencing them
-							from the collection metadata, and not to use multiple <literal>pkgname</literal> tags.
+							from the catalog metadata, and not to use multiple <literal>pkgname</literal> tags.
 							They should only be used multiple times as a workaround or if there is no sensible way of creating a
 							matching metapackage.
 						</para>
@@ -197,7 +216,7 @@
 				<term>&lt;description/&gt;</term>
 				<listitem>
 					<para>
-						A long description of the component. It is usually taken from the package descriptions or meta-info files, if they were provided.
+						A long description of the component. It is usually taken from the package descriptions or metainfo files, if they were provided.
 						The description might use markup. Right now, only paragraph, ordered list and unordered list are supported.
 						An example description element might look like this:
 						<programlisting language="XML"><![CDATA[<description>
@@ -218,8 +237,8 @@
 </description>]]></programlisting>
 					</para>
 					<para>
-						As opposed to the by-paragraph translation used in meta-info files, this tag is translated "as a whole", meaning that the
-						<literal>&lt;description/&gt;</literal> tag itself has a language property and contain the translated paragraphs for the given language.
+						As opposed to the by-paragraph translation used in metainfo files, this tag is translated "as a whole", meaning that the
+						<literal>&lt;description/&gt;</literal> tag itself has a language property and contains the translated paragraphs for the given language.
 						This allows faster parsing of the Appstream XML file, and does not increase it's size much, as long as it is compressed.
 					</para>
 					<para>
@@ -344,9 +363,17 @@
 					<para>
 						This tag can contain one or more <code><![CDATA[<keyword>]]></code> tags, describing keywords for the component,
 						to make it easier to find in a software center.
+					</para>
+					<para>
+						This tag behaves like the <xref linkend="tag-keywords"/> tag used in metainfo files, but is translated "as a whole",
+						unlike its metainfo counterpart that has individual keywords translated. This means that the <literal>&lt;keywords/&gt;</literal> tag
+						itself has a language property and contains only the translated keywords for the given language.
+					</para>
+					<para>
 						In case of type <literal>desktop-application</literal> components, this data is taken from .desktop files. For <literal>addon</literal>
 						components, the upstream metadata file usually provides this tag.
-						For translated keyword lists, the root node (<code>&lt;keywords/&gt;</code>) has the language property.
+					</para>
+					<para>
 						Example:
 					</para>
 					<programlisting language="XML"><![CDATA[<keywords>
@@ -371,7 +398,7 @@
 						which primarily represents it in a software center.
 					</para>
 					<para>
-						The <literal>screenshots</literal> tag is described for metainfo files in <xref linkend="tag-screenshots"/>. In collection metadata, the tag
+						The <literal>screenshots</literal> tag is described for metainfo files in <xref linkend="tag-screenshots"/>. In catalog metadata, the tag
 						has the exact same format as in metainfo files.
 						The metadata generator may add an arbitrary number of resized thumbnails for <literal>image</literal> type screenshots though.
 					</para>
@@ -404,7 +431,7 @@
 						on the image shown. The tag is translatable.
 					</para>
 					<para>
-						For <code><![CDATA[<screenshot>]]></code> tags that contain <literal>video</literal> elements, a collection metadata generator may impose any restrictions to them,
+						For <code><![CDATA[<screenshot>]]></code> tags that contain <literal>video</literal> elements, a catalog metadata generator may impose any restrictions to them,
 						including completely removing them from the output, imposing filesize limits, etc.
 						Upstream metainfo files should not rely on the videos being present and must always have a static screenhot for the software component as well.
 					</para>
@@ -478,17 +505,21 @@
 				<term>&lt;releases/&gt;</term>
 				<listitem>
 					<para>
-						The <literal>releases</literal> tag and its <literal>release</literal> children are structured as described in <xref linkend="tag-releases"/>, with the
-						additional requirement that releases must be sorted in a latest-to-oldest order.
+						The <literal>releases</literal> tag and its <literal>release</literal> children are structured as described in <xref linkend="sect-Metadata-Releases"/>.
 					</para>
 					<para>
 						Each <literal>release</literal> tag may have a <literal>description</literal> tag as child, containing a brief description of what is new in the release.
 						The <literal>description</literal> tag is structured as described in <xref linkend="tag-ct-description"/>. This also applies to its translation rules.
 					</para>
 					<para>
-						The AppStream collection XML generator may shorten overlong lists of releases to a smaller list, for example of 4 <literal>release</literal> tags.
+						The AppStream catalog XML generator may shorten overlong lists of releases to a smaller list, for example of 4 <literal>release</literal> tags.
 						It may also convert ISO 8601 <literal>date</literal> properties of the metainfo file into an UNIX timestamp <literal>timestamp</literal> property.
 						It should avoid generating metadata containing both properties on a <literal>release</literal> tag.
+					</para>
+					<para>
+						If a <xref linkend="tag-releases"/> tag in a metainfo file references an <literal>external</literal> release description, the release description should
+						be read either from the release file provided locally, or, if possible and provided, be downloaded from the URL referenced in the component's <literal>releases</literal>
+						tag.
 					</para>
 					<para>
 						Example for a valid releases tag:
@@ -615,7 +646,7 @@
 					<para>
 						This optional tag follows the same schema as described for metainfo files in <xref linkend="tag-agreement"/>, with the exception
 						of <literal>description</literal> tags in its <literal>agreement_section</literal> child tags now following the same translation
-						rules as the toplevel <xref linkend="tag-ct-description"/> tag in collection metadata.
+						rules as the toplevel <xref linkend="tag-ct-description"/> tag in catalog metadata.
 					</para>
 				</listitem>
 			</varlistentry>

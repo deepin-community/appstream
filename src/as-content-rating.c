@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2016-2020 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -294,7 +294,7 @@ get_esrb_string (const gchar *source, const gchar *translate)
 	if (g_strcmp0 (source, translate) == 0)
 		return g_strdup (source);
 	/* TRANSLATORS: This is the formatting of English and localized name
-	 * of the rating e.g. "Adults Only (solo adultos)" */
+	   of the rating e.g. "Adults Only (solo adultos)" */
 	return g_strdup_printf (_("%s (%s)"), source, translate);
 }
 
@@ -588,7 +588,7 @@ static guint content_rating_csm_ages[AS_CONTENT_RATING_SYSTEM_LAST][7] = {
 /**
  * as_content_rating_system_get_csm_ages:
  * @system: an #AsContentRatingSystem
- * @length_out: (out) (not optional): return location for the length of the
+ * @length_out: (out) (not nullable): return location for the length of the
  *    returned array
  *
  * Get the CSM ages corresponding to the entries returned by
@@ -1182,7 +1182,7 @@ as_content_rating_attribute_get_description (const gchar *id, AsContentRatingVal
 	}
 
 	/* This means the requested @id is missing from @oars_descriptions, so
-	 * presumably the OARS spec has been updated but appstream-glib hasn’t. */
+	 * presumably the OARS spec has been updated but AppStream hasn’t. */
 	g_warn_if_reached ();
 
 	return NULL;
@@ -1336,7 +1336,7 @@ as_content_rating_attribute_from_csm_age (const gchar *id, guint age)
  *
  * Returns: (array zero-terminated=1) (transfer container): a %NULL-terminated
  *    array of IDs, to be freed with g_free() (the element values are owned by
- *    libappstream-glib and must not be freed)
+ *    libappstream and must not be freed)
  * Since: 0.12.10
  */
 const gchar **
@@ -1445,7 +1445,7 @@ as_content_rating_load_from_xml (AsContentRating *content_rating, AsContext *ctx
 	g_autofree gchar *type_str = NULL;
 
 	/* set selected content-rating type (usually oars-1.0) */
-	type_str = (gchar*) xmlGetProp (node, (xmlChar*) "type");
+	type_str = as_xml_get_prop_value (node, "type");
 	as_content_rating_set_kind (content_rating, (gchar*) type_str);
 
 	/* read attributes */
@@ -1459,7 +1459,7 @@ as_content_rating_load_from_xml (AsContentRating *content_rating, AsContext *ctx
 		if (g_strcmp0 ((gchar*) iter->name, "content_attribute") != 0)
 			continue;
 
-		attr_id = (gchar*) xmlGetProp (iter, (xmlChar*) "id");
+		attr_id = as_xml_get_prop_value (iter, "id");
 		str_value = as_xml_get_node_value (iter);
 		attr_value = as_content_rating_value_from_string (str_value);
 		if ((attr_value == AS_CONTENT_RATING_VALUE_UNKNOWN) || (attr_id == NULL))
@@ -1486,22 +1486,17 @@ as_content_rating_to_xml_node (AsContentRating *content_rating, AsContext *ctx, 
 	guint i;
 	xmlNode *rnode;
 
-	rnode = xmlNewChild (root, NULL, (xmlChar*) "content_rating", NULL);
-	xmlNewProp (rnode,
-		    (xmlChar*) "type",
-		    (xmlChar*) priv->kind);
+	rnode = as_xml_add_node (root, "content_rating");
+	as_xml_add_text_prop (rnode, "type", priv->kind);
 
 	for (i = 0; i < priv->keys->len; i++) {
 		xmlNode *anode;
 		AsContentRatingKey *key = (AsContentRatingKey*) g_ptr_array_index (priv->keys, i);
 
-		anode = xmlNewTextChild (rnode,
-					 NULL,
-					 (xmlChar*) "content_attribute",
-					 (xmlChar*) as_content_rating_value_to_string (key->value));
-		xmlNewProp (anode,
-			    (xmlChar*) "id",
-			    (xmlChar*) key->id);
+		anode = as_xml_add_text_node (rnode,
+					      "content_attribute",
+					      as_content_rating_value_to_string (key->value));
+		as_xml_add_text_prop (anode, "id", key->id);
 	}
 }
 

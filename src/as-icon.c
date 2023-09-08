@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2015-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2015-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -252,8 +252,7 @@ as_icon_set_filename (AsIcon *icon, const gchar *filename)
 
 	/* invalidate URL */
 	if (priv->url != NULL) {
-		g_free (priv->url);
-		priv->url = NULL;
+		g_free (g_steal_pointer (&priv->url));
 	}
 }
 
@@ -350,17 +349,17 @@ as_xml_icon_set_size_from_node (xmlNode *node, AsIcon *icon)
 {
 	gchar *val;
 
-	val = (gchar*) xmlGetProp (node, (xmlChar*) "width");
+	val = as_xml_get_prop_value (node, "width");
 	if (val != NULL) {
 		as_icon_set_width (icon, g_ascii_strtoll (val, NULL, 10));
 		g_free (val);
 	}
-	val = (gchar*) xmlGetProp (node, (xmlChar*) "height");
+	val = as_xml_get_prop_value (node, "height");
 	if (val != NULL) {
 		as_icon_set_height (icon, g_ascii_strtoll (val, NULL, 10));
 		g_free (val);
 	}
-	val = (gchar*) xmlGetProp (node, (xmlChar*) "scale");
+	val = as_xml_get_prop_value (node, "scale");
 	if (val != NULL) {
 		as_icon_set_scale (icon, g_ascii_strtoll (val, NULL, 10));
 		g_free (val);
@@ -387,7 +386,7 @@ as_icon_load_from_xml (AsIcon *icon, AsContext *ctx, xmlNode *node, GError **err
 	if (content == NULL)
 		return FALSE;
 
-	type_str = (gchar*) xmlGetProp (node, (xmlChar*) "type");
+	type_str = as_xml_get_prop_value (node, "type");
 
 	if (g_strcmp0 (type_str, "stock") == 0) {
 		priv->kind = AS_ICON_KIND_STOCK;
@@ -441,27 +440,26 @@ as_icon_to_xml_node (AsIcon *icon, AsContext *ctx, xmlNode *root)
 	if (value == NULL)
 		return;
 
-	n = xmlNewTextChild (root, NULL, (xmlChar*) "icon", (xmlChar*) value);
-	xmlNewProp (n, (xmlChar*) "type",
-			(xmlChar*) as_icon_kind_to_string (priv->kind));
+	n = as_xml_add_text_node (root, "icon", value);
+	as_xml_add_text_prop (n, "type", as_icon_kind_to_string (priv->kind));
 
 	if (priv->kind != AS_ICON_KIND_STOCK) {
 		if (priv->width > 0) {
 			g_autofree gchar *size = NULL;
 			size = g_strdup_printf ("%i", as_icon_get_width (icon));
-			xmlNewProp (n, (xmlChar*) "width", (xmlChar*) size);
+			as_xml_add_text_prop (n, "width", size);
 		}
 
 		if (priv->height > 0) {
 			g_autofree gchar *size = NULL;
 			size = g_strdup_printf ("%i", as_icon_get_height (icon));
-			xmlNewProp (n, (xmlChar*) "height", (xmlChar*) size);
+			as_xml_add_text_prop (n, "height", size);
 		}
 
 		if (priv->scale > 1) {
 			g_autofree gchar *scale = NULL;
 			scale = g_strdup_printf ("%i", as_icon_get_scale (icon));
-			xmlNewProp (n, (xmlChar*) "scale", (xmlChar*) scale);
+			as_xml_add_text_prop (n, "scale", scale);
 		}
 	}
 }

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -20,16 +20,19 @@
 
 /**
  * SECTION:asc-canvas
- * @short_description: Draw text and render SVG canvass.
+ * @short_description: Draw text and render SVG graphics.
  * @include: appstream-compose.h
  */
 
 #include "config.h"
 #include "asc-canvas.h"
+#include "asc-canvas-private.h"
 
 #include <cairo.h>
 #include <cairo-ft.h>
+#ifdef HAVE_SVG_SUPPORT
 #include <librsvg/rsvg.h>
+#endif
 
 #include "asc-font-private.h"
 #include "asc-image.h"
@@ -151,11 +154,16 @@ asc_canvas_get_height (AscCanvas *canvas)
 gboolean
 asc_canvas_render_svg (AscCanvas *canvas, GInputStream *stream, GError **error)
 {
+#ifdef HAVE_SVG_SUPPORT
 	AscCanvasPrivate *priv = GET_PRIVATE (canvas);
 	RsvgHandle *handle = NULL;
-	RsvgDimensionData dims;
 	gboolean ret = FALSE;
-	double w, h;
+	gdouble srf_width, srf_height;
+#if LIBRSVG_CHECK_VERSION(2, 52, 0)
+	RsvgRectangle viewport;
+#else
+	RsvgDimensionData dims;
+#endif
 
 	/* NOTE: unfortunately, Cairo/RSvg may use Fontconfig internally, so
 	 * we need to lock this down since a parallel-processed font
@@ -169,16 +177,38 @@ asc_canvas_render_svg (AscCanvas *canvas, GInputStream *stream, GError **error)
 						   error);
 	if (handle == NULL)
 		goto out;
+	rsvg_handle_set_dpi (handle, 100);
 
-	rsvg_handle_get_dimensions (handle, &dims);
-	w = (double) cairo_image_surface_get_width (priv->srf);
-	h = (double) cairo_image_surface_get_height (priv->srf);
-
-	/* cairo_translate (cr, (w - dims.width) / 2, (h - dims.height) / 2); */
-	cairo_scale (priv->cr, w / dims.width, h / dims.height);
+	srf_width = (gdouble) cairo_image_surface_get_width (priv->srf);
+	srf_height = (gdouble) cairo_image_surface_get_height (priv->srf);
 
 	cairo_save (priv->cr);
-        if (!rsvg_handle_render_cairo (handle, priv->cr)) {
+
+#if LIBRSVG_CHECK_VERSION(2, 52, 0)
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = srf_width;
+	viewport.height = srf_height;
+
+	ret = rsvg_handle_render_document (handle,
+					   priv->cr,
+					   &viewport,
+					   error);
+	if (!ret) {
+		cairo_restore (priv->cr);
+		g_prefix_error (error, "SVG graphic rendering failed:");
+		goto out;
+	}
+#else
+	rsvg_handle_get_dimensions (handle, &dims);
+
+	/* cairo_translate (cr, (srf_width - dims.width) / 2, (srf_height - dims.height) / 2); */
+	cairo_scale (priv->cr,
+		     srf_width / dims.width,
+		     srf_height / dims.height);
+
+	ret = rsvg_handle_render_cairo (handle, priv->cr);
+	if (!ret) {
 		cairo_restore (priv->cr);
 		g_set_error_literal (error,
 				     ASC_CANVAS_ERROR,
@@ -186,12 +216,22 @@ asc_canvas_render_svg (AscCanvas *canvas, GInputStream *stream, GError **error)
 				     "SVG graphic rendering failed.");
 		goto out;
 	}
-	ret = TRUE;
+#endif
 
+	ret = TRUE;
 out:
 	if (handle != NULL)
 		g_object_unref (handle);
 	return ret;
+#else
+	g_warning ("Unable to render SVG graphic: AppStream built without SVG support.");
+	g_set_error_literal (error,
+			     ASC_CANVAS_ERROR,
+			     ASC_CANVAS_ERROR_UNSUPPORTED,
+			     "AppStream was built without SVG support. This is an issue with your AppStream distribution. "
+			     "Please rebuild AppStream with SVG support enabled or contact your distributor to enable it for you.");
+	return FALSE;
+#endif
 }
 
 /**
@@ -283,6 +323,7 @@ asc_canvas_draw_text (AscCanvas *canvas, AscFont *font, const gchar *text, gint 
 	gboolean ret = FALSE;
 	cairo_font_face_t *cff = NULL;
 	cairo_status_t status;
+	cairo_text_extents_t te;
 	g_auto(GStrv) lines = NULL;
 	guint lines_len;
 	guint line_padding;
@@ -336,7 +377,6 @@ asc_canvas_draw_text (AscCanvas *canvas, AscFont *font, const gchar *text, gint 
 		}
         }
 
-        cairo_text_extents_t te;
 	text_size = 128;
 	while (text_size-- > 0) {
 		cairo_set_font_size (priv->cr, text_size);
@@ -389,7 +429,8 @@ asc_canvas_save_png (AscCanvas *canvas, const gchar *fname, GError **error)
 		g_set_error (error,
 			     ASC_CANVAS_ERROR,
 			     ASC_CANVAS_ERROR_FONT,
-			     "Could not save canvas to PNG: %i", status);
+			     "Could not save canvas to PNG: %s",
+			     cairo_status_to_string (status));
 		return FALSE;
 	}
 

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2018-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2018-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -52,10 +52,10 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	     "Localize the individual paragraphs instead.")
 	},
 
-	{ "collection-localized-description-section",
+	{ "catalog-localized-description-section",
 	  AS_ISSUE_SEVERITY_ERROR,
-	  N_("This element (paragraph, list, etc.) of a <description/> tag must not be localized individually in collection metadata. "
-	     "Localize the whole <description/> tag instead. The AppStream collection metadata generator (e.g. `appstream-generator`) will already do the right thing when compiling the data.")
+	  N_("This element (paragraph, list, etc.) of a <description/> tag must not be localized individually in catalog metadata. "
+	     "Localize the whole <description/> tag instead. The AppStream metadata catalog generator (e.g. `appstream-generator`) will already do the right thing when compiling the data.")
 	},
 
 	{ "description-markup-invalid",
@@ -81,19 +81,34 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	     "and to provide more detailed information on this component immediately in the first paragraph.")
 	},
 
+	{ "description-first-word-not-capitalized",
+	  AS_ISSUE_SEVERITY_INFO,
+	  N_("The description line does not start with a capitalized word, project name or number.")
+	},
+
 	{ "description-has-plaintext-url",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  N_("The description contains a web URL in plain text. This is not allowed, please use the <url/> tag instead to share links.")
 	},
 
+	{ "tag-not-translatable",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("This tag is not translatable.")
+	},
+
 	{ "tag-duplicated",
 	  AS_ISSUE_SEVERITY_ERROR,
-	  N_("As per AppStream specification, the mentioned tag must only appear once in this context. Having multiple tags of this kind is not valid.")
+	  N_("This tag must only appear once in this context. Having multiple tags of this kind is not valid.")
 	},
 
 	{ "tag-empty",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  N_("The mentioned tag is empty, which is highly likely not intended as it should have content.")
+	},
+
+	{ "tag-invalid-text-content",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("The mentioned tag has text content, even though it must not contain text.")
 	},
 
 	{ "cid-is-not-rdns",
@@ -119,6 +134,11 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("The component ID contains an invalid character. Only ASCII characters, dots and numbers are permitted.")
 	},
 
+	{ "cid-punctuation-prefix",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("The component ID starts with punctuation. This is not allowed.")
+	},
+
 	{ "cid-contains-hyphen",
 	  AS_ISSUE_SEVERITY_INFO,
 	  N_("The component ID contains a hyphen/minus. Using a hyphen is strongly discouraged, to improve interoperability with other tools such as D-Bus. "
@@ -133,7 +153,12 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 
 	{ "cid-contains-uppercase-letter",
 	  AS_ISSUE_SEVERITY_PEDANTIC,
-	  N_("The component ID should only contain lowercase letters.")
+	  N_("The component ID should only contain lowercase characters.")
+	},
+
+	{ "cid-domain-not-lowercase",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("The domain part of the rDNS component ID (first two parts) must only contain lowercase characters.")
 	},
 
 	{ "cid-missing-affiliation-freedesktop",
@@ -177,6 +202,48 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "update-contact-no-mail",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  N_("The update-contact does not appear to be a valid email address (escaping of `@` is only allowed as `_at_` or `_AT_`).")
+	},
+
+	{ "screenshot-invalid-width",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("The `width` property must be a positive integer.")
+	},
+
+	{ "screenshot-invalid-height",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("The `height` property must be a positive integer.")
+	},
+
+	{ "screenshot-image-invalid-type",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("The image type must be either `source` or `thumbnail`.")
+	},
+
+	{ "screenshot-image-missing-width",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("The `width` property must be present if the image type is `thumbnail`.")
+	},
+
+	{ "screenshot-image-missing-height",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("The `height` property must be present if the image type is `thumbnail`.")
+	},
+
+	{ "screenshot-image-source-duplicated",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("There can only be one `source` image per screenshot and language.")
+	},
+
+	{ "screenshot-image-source-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("A screenshot must have at least one image of type `source`.")
 	},
 
 	{ "screenshot-image-not-found",
@@ -248,6 +315,11 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("The default screenshot of a software component must not be a video. Use a static image as default screenshot and set the video as a secondary screenshot.")
 	},
 
+	{ "screenshot-default-missing",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("No screenshot is marked as default.")
+	},
+
 	{ "relation-invalid-tag",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  N_("Found an unknown tag in a requires/recommends group. This is likely an error, because a component relation of this type is unknown.")
@@ -273,12 +345,18 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 
 	{ "relation-item-invalid-vercmp",
 	  AS_ISSUE_SEVERITY_ERROR,
-	  N_("Invalid comparison operation on relation item. Only eq/ne/lt/gt/le/ge are permitted.")
+	  /* TRANSLATORS: `eq/ne/lt/gt/le/ge` are AppStream XML values. Please do not translate them. */
+	  N_("Invalid comparison operation on relation item. Only one of `eq/ne/lt/gt/le/ge` is permitted.")
 	},
 
 	{ "relation-item-has-vercmp",
 	  AS_ISSUE_SEVERITY_INFO,
 	  N_("The relation item has a comparison operation set, but does not support any comparisons.")
+	},
+
+	{ "relation-item-redefined",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("This relation item has already been defined once for this or a different relation type. Please do not redefine relations.")
 	},
 
 	{ "relation-memory-in-requires",
@@ -313,6 +391,35 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
 	  N_("This `side` property of this `display_length` item contains an invalid value. It must either be `shortest` or `longest`, or unset to imply `shortest` to "
 	     "make the item value refer to either the shortest or longest side of the display.")
+	},
+
+	{ "relation-hardware-value-invalid",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("This `hardware` item contains an invalid value. It should be a Computer Hardware ID (CHID) UUID without braces.")
+	},
+
+	{ "relation-memory-value-invalid",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("A `memory` item must only contain a non-zero integer value, depicting a system memory size in mebibyte (MiB)")
+	},
+
+	{ "relation-internet-value-invalid",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The set tag value is not valid for an `internet` relation.")
+	},
+
+	{ "relation-internet-bandwidth-offline",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `bandwidth_mbitps` property is not allowed when using `offline-only` as value.")
+	},
+
+	{ "relation-internet-bandwidth-value-invalid",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The value of this property must be a positive integer value, describing the minimum required bandwidth in mbit/s.")
 	},
 
 	{ "component-type-invalid",
@@ -372,7 +479,12 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 
 	{ "summary-has-url",
 	  AS_ISSUE_SEVERITY_ERROR,
-	  N_("The summary must not contain any URL. Use the <url/> tags for links.")
+	  N_("The summary must not contain any URL. Use the `<url/>` tags for links.")
+	},
+
+	{ "summary-first-word-not-capitalized",
+	  AS_ISSUE_SEVERITY_INFO,
+	  N_("The summary text does not start with a capitalized word, project name or number.")
 	},
 
 	{ "icon-stock-cached-has-url",
@@ -410,7 +522,7 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("Invalid `type` property for this `url` tag. URLs of this type are not known in the AppStream specification."),
 	},
 
-	{ "url-not-found",
+	{ "url-not-reachable",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  N_("Unable to reach remote location that this URL references - does it exist?"),
 	},
@@ -428,6 +540,11 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "url-uses-ftp",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  N_("This web link uses the FTP protocol. Consider switching to HTTP(S) instead."),
+	},
+
+	{ "url-redefined",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("An URL of this type has already been defined."),
 	},
 
 	{ "developer-name-has-url",
@@ -452,10 +569,10 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("This `bundle` tag has an unknown type and can not be used."),
 	},
 
-	{ "update-contact-in-collection-data",
+	{ "update-contact-in-catalog-data",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
-	  N_("The `update_contact` tag should not be included in collection AppStream XML."),
+	  N_("The `update_contact` tag should not be included in catalog AppStream XML."),
 	},
 
 	{ "nonstandard-gnome-extension",
@@ -495,6 +612,25 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "generic-description-missing",
 	  AS_ISSUE_SEVERITY_PEDANTIC,
 	  N_("This generic component is missing a long description. It may be useful to add one."),
+	},
+
+	{ "desktop-app-launchable-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("This `desktop-application` component is missing a `desktop-id` launchable tag. "
+	     "This means that this application can not be launched and has no association with its desktop-entry file. "
+	     "It also means no icon data or category information from the desktop-entry file will be available, which "
+	     "will result in this application being ignored entirely."),
+	},
+
+	{ "desktop-app-launchable-omitted",
+	  AS_ISSUE_SEVERITY_INFO,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("This `desktop-application` component has no `desktop-id` launchable tag, "
+	     "however it contains all the necessary information to display the application. "
+	     "The omission of the launchable entry means that this application can not be launched directly from "
+	     "installers or software centers. If this is intended, this information can be ignored, otherwise "
+	     "it is strongly recommended to add a launchable tag as well."),
 	},
 
 	{ "console-app-no-binary",
@@ -574,6 +710,11 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("The category name is not valid. Refer to the XDG Menu Specification for a list of valid category names."),
 	},
 
+	{ "app-categories-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("This component is in no valid categories, even though it should be. Please check its metainfo file and desktop-entry file."),
+	},
+
 	{ "screenshot-caption-too-long",
 	  AS_ISSUE_SEVERITY_PEDANTIC,
 	  N_("The screenshot caption is too long (should be <= 100 characters)"),
@@ -589,10 +730,10 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("The XML of this file is malformed."),
 	},
 
-	{ "component-collection-tag-invalid",
+	{ "component-catalog-tag-invalid",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
-	  N_("Invalid tag found in collection metadata. Only `component` tags are permitted."),
+	  N_("Invalid tag found in catalog metadata. Only `component` tags are permitted."),
 	},
 
 	{ "metainfo-ancient",
@@ -611,9 +752,9 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("The metainfo filename does not match the component ID."),
 	},
 
-	{ "desktop-file-read-failed",
+	{ "desktop-file-load-failed",
 	  AS_ISSUE_SEVERITY_ERROR,
-	  N_("Unable to read the .desktop file associated with this component."),
+	  N_("Unable to load the desktop-entry file associated with this component."),
 	},
 
 	{ "desktop-file-not-found",
@@ -621,17 +762,44 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("This component metadata refers to a non-existing .desktop file."),
 	},
 
-	{ "desktop-file-category-invalid",
+	{ "desktop-entry-category-invalid",
 	  AS_ISSUE_SEVERITY_WARNING,
-	  N_("The category defined in the .desktop file is not valid. Refer to the XDG Menu Specification for a list of valid categories."),
+	  N_("A category defined in the desktop-entry file is not valid. Refer to the XDG Menu Specification for a list of valid categories."),
 	},
 
-	{ "dir-no-metadata.found",
+	{ "desktop-entry-bad-data",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("Error while reading some data from the desktop-entry file."),
+	},
+
+	{ "desktop-entry-value-invalid-chars",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The value of this desktop-entry field contains invalid or non-printable UTF-8 characters, which can not be displayed properly."),
+	},
+
+	{ "desktop-entry-value-quoted",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("This desktop-entry field value is quoted, which is likely unintentional."),
+	},
+
+	{ "desktop-entry-hidden-set",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("This desktop-entry file has the 'Hidden' property set. This is wrong for vendor-installed .desktop files, and "
+	     "nullifies all effects this .desktop file has (including MIME associations), which most certainly is not intentional."),
+	},
+
+	{ "desktop-entry-empty-onlyshowin",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("This desktop-entry file has the 'OnlyShowIn' property set with an empty value. This might not be intended, as this will hide "
+	     "the application from all desktops. If you do want to hide the application from all desktops, using 'NoDisplay=true' is more explicit."),
+	},
+
+	{ "dir-no-metadata-found",
 	  AS_ISSUE_SEVERITY_INFO,
 	  N_("No AppStream metadata was found in this directory or directory tree."),
 	},
 
-	{ "dir-applications-not.found",
+	{ "dir-applications-not-found",
 	  AS_ISSUE_SEVERITY_PEDANTIC, /* pedantic because not everything which has metadata is an application */
 	  N_("No XDG applications directory found."),
 	},
@@ -653,6 +821,28 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	     "Sorting releases also increases overall readability of the metainfo file."),
 	},
 
+	{ "releases-type-invalid",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("The type of the releases block is invalid. It needs to either `embedded` (the default) or `external`."),
+	},
+
+	{ "releases-url-insecure",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("The URL to an external release metadata file is insecure. This is not allowed, please use HTTPS URLs only."),
+	},
+
+	{ "releases-download-failed",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("Failed to download release metadata."),
+	},
+
+	{ "releases-external-not-found",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("A local release metadata file was not found. It is strongly recommended to validate this metadata "
+	     "together with the main MetaInfo file."),
+	},
+
 	{ "release-urgency-invalid",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  N_("The value set as release urgency is not a known urgency value."),
@@ -661,6 +851,23 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "release-type-invalid",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  N_("The value set as release type is invalid."),
+	},
+
+	{ "release-version-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The release is missing the `version` property."),
+	},
+
+	{ "release-time-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The release is missing either the `date` (preferred) or the `timestamp` property."),
+	},
+
+	{ "release-timestamp-invalid",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("The release timestamp is invalid."),
 	},
 
 	{ "artifact-type-invalid",
@@ -751,9 +958,65 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 
 	{ "content-rating-missing",
 	  AS_ISSUE_SEVERITY_INFO,
-	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks) and keep the URL intact. */
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
 	  N_("This component has no `content_rating` tag to provide age rating information. "
 	     "You can generate the tag data online by answering a few questions at https://hughsie.github.io/oars/"),
+	},
+
+	{ "component-tag-missing-namespace",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("This `tag` is missing a `namespace` attribute."),
+	},
+
+	{ "component-tag-invalid",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("This tag or its namespace contains invalid characters. Only lower-cased ASCII letters, numbers, dots, hyphens and underscores are permitted."),
+	},
+
+	{ "branding-color-type-invalid",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("The type of this color is not valid."),
+	},
+
+	{ "branding-color-scheme-type-invalid",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("The value of this color scheme preference is not valid."),
+	},
+
+	{ "branding-color-invalid",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("This color is not a valid HTML color code."),
+	},
+
+	{ "custom-invalid-tag",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `custom` tag can only contain `value` children."),
+	},
+
+	{ "custom-key-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("This `custom` tag value is missing a `key` attribute."),
+	},
+
+	{ "custom-key-duplicated",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("A key can only be used once."),
+	},
+
+	{ "custom-value-empty",
+	  AS_ISSUE_SEVERITY_INFO,
+	  N_("This custom value is empty."),
+	},
+
+	{ "metainfo-localized-keywords-tag",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("A `keywords` tag must not be localized in metainfo files (upstream metadata). "
+	     "Localize the individual keyword entries instead.")
 	},
 
 	{ NULL, AS_ISSUE_SEVERITY_UNKNOWN, NULL }

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2019-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2019-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -363,7 +363,7 @@ as_video_load_from_xml (AsVideo *video, AsContext *ctx, xmlNode *node, GError **
 		return FALSE;
 	as_video_set_locale (video, lang);
 
-	str = (gchar*) xmlGetProp (node, (xmlChar*) "width");
+	str = as_xml_get_prop_value (node, "width");
 	if (str == NULL) {
 		priv->width = 0;
 	} else {
@@ -371,7 +371,7 @@ as_video_load_from_xml (AsVideo *video, AsContext *ctx, xmlNode *node, GError **
 		g_free (str);
 	}
 
-	str = (gchar*) xmlGetProp (node, (xmlChar*) "height");
+	str = as_xml_get_prop_value (node, "height");
 	if (str == NULL) {
 		priv->height = 0;
 	} else {
@@ -379,10 +379,10 @@ as_video_load_from_xml (AsVideo *video, AsContext *ctx, xmlNode *node, GError **
 		g_free (str);
 	}
 
-	codec_kind = (gchar*) xmlGetProp (node, (xmlChar*) "codec");
+	codec_kind = as_xml_get_prop_value (node, "codec");
 	priv->codec = as_video_codec_kind_from_string (codec_kind);
 
-	container_kind = (gchar*) xmlGetProp (node, (xmlChar*) "container");
+	container_kind = as_xml_get_prop_value (node, "container");
 	priv->container = as_video_container_kind_from_string (container_kind);
 
 	if (!as_context_has_media_baseurl (ctx)) {
@@ -411,29 +411,27 @@ as_video_to_xml_node (AsVideo *video, AsContext *ctx, xmlNode *root)
 	AsVideoPrivate *priv = GET_PRIVATE (video);
 	xmlNode* n_video = NULL;
 
-	n_video = xmlNewTextChild (root, NULL,
-				   (xmlChar*) "video",
-				   (xmlChar*) priv->url);
+	n_video = as_xml_add_text_node (root, "video", priv->url);
 
 	if (priv->codec != AS_VIDEO_CODEC_KIND_UNKNOWN)
-		xmlNewProp (n_video, (xmlChar*) "codec", (xmlChar*) as_video_codec_kind_to_string (priv->codec));
+		as_xml_add_text_prop (n_video, "codec", as_video_codec_kind_to_string (priv->codec));
 	if (priv->container != AS_VIDEO_CONTAINER_KIND_UNKNOWN)
-		xmlNewProp (n_video, (xmlChar*) "container", (xmlChar*) as_video_container_kind_to_string (priv->container));
+		as_xml_add_text_prop (n_video, "container", as_video_container_kind_to_string (priv->container));
 
 	if ((priv->width > 0) && (priv->height > 0)) {
 		gchar *size;
 
 		size = g_strdup_printf("%i", priv->width);
-		xmlNewProp (n_video, (xmlChar*) "width", (xmlChar*) size);
+		as_xml_add_text_prop (n_video, "width", size);
 		g_free (size);
 
 		size = g_strdup_printf("%i", priv->height);
-		xmlNewProp (n_video, (xmlChar*) "height", (xmlChar*) size);
+		as_xml_add_text_prop (n_video, "height", size);
 		g_free (size);
 	}
 
 	if ((priv->locale != NULL) && (g_strcmp0 (priv->locale, "C") != 0))
-		xmlNewProp (n_video, (xmlChar*) "xml:lang", (xmlChar*) priv->locale);
+		as_xml_add_text_prop (n_video, "xml:lang", priv->locale);
 
 	xmlAddChild (root, n_video);
 }

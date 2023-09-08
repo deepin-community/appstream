@@ -21,9 +21,9 @@ This repository contains:
  * a Qt5 based library for accessing AppStream
 
 ## Useful Links
-[AppStream Documentation](https://www.freedesktop.org/software/appstream/docs/) - The AppStream specification and help  
-[Releases](https://www.freedesktop.org/software/appstream/releases/) - All (signed) releases of AppStream  
-[AppStream on Freedesktop](https://www.freedesktop.org/wiki/Distributions/AppStream/) - The original Freedesktop.org page  
+[AppStream Documentation](https://www.freedesktop.org/software/appstream/docs/) - The AppStream specification and help
+[Releases](https://www.freedesktop.org/software/appstream/releases/) - All (signed) releases of AppStream
+[AppStream on Freedesktop](https://www.freedesktop.org/wiki/Distributions/AppStream/) - The original Freedesktop.org page
 
 For help and development discussion, check out the [AppStream mailinglist](https://lists.freedesktop.org/mailman/listinfo/appstream).
 
@@ -44,13 +44,13 @@ you may want to take a look at the [AppStream Generator](https://github.com/ximi
 ### Dependencies
 
 #### Required
- * Meson (>= 0.48)
+ * Meson (>= 0.62)
  * glib2 (>= 2.58)
  * GObject-Introspection
  * libxml2
  * libyaml
  * libcurl (>= 7.62)
- * LMDB
+ * libxmlb (>= 0.3.6)
 
 #### Optional
  * Vala Compiler (vapigen) (for Vala VAPI file)
@@ -75,18 +75,19 @@ Use Meson to configure AppStream and build it with ninja:
 ```bash
 mkdir build
 cd build
-meson <flags> ..
+meson setup <flags> ..
 ninja
 ninja test
 ```
 Possible AppStream-specific flags are:  
  -Dqt=true          -- Build the Qt interface library (default: false)  
  -Dvapi=true        -- Build Vala API to use the library with the Vala programming language (default: false)  
+ -Dcompose=true     -- Build libappstream-compose library and `appstreamcli compose` tool for composing metadata indices (default: false)  
+ -Dapt-support=true -- Enable integration with the APT package manager on Debian (default: false)  
  -Ddocs=true        -- Build specification and other documentation, requires DAPS (default: false)  
  -Dinstall-docs=true -- Install documentation (default: true)  
  -Dmaintainer=true  -- Enable strict compiler options - use this if you write a patch for AppStream (default: false)  
- -Dstemming=true    -- Enable support for stemming in fulltext searches (default: true)  
- -Dapt-support=true -- Enable integration with the APT package manager on Debian (default: false)
+ -Dstemming=true    -- Enable support for stemming in fulltext searches (default: true)
 
 ### Installation
 

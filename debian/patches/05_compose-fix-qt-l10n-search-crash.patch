@@ -1,0 +1,31 @@
+From 40b5b923c4e5013c4c63e8482b895a8e8461f498 Mon Sep 17 00:00:00 2001
+From: Gleb Popov <6yearold@gmail.com>
+Date: Thu, 13 Apr 2023 15:07:48 +0300
+Subject: [PATCH] Fix crash in asc_l10n_search_translations_qt()
+
+We can't change value of the pointer that is marked `g_autofree`.
+
+Fixes #483
+---
+ compose/asc-utils-l10n.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/compose/asc-utils-l10n.c b/compose/asc-utils-l10n.c
+index 74e4985dc..4c82210fd 100644
+--- a/compose/asc-utils-l10n.c
++++ b/compose/asc-utils-l10n.c
+@@ -389,12 +389,9 @@ asc_l10n_search_translations_qt (AscLocaleContext *ctx,
+ 					continue;
+ 				locale = g_strdup (fname + strlen (qm_root) + 1);
+ 				g_strdelimit (locale, ".", '\0');
++				/* tmp == NULL means we have the ${hint}/${locale}.qm form */
+ 				tmp = g_strstr_len (locale, -1, "/");
+-				if (tmp != NULL) {
+-					/* we have the ${hint}/${locale}.qm form */
+-					locale = tmp + 1;
+-				}
+-				if (!asc_l10n_parse_file_qt (ctx, unit, locale, fname, error))
++				if (!asc_l10n_parse_file_qt (ctx, unit, tmp == NULL ? locale : tmp + 1, fname, error))
+ 					return FALSE;
+ 			}
+ 		}

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2018-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2018-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -29,6 +29,8 @@
 
 #include "config.h"
 #include "as-artifact.h"
+#include "as-artifact-private.h"
+
 #include "as-checksum-private.h"
 #include "as-utils-private.h"
 
@@ -405,11 +407,11 @@ as_artifact_load_from_xml (AsArtifact *artifact, AsContext *ctx, xmlNode *node, 
 	as_ref_string_assign_safe (&priv->platform, str);
 	g_free (str);
 
-	str = (gchar*) xmlGetProp (node, (xmlChar*) "type");
+	str = as_xml_get_prop_value (node, "type");
 	priv->kind = as_artifact_kind_from_string (str);
 	g_free (str);
 
-	str = (gchar*) xmlGetProp (node, (xmlChar*) "bundle");
+	str = as_xml_get_prop_value (node, "bundle");
 	priv->bundle_kind = as_bundle_kind_from_string (str);
 	g_free (str);
 
@@ -432,7 +434,7 @@ as_artifact_load_from_xml (AsArtifact *artifact, AsContext *ctx, xmlNode *node, 
 				as_artifact_add_checksum (artifact, cs);
 		} else if (g_strcmp0 ((gchar*) iter->name, "size") == 0) {
 			AsSizeKind s_kind;
-			gchar *prop = (gchar*) xmlGetProp (iter, (xmlChar*) "type");
+			gchar *prop = as_xml_get_prop_value (iter, "type");
 
 			s_kind = as_size_kind_from_string (prop);
 			if (s_kind != AS_SIZE_KIND_UNKNOWN) {
@@ -467,22 +469,22 @@ as_artifact_to_xml_node (AsArtifact *artifact, AsContext *ctx, xmlNode *root)
 	if (priv->kind == AS_ARTIFACT_KIND_UNKNOWN)
 		return;
 
-	n_artifact = xmlNewChild (root, NULL, (xmlChar*) "artifact", (xmlChar*) "");
+	n_artifact = as_xml_add_node (root, "artifact");
 
-	xmlNewProp (n_artifact,
-		    (xmlChar*) "type",
-		    (xmlChar*) as_artifact_kind_to_string (priv->kind));
+	as_xml_add_text_prop (n_artifact,
+			      "type",
+			      as_artifact_kind_to_string (priv->kind));
 
 	if (priv->platform != NULL) {
-		xmlNewProp (n_artifact,
-				(xmlChar*) "platform",
-				(xmlChar*) priv->platform);
+		as_xml_add_text_prop (n_artifact,
+				      "platform",
+				      priv->platform);
 	}
 
 	if (priv->bundle_kind != AS_BUNDLE_KIND_UNKNOWN) {
-		xmlNewProp (n_artifact,
-				(xmlChar*) "bundle",
-				(xmlChar*) as_bundle_kind_to_string (priv->bundle_kind));
+		as_xml_add_text_prop (n_artifact,
+				      "bundle",
+				      as_bundle_kind_to_string (priv->bundle_kind));
 	}
 
 	/* add location urls */
@@ -505,16 +507,9 @@ as_artifact_to_xml_node (AsArtifact *artifact, AsContext *ctx, xmlNode *root)
 		guint64 asize = as_artifact_get_size (artifact, j);
 		if (asize > 0) {
 			xmlNode *s_node;
-			g_autofree gchar *size_str;
-
-			size_str = g_strdup_printf ("%" G_GUINT64_FORMAT, asize);
-			s_node = xmlNewTextChild (n_artifact,
-						  NULL,
-						  (xmlChar*) "size",
-						  (xmlChar*) size_str);
-			xmlNewProp (s_node,
-				(xmlChar*) "type",
-				(xmlChar*) as_size_kind_to_string (j));
+			g_autofree gchar *size_str = g_strdup_printf ("%" G_GUINT64_FORMAT, asize);
+			s_node = as_xml_add_text_node (n_artifact, "size", size_str);
+			as_xml_add_text_prop (s_node, "type", as_size_kind_to_string (j));
 		}
 	}
 

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -100,12 +100,14 @@ typedef enum {
 
 /**
  * AscImageError:
- * @ASC_IMAGE_ERROR_FAILED:	Generic failure.
+ * @ASC_IMAGE_ERROR_FAILED:	 Generic failure.
+ * @ASC_IMAGE_ERROR_UNSUPPORTED: The graphic type is not supported.
  *
  * An image processing error.
  **/
 typedef enum {
 	ASC_IMAGE_ERROR_FAILED,
+	ASC_IMAGE_ERROR_UNSUPPORTED,
 	/*< private >*/
 	ASC_IMAGE_ERROR_LAST
 } AscImageError;

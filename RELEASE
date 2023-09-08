@@ -1,13 +1,18 @@
 AppStream Release Notes
 
-1. Write NEWS entries for AppStream in the same format as usual.
+1. Set variables
 
-git shortlog v0.14.5.. | grep -i -v trivial | grep -v Merge > NEWS.new
+OLD_VERSION="0.16.0"
+NEW_VERSION="0.16.1"
+
+2. Write NEWS entries for AppStream in the same format as usual.
+
+git shortlog v$OLD_VERSION.. | grep -i -v trivial | grep -v Merge > NEWS.new
 
 --------------------------------------------------------------------------------
-Version 0.14.6
+Version 0.16.1
 ~~~~~~~~~~~~~~
-Released: 2021-xx-xx
+Released: 2023-xx-xx
 
 Notes:
 
@@ -17,36 +22,38 @@ Specification:
 
 Bugfixes:
 
+Miscellaneous:
+
 Contributors:
 --------------------------------------------------------------------------------
 
-2. Update library version if new ABI or API in meson.build
+3. Update library version if new ABI or API in meson.build
 
-3. Commit changes in AppStream git:
+4. Commit changes in AppStream git:
 
-git commit -a -m "Release version 0.14.6"
-git tag -s -f -m "Release 0.14.6" v0.14.6 <gpg password>
+git commit -a -m "Release version $NEW_VERSION"
+git tag -s -f -m "Release $NEW_VERSION" v$NEW_VERSION <gpg password>
 git push --tags
 git push
 
-4. run './release.sh --version=0.14.6 --git-tag=v0.14.6 --sign'
+5. run './release.sh --version=$NEW_VERSION --git-tag=v$NEW_VERSION --sign'
 
-5. Upload tarball: scp -r *.tar.xz* annarchy.freedesktop.org:/srv/www.freedesktop.org/www/software/appstream/releases/
+6. Upload tarball: scp -r *.tar.xz* annarchy.freedesktop.org:/srv/www.freedesktop.org/www/software/appstream/releases/
 
-6. Upload documentation:
+7. Upload documentation:
    scp -r build/release_install/usr/local/share/doc/appstream/html/* annarchy.freedesktop.org:/srv/www.freedesktop.org/www/software/appstream/docs/
 
-7. Do post release version bump in meson.build, RELEASE
+8. Do post release version bump in meson.build, RELEASE
 
-8. Commit trivial changes:
+9. Commit trivial changes:
 
 git commit -a -m "trivial: post release version bump"
 git push
 
-9. Send an email to appstream@lists.freedesktop.org
+10. Send an email to appstream@lists.freedesktop.org
 
 =================================================
-AppStream 0.14.6 released!
+AppStream 0.16.1 released!
 
 Tarballs available here: https://www.freedesktop.org/software/appstream/releases/
 

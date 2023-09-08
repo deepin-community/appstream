@@ -1,3 +1,120 @@
+appstream (0.16.1-2) unstable; urgency=medium
+
+  * Add add-missing-is-hidden-attribute.patch:
+    - Fixes noisy warning with newer GLib versions (Closes: #1032519)
+  * Add spdx-accept-brackets-in-expression-check.patch:
+    - Consider license expressions with brackets as valid when testing
+      them using the CLI tool.
+  * Add compose-lowercase-cids.patch:
+    - Ensure CIDs are lower-cased for synthesized components. This fixes
+      a regression that broke ratings & reviews and caused unstable
+      component hashes for appstream-generator.
+  * Add fix-crash-on-invalid-yaml-input.patch:
+    - Safeguard against someone feeding non-YAML data into the YAML parser.
+  * Add compose-fix-qt-l10n-search-crash.patch:
+    - Fix crash in compose when trying to find & parse Qt translation files
+      to extract translation statistics.
+
+ -- Matthias Klumpp <mak@debian.org>  Sun, 28 May 2023 17:10:40 +0200
+
+appstream (0.16.1-1) unstable; urgency=medium
+
+  * New upstream version: 0.16.1
+    - Bugfix-only release, resolves crashes in clients that
+      use GIR bindings (Closes: #1030588)
+
+ -- Matthias Klumpp <mak@debian.org>  Fri, 10 Feb 2023 22:20:48 +0100
+
+appstream (0.16.0-1) unstable; urgency=medium
+
+  * New upstream version: 0.16.0
+  * Update autopkgtests
+  * Only build against libsystemd on Linux
+  * Bump standards version (no changes needed)
+  * Update symbols file
+
+ -- Matthias Klumpp <mak@debian.org>  Thu, 26 Jan 2023 22:58:46 +0100
+
+appstream (0.15.6-1) unstable; urgency=medium
+
+  * New upstream version: 0.15.6
+  * Mark "appstream" package as Multi-Arch: foreign (Closes: #1023366)
+  * Update symbols file
+
+ -- Matthias Klumpp <mak@debian.org>  Thu, 22 Dec 2022 22:56:38 +0100
+
+appstream (0.15.5-1) unstable; urgency=medium
+
+  * New upstream version: 0.15.5
+  * Update symbols file
+  * Override false-positive source-is-missing Lintian error
+
+ -- Matthias Klumpp <mak@debian.org>  Mon, 22 Aug 2022 20:28:46 +0200
+
+appstream (0.15.4-1) unstable; urgency=medium
+
+  * New upstream version: 0.15.4
+  * Update symbols file
+  * Clean up swcatalog on purge (Closes: #1009825)
+
+ -- Matthias Klumpp <mak@debian.org>  Sun, 22 May 2022 22:54:28 +0200
+
+appstream (0.15.3-1) unstable; urgency=medium
+
+  * New upstream version: 0.15.3
+    - Will no longer process Flatpak data (if available) as well in
+      APT hooks (Closes: #1006269)
+    - Centralize GOnce guard to fix an assertion failure
+      in AsComponent (Closes: #1006684)
+  * Bump build dependency on Meson
+  * Update symbols file
+
+ -- Matthias Klumpp <mak@debian.org>  Sun, 10 Apr 2022 21:56:00 +0200
+
+appstream (0.15.2-2) unstable; urgency=medium
+
+  * appstream-compose: Add missing Breaks/Replaces
+    on appstream (Closes: #1006312)
+
+ -- Matthias Klumpp <mak@debian.org>  Thu, 24 Feb 2022 14:58:45 +0100
+
+appstream (0.15.2-1) unstable; urgency=medium
+
+  [ Matthias Klumpp ]
+  * New upstream version: 0.15.2
+  * Move *.compose metainfo file to the right package
+  * Remove old caches in postinst
+  * Update symbols file
+
+  [ Debian Janitor ]
+  * Remove constraints unnecessary since buster
+
+ -- Matthias Klumpp <mak@debian.org>  Tue, 22 Feb 2022 19:09:15 +0100
+
+appstream (0.15.1-1) unstable; urgency=medium
+
+  [ Matthias Klumpp ]
+  * New upstream version: 0.15.1
+  * Update symbols file
+
+  [ Laurent Bigonville ]
+  * debian/control: Set librsvg2-dev BD version to 2.48
+  * Only build libappstream-compose library on architecture where librsvg is
+    building (Closes: #988827)
+  * debian/control: Mark -dev and gir packages as M-A: same
+
+ -- Matthias Klumpp <mak@debian.org>  Wed, 22 Dec 2021 18:40:12 +0100
+
+appstream (0.15.0-1) unstable; urgency=medium
+
+  * New upstream version: 0.15.0
+  * Only update cache on trigger if needed
+  * Adjust lintian override to lintian output changes
+  * Update symbols file
+  * Update d/control: Depend on libxmlb and drop lmdb
+
+ -- Matthias Klumpp <mak@debian.org>  Thu, 02 Dec 2021 22:48:16 +0100
+
 appstream (0.14.6-1) unstable; urgency=medium
 
   * New upstream version: 0.14.6 (Closes: #995798)

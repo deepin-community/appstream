@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2014-2017 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -43,6 +43,7 @@
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 #include "as-tag-xml-private.h"
 #include "as-tag-yaml-private.h"
 #pragma GCC diagnostic pop

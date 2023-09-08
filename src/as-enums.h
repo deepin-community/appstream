@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -30,28 +30,32 @@
 G_BEGIN_DECLS
 
 /* convenience functions as it's easy to forget the bitwise operators */
-#define as_flags_add(bitfield,enum)		do { ((bitfield) |= enum); } while (0)
-#define as_flags_remove(bitfield,enum)		do { ((bitfield) &= ~enum); } while (0)
+#define as_flags_add(bitfield,enum)		do { ((bitfield) |= (enum)); } while (0)
+#define as_flags_remove(bitfield,enum)		do { ((bitfield) &= ~(enum)); } while (0)
 #define as_flags_invert(bitfield,enum)		do { ((bitfield) ^= enum); } while (0)
 #define as_flags_contains(bitfield,enum)	(((bitfield) & enum) > 0)
 
 /**
  * AsFormatStyle:
+ * @AS_FORMAT_STYLE_UNKNOWN:	The format style is unknown.
  * @AS_FORMAT_STYLE_METAINFO:	Parse AppStream upstream metadata (metainfo files)
- * @AS_FORMAT_STYLE_COLLECTION:	Parse AppStream metadata collections (shipped by software distributors)
+ * @AS_FORMAT_STYLE_CATALOG:	Parse AppStream metadata catalog (shipped by software distributors)
  *
  * There are a few differences between AppStream's metainfo files (shipped by upstream projects)
- * and the collection metadata (shipped by distributors).
+ * and the catalog metadata (shipped by distributors).
  * The data source kind indicates which style we should process.
  * Usually you do not want to set this explicitly.
  **/
 typedef enum {
 	AS_FORMAT_STYLE_UNKNOWN,
 	AS_FORMAT_STYLE_METAINFO,
-	AS_FORMAT_STYLE_COLLECTION,
+	AS_FORMAT_STYLE_CATALOG,
 	/*< private >*/
 	AS_FORMAT_STYLE_LAST
 } AsFormatStyle;
+
+/* DEPRECATED */
+#define AS_FORMAT_STYLE_COLLECTION AS_FORMAT_STYLE_CATALOG
 
 /**
  * AsFormatKind:
@@ -81,6 +85,8 @@ typedef enum {
  * @AS_URL_KIND_DONATION:	Page with information about how to donate to the project
  * @AS_URL_KIND_TRANSLATE:	Page with instructions on how to translate the project / submit translations.
  * @AS_URL_KIND_CONTACT:	Contact the developers
+ * @AS_URL_KIND_VCS_BROWSER:	Browse the source code
+ * @AS_URL_KIND_CONTRIBUTE:	Help developing
  *
  * The URL type.
  **/
@@ -93,6 +99,8 @@ typedef enum {
 	AS_URL_KIND_DONATION,
 	AS_URL_KIND_TRANSLATE,
 	AS_URL_KIND_CONTACT,
+	AS_URL_KIND_VCS_BROWSER,
+	AS_URL_KIND_CONTRIBUTE,
 	/*< private >*/
 	AS_URL_KIND_LAST
 } AsUrlKind;

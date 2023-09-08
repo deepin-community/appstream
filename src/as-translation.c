@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -227,7 +227,7 @@ as_translation_load_from_xml (AsTranslation *tr, AsContext *ctx, xmlNode *node, 
 	g_autofree gchar *prop = NULL;
 	g_autofree gchar *content = NULL;
 
-	prop = (gchar*) xmlGetProp (node, (xmlChar*) "type");
+	prop = as_xml_get_prop_value (node, "type");
 	priv->kind = as_translation_kind_from_string (prop);
 	if (priv->kind == AS_TRANSLATION_KIND_UNKNOWN)
 		return FALSE;
@@ -259,9 +259,8 @@ as_translation_to_xml_node (AsTranslation *tr, AsContext *ctx, xmlNode *root)
 	if (as_context_get_style (ctx) != AS_FORMAT_STYLE_METAINFO)
 		return;
 
-	n = xmlNewTextChild (root, NULL, (xmlChar*) "translation", (xmlChar*) priv->id);
-	xmlNewProp (n, (xmlChar*) "type",
-			(xmlChar*) as_translation_kind_to_string (priv->kind));
+	n = as_xml_add_text_node (root, "translation", priv->id);
+	as_xml_add_text_prop (n, "type", as_translation_kind_to_string (priv->kind));
 
 	as_xml_add_text_prop (n, "source_locale", priv->source_locale);
 }

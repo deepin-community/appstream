@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2021-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -28,6 +28,15 @@ struct _AsRelation;
 
 namespace AppStream {
 
+enum class CheckResult {
+    Error,
+    Unknown,
+    False,
+    True
+};
+
+class Pool;
+class SystemInfo;
 class RelationData;
 
 /**
@@ -159,6 +168,10 @@ class APPSTREAMQT_EXPORT Relation {
         void setValueDisplayLengthKind(DisplayLengthKind kind);
 
         bool versionCompare(const QString &version);
+
+        CheckResult isSatisfied(SystemInfo *sysInfo,
+                                Pool *pool,
+                                QString *message);
 
         QString lastError() const;
 

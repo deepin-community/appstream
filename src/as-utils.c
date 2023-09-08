@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2014-2016 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -190,7 +190,7 @@ as_sanitize_text_spaces (const gchar *text)
 	strv = g_strsplit (text, "\n", -1);
 	for (guint i = 0; strv[i] != NULL; ++i)
 		g_strstrip (strv[i]);
-	return g_strjoinv (" ", strv);
+	return g_strstrip (g_strjoinv (" ", strv));
 }
 
 /**
@@ -251,7 +251,12 @@ as_description_markup_convert (const gchar *markup, AsMarkupKind to_kind, GError
 
 		if (g_strcmp0 ((gchar*) iter->name, "p") == 0) {
 			g_autofree gchar *clean_text = NULL;
-			g_autofree gchar *text_content = (gchar*) xmlNodeGetContent (iter);
+			g_autofree gchar *text_content = as_xml_get_node_value_raw (iter);
+
+			/* Apparently the element is empty, which is odd. But we better add it instead
+			 * of completely ignoring it. */
+			if (text_content == NULL)
+				text_content = g_strdup ("");
 
 			/* remove extra whitespaces and linebreaks */
 			clean_text = as_sanitize_text_spaces (text_content);
@@ -261,8 +266,10 @@ as_description_markup_convert (const gchar *markup, AsMarkupKind to_kind, GError
 
 			if (to_kind == AS_MARKUP_KIND_MARKDOWN) {
 				g_auto(GStrv) spl = as_markup_strsplit_words (clean_text, 100);
-				for (guint i = 0; spl[i] != NULL; i++)
-					g_string_append (str, spl[i]);
+				if (spl != NULL) {
+					for (guint i = 0; spl[i] != NULL; i++)
+						g_string_append (str, spl[i]);
+				}
 			} else {
 				g_string_append_printf (str, "%s\n", clean_text);
 			}
@@ -286,8 +293,13 @@ as_description_markup_convert (const gchar *markup, AsMarkupKind to_kind, GError
 				if (g_strcmp0 ((gchar*) iter2->name, "li") == 0) {
 					g_auto(GStrv) spl = NULL;
 					g_autofree gchar *clean_item = NULL;
-					g_autofree gchar *item_content = (gchar*) xmlNodeGetContent (iter2);
+					g_autofree gchar *item_content = as_xml_get_node_value_raw (iter2);
 					entry_no++;
+
+					/* Apparently the item text is empty, which is odd.
+					 * Let's add an empty entry, instead of ignoring it entirely. */
+					if (item_content == NULL)
+						item_content = g_strdup ("");
 
 					/* remove extra whitespaces and linebreaks */
 					clean_item = as_sanitize_text_spaces (item_content);
@@ -300,9 +312,11 @@ as_description_markup_convert (const gchar *markup, AsMarkupKind to_kind, GError
 
 					/* break to 100 chars, leaving room for the dot/indent */
 					spl = as_markup_strsplit_words (clean_item, 100 - 4);
-					g_string_append_printf (str, " %s %s", item_c, spl[0]);
-					for (guint i = 1; spl[i] != NULL; i++)
-						g_string_append_printf (str, "   %s", spl[i]);
+					if (spl != NULL) {
+						g_string_append_printf (str, " %s %s", item_c, spl[0]);
+						for (guint i = 1; spl[i] != NULL; i++)
+							g_string_append_printf (str, "   %s", spl[i]);
+					}
 				} else {
 					/* only <li> is valid in lists */
 					ret = FALSE;
@@ -395,6 +409,36 @@ as_iso8601_to_datetime (const gchar *iso_date)
 }
 
 /**
+ * as_str_verify_integer:
+ * @str: The string to test.
+ * @min_value: Minimal value to be considered valid, e.g. %G_MININT64
+ * @max_value: Maximum value to be considered valie, e.g. %G_MAXINT64
+ *
+ * Verify that a string is an integer in the given range.
+ * Unlike strtoll(), this function will only pass if the whole string
+ * consists of numbers, and will not succeed if the string has a text suffix.
+ *
+ * Returns: %TRUE if verified correctly according to the set conditions, %FALSE otherwise.
+ */
+gboolean
+as_str_verify_integer (const gchar *str, gint64 min_value, gint64 max_value)
+{
+	gchar *endptr;
+	gint64 res;
+	g_return_val_if_fail (min_value < max_value, FALSE);
+
+	if (as_is_empty (str))
+		return FALSE;
+
+	res = g_ascii_strtoll (str, &endptr, 10);
+	/* check if we used the whole string for conversion */
+	if (endptr[0] != '\0')
+		return FALSE;
+
+	return res >= min_value && res <= max_value;
+}
+
+/**
  * as_utils_delete_dir_recursive:
  * @dirname: Directory to remove
  *
@@ -426,21 +470,18 @@ as_utils_delete_dir_recursive (const gchar* dirname)
 	if (error != NULL)
 		goto out;
 	while (info != NULL) {
-		gchar *path;
-		path = g_build_filename (dirname, g_file_info_get_name (info), NULL);
-		if (g_file_test (path, G_FILE_TEST_IS_DIR)) {
+		g_autofree gchar *path = g_build_filename (dirname, g_file_info_get_name (info), NULL);
+		if (g_file_test (path, G_FILE_TEST_IS_DIR))
 			as_utils_delete_dir_recursive (path);
-		} else {
+		else
 			g_remove (path);
-		}
 		g_object_unref (info);
 		info = g_file_enumerator_next_file (enr, NULL, &error);
 		if (error != NULL)
 			goto out;
 	}
-	if (g_file_test (dirname, G_FILE_TEST_EXISTS)) {
+	if (g_file_test (dirname, G_FILE_TEST_EXISTS))
 		g_rmdir (dirname);
-	}
 	ret = TRUE;
 
 out:
@@ -529,6 +570,7 @@ out:
 			g_debug ("Error while searching for files in %s: %s", dir, tmp_error->message);
 		else
 			g_propagate_error (error, tmp_error);
+		g_error_free (tmp_error);
 		g_ptr_array_unref (list);
 		return NULL;
 	}
@@ -604,18 +646,15 @@ as_get_current_locale (void)
 	locale_names = g_get_language_names ();
 
 	if (g_strstr_len (locale_names[0], -1, "_") == NULL) {
-		/* The locale doesn't have a region code - see if LANG has more to offer.
-		 * Some users expect LANG to take priority, and PackageKit uses region codes
-		 * as well since frontends submit them (based on LANG).
-		 * So if we don't have them in LANGUAGE but do have them in LANG, we have
-		 * different localization depending on how the application was launched as well as
-		 * multiple caches on systems which generate them via a backend in PackageKit. */
+		/* The locale doesn't have a region code - see if LANG has more to offer. */
 		const gchar *env_lang = g_getenv ("LANG");
 		if ((env_lang != NULL) && (g_strstr_len (env_lang, -1, "_") != NULL))
 			locale = env_lang;
 	}
 	if (locale == NULL)
 		locale = locale_names[0];
+	if (locale == NULL)
+		locale = g_strdup ("C");
 
 	/* return active locale without UTF-8 suffix, UTF-8 is default in AppStream */
 	return as_locale_strip_encoding (locale);
@@ -934,10 +973,8 @@ as_utils_locale_to_language (const gchar *locale)
 const gchar*
 as_ptr_array_find_string (GPtrArray *array, const gchar *value)
 {
-	const gchar *tmp;
-	guint i;
-	for (i = 0; i < array->len; i++) {
-		tmp = g_ptr_array_index (array, i);
+	for (guint i = 0; i < array->len; i++) {
+		const gchar *tmp = g_ptr_array_index (array, i);
 		if (g_strcmp0 (tmp, value) == 0)
 			return tmp;
 	}
@@ -1039,6 +1076,24 @@ as_utils_search_token_valid (const gchar *token)
 }
 
 /**
+ * as_utils_ensure_resources:
+ *
+ * Perform a sanity check to ensure GResource can be loaded.
+ */
+void
+as_utils_ensure_resources (void)
+{
+	static GMutex mutex;
+	GResource *resource = NULL;
+
+	g_mutex_lock (&mutex);
+	resource = as_get_resource ();
+	if (resource == NULL)
+		g_error ("Failed to load internal resources: as_get_resource() returned NULL!");
+	g_mutex_unlock (&mutex);
+}
+
+/**
  * as_utils_is_category_id:
  * @category_name: a XDG category name, e.g. "ProjectManagement"
  *
@@ -1055,13 +1110,15 @@ as_utils_is_category_name (const gchar *category_name)
 {
 	g_autoptr(GBytes) data = NULL;
 	g_autofree gchar *key = NULL;
+	GResource *resource = as_get_resource ();
+	g_assert (resource != NULL);
 
 	/* custom spec-extensions are generally valid if prefixed correctly */
 	if (g_str_has_prefix (category_name, "X-"))
 		return TRUE;
 
 	/* load the readonly data section and look for the category name */
-	data = g_resource_lookup_data (as_get_resource (),
+	data = g_resource_lookup_data (resource,
 				       "/org/freedesktop/appstream/xdg-category-names.txt",
 				       G_RESOURCE_LOOKUP_FLAGS_NONE,
 				       NULL);
@@ -1147,7 +1204,7 @@ as_utils_is_platform_triplet_arch (const gchar *arch)
 {
 	g_autoptr(GBytes) data = NULL;
 	g_autofree gchar *key = NULL;
-	GResource *resource;
+	GResource *resource = NULL;
 
 	if (arch == NULL)
 		return FALSE;
@@ -1582,6 +1639,12 @@ as_utils_get_component_bundle_kind (AsComponent *cpt)
 	if (bundles->len > 0)
 		bundle_kind = as_bundle_get_kind (AS_BUNDLE (g_ptr_array_index (bundles, 0)));
 
+	/* assume "package" for system-wide components from metainfo files */
+	if (bundle_kind == AS_BUNDLE_KIND_UNKNOWN &&
+	    as_component_get_scope (cpt) == AS_COMPONENT_SCOPE_SYSTEM &&
+	    as_component_get_origin_kind (cpt) == AS_ORIGIN_KIND_METAINFO)
+		return AS_BUNDLE_KIND_PACKAGE;
+
 	return bundle_kind;
 }
 
@@ -1697,15 +1760,8 @@ as_sort_components_by_score (GPtrArray *cpts)
 void
 as_object_ptr_array_absorb (GPtrArray *dest, GPtrArray *src)
 {
-#if GLIB_CHECK_VERSION(2,58,0)
 	while (src->len != 0)
 		g_ptr_array_add (dest, g_ptr_array_steal_index_fast (src, 0));
-#else
-	while (src->len != 0) {
-		g_ptr_array_add (dest, g_object_ref (g_ptr_array_index (src, 0)));
-		g_ptr_array_remove_index_fast (src, 0);
-	}
-#endif
 }
 
 /**
@@ -1761,46 +1817,6 @@ as_filebasename_from_uri (const gchar *uri)
 		tmp[0] = '\0';
 
 	return bname;
-}
-
-/**
- * as_date_time_format_iso8601:
- * @datetime: A #GDateTime
- *
- * Format datetime in ISO 8601 format.
- *
- * Compatibility wrapper to support GLib < 2.62.
- * This function can go away if we bump the GLib minimal version.
- */
-gchar*
-as_date_time_format_iso8601 (GDateTime *datetime)
-{
-#if GLIB_CHECK_VERSION(2,62,0)
-	return g_date_time_format_iso8601 (datetime);
-#else
-	GString *outstr = NULL;
-	gchar *main_date = NULL;
-	gint64 offset;
-
-	/* Main date and time. */
-	main_date = g_date_time_format (datetime, "%Y-%m-%dT%H:%M:%S");
-	outstr = g_string_new (main_date);
-	g_free (main_date);
-
-	/* Timezone. Format it as `%:::z` unless the offset is zero, in which case
-	 * we can simply use `Z`. */
-	offset = g_date_time_get_utc_offset (datetime);
-
-	if (offset == 0) {
-		g_string_append_c (outstr, 'Z');
-	} else {
-		gchar *time_zone = g_date_time_format (datetime, "%:::z");
-		g_string_append (outstr, time_zone);
-		g_free (time_zone);
-	}
-
-	return g_string_free (outstr, FALSE);
-#endif
 }
 
 /**
@@ -2015,7 +2031,7 @@ as_utils_install_metadata_file_internal (const gchar *filename,
 			g_set_error (error,
 				     AS_UTILS_ERROR,
 				     AS_UTILS_ERROR_FAILED,
-				     "Name of metadata collection file is invalid %s",
+				     "Name of metadata catalog file is invalid %s",
 				     basename);
 			return FALSE;
 		}
@@ -2040,7 +2056,7 @@ as_utils_install_metadata_file_internal (const gchar *filename,
 		if (!as_metadata_parse_file (mdata, file_dest, AS_FORMAT_KIND_XML, error))
 			return FALSE;
 		as_metadata_set_origin (mdata, origin);
-		if (!as_metadata_save_collection (mdata, path_dest, AS_FORMAT_KIND_XML, error))
+		if (!as_metadata_save_catalog (mdata, path_dest, AS_FORMAT_KIND_XML, error))
 			return FALSE;
 	}
 
@@ -2060,7 +2076,7 @@ as_utils_install_icon_tarball (AsMetadataLocation location,
 				GError **error)
 {
 	g_autofree gchar *dir = NULL;
-	dir = g_strdup_printf ("%s%s/app-info/icons/%s/%s",
+	dir = g_strdup_printf ("%s%s/swcatalog/icons/%s/%s",
 			       destdir,
 			       as_metadata_location_get_prefix (location),
 			       origin,
@@ -2086,7 +2102,7 @@ as_utils_install_icon_tarball (AsMetadataLocation location,
  * @destdir: the destdir to use, or %NULL
  * @error: A #GError or %NULL
  *
- * Installs an AppStream MetaInfo, AppStream Metadata Collection or AppStream Icon tarball file
+ * Installs an AppStream MetaInfo, AppStream Metadata Catalog or AppStream Icon tarball file
  * to the right place on the filesystem.
  * Please note that this function does almost no validation and may guess missing values such
  * as icon sizes and origin names.
@@ -2122,14 +2138,14 @@ as_utils_install_metadata_file (AsMetadataLocation location,
 		destdir = "";
 
 	switch (as_metadata_file_guess_style (filename)) {
-	case AS_FORMAT_STYLE_COLLECTION:
+	case AS_FORMAT_STYLE_CATALOG:
 		if (g_strstr_len (filename, -1, ".yml.gz") != NULL) {
 			path = g_build_filename (as_metadata_location_get_prefix (location),
-						 "app-info", "yaml", NULL);
+						 "swcatalog", "yaml", NULL);
 			ret = as_utils_install_metadata_file_internal (filename, origin, path, destdir, TRUE, error);
 		} else {
 			path = g_build_filename (as_metadata_location_get_prefix (location),
-						 "app-info", "xmls", NULL);
+						 "swcatalog", "xml", NULL);
 			ret = as_utils_install_metadata_file_internal (filename, origin, path, destdir, FALSE, error);
 		}
 		break;
@@ -2204,16 +2220,14 @@ as_utils_install_metadata_file (AsMetadataLocation location,
  * Since: 0.14.2
  */
 gchar*
-as_get_user_cache_dir ()
+as_get_user_cache_dir (GError **error)
 {
 	const gchar *cache_root = g_get_user_cache_dir ();
 	if (cache_root == NULL) {
-		g_autoptr(GError) error = NULL;
-		gchar *tmp_dir = g_dir_make_tmp ("appstream-XXXXXX", &error);
+		gchar *tmp_dir = g_dir_make_tmp ("appstream-XXXXXX", error);
 		if (tmp_dir == NULL) {
 			/* something went very wrong here, we could neither get a user cache dir, nor
 			 * access to a temporary directory in /tmp */
-			g_error ("Unable to create temporary cache directory: %s", error->message);
 			return NULL;
 		}
 		return tmp_dir;
@@ -2435,4 +2449,22 @@ as_utils_find_stock_icon_filename_full (const gchar *root_dir,
 		     AS_UTILS_ERROR_FAILED,
 		     "Failed to find icon %s", icon_name);
 	return NULL;
+}
+
+/**
+ * as_utils_guess_scope_from_path:
+ * @path: The filename to test.
+ *
+ * Guess the #AsComponentScope that applies to a given path.
+ *
+ * Returns: the #AsComponentScope
+ *
+ * Since: 0.15.0
+ */
+AsComponentScope
+as_utils_guess_scope_from_path (const gchar *path)
+{
+	if (g_str_has_prefix (path, "/home") || g_str_has_prefix (path, g_get_home_dir ()))
+		return AS_COMPONENT_SCOPE_USER;
+	return AS_COMPONENT_SCOPE_SYSTEM;
 }

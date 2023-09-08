@@ -2,7 +2,8 @@
 
 asqt_api_level = '2'
 
-add_languages('cpp')
+add_languages('cpp', native: true)
+add_languages('cpp', native: false)
 
 qt = import('qt5')
 qt5_dep = dependency('qt5', modules: ['Core'])
@@ -23,6 +24,7 @@ asqt_src = [
     'screenshot.cpp',
     'spdx.cpp',
     'suggested.cpp',
+    'systeminfo.cpp',
     'translation.cpp',
     'utils.cpp',
     'video.cpp'
@@ -45,6 +47,7 @@ asqt_pub_headers = [
     'screenshot.h',
     'spdx.h',
     'suggested.h',
+    'systeminfo.h',
     'translation.h',
     'utils.h',
     'video.h'
@@ -75,6 +78,13 @@ appstreamqt_lib = library ('AppStreamQt',
                    gio_dep],
     cpp_args: asqt_cpp_args,
     install: true
+)
+
+configure_file(
+    input: 'version.h.in',
+    output: 'version.h',
+    install_dir: join_paths(get_option('includedir'), 'AppStreamQt'),
+    configuration: conf
 )
 
 install_headers(asqt_pub_headers, subdir: 'AppStreamQt')

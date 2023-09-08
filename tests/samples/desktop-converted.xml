@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<components version="0.14">
+<components version="0.16">
   <component type="desktop-application" priority="-1">
     <id>org.kde.ksysguard</id>
     <name xml:lang="ar">حارس نظامك</name>
@@ -278,6 +278,13 @@
       <mediatype>inode/directory</mediatype>
       <mediatype>application/x-gnome-saved-search</mediatype>
     </provides>
+    <keywords>
+      <keyword>folder</keyword>
+      <keyword>manager</keyword>
+      <keyword>explore</keyword>
+      <keyword>disk</keyword>
+      <keyword>filesystem</keyword>
+    </keywords>
     <keywords xml:lang="af">
       <keyword>folder</keyword>
       <keyword>manager</keyword>
@@ -350,13 +357,6 @@
       <keyword>istraživanje</keyword>
       <keyword>disk</keyword>
       <keyword>datotečni sistem</keyword>
-    </keywords>
-    <keywords>
-      <keyword>folder</keyword>
-      <keyword>manager</keyword>
-      <keyword>explore</keyword>
-      <keyword>disk</keyword>
-      <keyword>filesystem</keyword>
     </keywords>
     <keywords xml:lang="ca">
       <keyword>carpeta</keyword>

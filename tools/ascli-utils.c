@@ -1,27 +1,31 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
- * Licensed under the GNU General Public License Version 2
+ * Licensed under the GNU Lesser General Public License Version 2.1
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the license, or
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 2.1 of the license, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "ascli-utils.h"
 
 #include <config.h>
+#include <stdio.h>
+#include <unistd.h>
 #include <glib/gi18n-lib.h>
+
+#include "as-pool-private.h"
 
 /**
  * Set to true if we don't want colored output
@@ -98,8 +102,15 @@ ascli_print_key_value (const gchar* key, const gchar* val, gboolean line_wrap)
  * ascli_print_highlight:
  */
 void
-ascli_print_highlight (const gchar* msg)
+ascli_print_highlight (const gchar *format, ...)
 {
+	va_list args;
+	g_autofree gchar *msg = NULL;
+
+	va_start (args, format);
+	msg = g_strdup_vprintf (format, args);
+	va_end (args);
+
 	if (_colored_output) {
 		g_print ("%c[%dm%s%c[%dm\n", 0x1B, 1, msg, 0x1B, 0);
 	} else {
@@ -111,7 +122,7 @@ ascli_print_highlight (const gchar* msg)
  * ascli_print_separator:
  */
 void
-ascli_print_separator ()
+ascli_print_separator (void)
 {
 	if (_colored_output) {
 		g_print ("%c[%dm%s\n%c[%dm", 0x1B, 36, "---", 0x1B, 0);
@@ -127,15 +138,13 @@ void
 ascli_print_stderr (const gchar *format, ...)
 {
 	va_list args;
-	gchar *str;
+	g_autofree gchar *str = NULL;
 
 	va_start (args, format);
 	str = g_strdup_vprintf (format, args);
 	va_end (args);
 
 	g_printerr ("%s\n", str);
-
-	g_free (str);
 }
 
 /**
@@ -157,6 +166,31 @@ ascli_print_stdout (const gchar *format, ...)
 }
 
 /**
+ * ascli_get_char_success:
+ */
+const gchar*
+ascli_get_char_success (void)
+{
+	if (_colored_output)
+		return "\x1B[32m" "✔" "\033[0m";
+	else
+		return "✔";
+}
+
+/**
+ * ascli_get_char_failure:
+ */
+const gchar*
+ascli_get_char_failure (void)
+{
+	if (_colored_output)
+		return "\x1B[31m" "✘" "\033[0m";
+	else
+		return "✘";
+}
+
+
+/**
  * ascli_set_output_colored:
  */
 void
@@ -169,7 +203,7 @@ ascli_set_output_colored (gboolean colored)
  * ascli_get_output_colored:
  */
 gboolean
-ascli_get_output_colored ()
+ascli_get_output_colored (void)
 {
 	return _colored_output;
 }
@@ -180,14 +214,13 @@ ascli_get_output_colored ()
 static gchar*
 as_get_bundle_str (AsComponent *cpt)
 {
-	guint i;
 	GString *gstr;
 
 	if (!as_component_has_bundle (cpt))
 		return NULL;
 
 	gstr = g_string_new ("");
-	for (i = 0; i < AS_BUNDLE_KIND_LAST; i++) {
+	for (guint i = 0; i < AS_BUNDLE_KIND_LAST; i++) {
 		AsBundleKind kind = (AsBundleKind) i;
 		AsBundle *bundle;
 
@@ -374,8 +407,10 @@ ascli_print_component (AsComponent *cpt, gboolean show_detailed)
 
 		/* Provided Items */
 		provided = as_component_get_provided (cpt);
-		if (provided->len > 0)
+		if (provided->len > 0) {
+			/* TRANSLATORS: Other software or interfaces that this software component provides */
 			ascli_print_key_value (_("Provided Items"), "↓", FALSE);
+		}
 		for (i = 0; i < provided->len; i++) {
 			GPtrArray *items = NULL;
 			AsProvided *prov = AS_PROVIDED (g_ptr_array_index (provided, i));
@@ -410,4 +445,70 @@ ascli_print_components (GPtrArray *cpts, gboolean show_detailed)
 		if (i < cpts->len-1)
 			ascli_print_separator ();
 	}
+}
+
+/**
+ * ascli_data_pool_new_and_open:
+ */
+AsPool*
+ascli_data_pool_new_and_open (const gchar *cachepath, gboolean no_cache, GError **error)
+{
+	AsPool *dpool;
+	AsPoolFlags flags;
+
+	dpool = as_pool_new ();
+	flags = as_pool_get_flags (dpool);
+	if (no_cache)
+		as_flags_add (flags, AS_POOL_FLAG_IGNORE_CACHE_AGE);
+
+	if (cachepath == NULL) {
+		/* no cache object to load, we can use a normal pool */
+		as_pool_load (dpool, NULL, error);
+	} else {
+		/* use an exported cache object */
+		as_pool_override_cache_locations (dpool, cachepath, cachepath);
+		as_pool_load (dpool, NULL, error);
+	}
+	as_pool_set_flags (dpool, flags);
+
+	return dpool;
+}
+
+/**
+ * ascli_query_numer:
+ * @question: question to ask user
+ * @maxnum: maximum number allowed
+ *
+ * Prompt the user to enter a number and confirm.
+ *
+ * Return value: a number entered by the user.
+ **/
+guint
+ascli_prompt_numer (const gchar *question, guint maxnum)
+{
+	gint answer = 0;
+	gint retval;
+
+	/* pretty print */
+	g_print ("%s ", question);
+
+	do {
+		char buffer[64];
+
+		/* swallow the \n at end of line too */
+		if (!fgets (buffer, sizeof (buffer), stdin))
+			break;
+		if (strlen (buffer) == sizeof (buffer) - 1)
+			continue;
+
+		/* get a number */
+		retval = sscanf (buffer, "%u", &answer);
+
+		/* positive */
+		if (retval == 1 && answer > 0 && answer <= (gint) maxnum)
+			break;
+		g_print (_("Please enter a number from 1 to %i: "), maxnum);
+	} while (TRUE);
+
+	return answer;
 }

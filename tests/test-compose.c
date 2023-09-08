@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2018-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2018-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -24,7 +24,12 @@
 #include "asc-utils-metainfo.h"
 #include "asc-utils-l10n.h"
 #include "asc-utils-screenshots.h"
+#include "asc-utils-fonts.h"
+#include "asc-image.h"
+#include "asc-canvas.h"
+#include "asc-canvas-private.h"
 
+#include "as-utils-private.h"
 #include "as-test-utils.h"
 
 static gchar *datadir = NULL;
@@ -37,7 +42,7 @@ typedef struct
 /**
  * asc_assert_no_results_issue:
  */
-void
+static void
 asc_assert_no_hints_in_result (AscResult *cres)
 {
 	g_autoptr(GPtrArray) hints = asc_result_fetch_hints_all (cres);
@@ -60,7 +65,7 @@ asc_assert_no_hints_in_result (AscResult *cres)
  * Test global and utility functions.
  */
 static void
-test_utils ()
+test_utils (void)
 {
 	gchar *tmp;
 
@@ -108,12 +113,36 @@ test_utils ()
 }
 
 /**
+ * test_compose_issue_tag_sanity:
+ */
+static void
+test_compose_issue_tag_sanity (void)
+{
+	g_autoptr(GHashTable) tag_map = NULL;
+	g_auto(GStrv) all_hint_tags = NULL;
+
+	tag_map = g_hash_table_new_full (g_str_hash,
+					 g_str_equal,
+					 NULL,
+					 NULL);
+
+	all_hint_tags = asc_globals_get_hint_tags ();
+	for (guint i = 0; all_hint_tags[i] != NULL; i++) {
+		gboolean r = g_hash_table_add (tag_map, all_hint_tags[i]);
+		if (!r) {
+			g_critical ("Duplicate compose issue-tag '%s' found in tag list.", all_hint_tags[i]);
+			g_assert_not_reached ();
+		}
+	}
+}
+
+/**
  * test_read_fontinfo:
  *
  * Extract font information from a font file.
  */
 static void
-test_read_fontinfo ()
+test_read_fontinfo (void)
 {
 	g_autofree gchar *font_fname = NULL;
 	g_autoptr(AscFont) font = NULL;
@@ -178,7 +207,7 @@ test_read_fontinfo ()
  * Test image related things, like transformations.
  */
 static void
-test_image_transform ()
+test_image_transform (void)
 {
 	g_autoptr(GHashTable) supported_fmts = NULL;
 	g_autofree gchar *sample_img_fname = NULL;
@@ -252,7 +281,7 @@ test_image_transform ()
  * Test canvas.
  */
 static void
-test_canvas ()
+test_canvas (void)
 {
 	g_autofree gchar *sample_svg_fname = NULL;
 	g_autofree gchar *font_fname = NULL;
@@ -305,7 +334,7 @@ test_canvas ()
  * Test compose hints and issue reporting.
  */
 static void
-test_compose_hints ()
+test_compose_hints (void)
 {
 	g_autoptr(AscHint) hint = NULL;
 	g_autoptr(GError) error = NULL;
@@ -343,7 +372,7 @@ test_compose_hints ()
  * Test the result object.
  */
 static void
-test_compose_result ()
+test_compose_result (void)
 {
 	g_autoptr(AscResult) cres = NULL;
 	g_autoptr(AsComponent) cpt = NULL;
@@ -401,7 +430,7 @@ test_compose_result ()
  * test_compose_desktop_entry:
  */
 static void
-test_compose_desktop_entry ()
+test_compose_desktop_entry (void)
 {
 	g_autoptr(GError) error = NULL;
 	g_autoptr(AscResult) cres = NULL;
@@ -538,7 +567,7 @@ test_compose_desktop_entry ()
 	g_assert_cmpint (hints->len, ==, 2);
 	for (guint i = 0; i < hints->len; i++) {
 		AscHint *hint = ASC_HINT (g_ptr_array_index (hints, i));
-		g_assert_cmpstr (asc_hint_get_tag (hint), ==, "desktop-entry-bad-data");
+		g_assert_cmpstr (asc_hint_get_tag (hint), ==, "asv-desktop-entry-bad-data");
 	}
 	g_clear_pointer (&cpt, g_object_unref);
 }
@@ -578,7 +607,7 @@ test_compose_optipng_not_found (Fixture *fixture, gconstpointer user_data)
  * test_compose_directory_unit:
  */
 static void
-test_compose_directory_unit ()
+test_compose_directory_unit (void)
 {
 	g_autoptr(GError) error = NULL;
 	gboolean ret;
@@ -591,7 +620,7 @@ test_compose_directory_unit ()
 	g_assert_true (ret);
 
 	contents = asc_unit_get_contents (ASC_UNIT (dirunit));
-	g_assert_cmpint (contents->len, ==, 13);
+	g_assert_cmpint (contents->len, ==, 15);
 	as_sort_strings (contents);
 
 	g_assert_cmpstr (g_ptr_array_index (contents, 0), ==, "/Noto.LICENSE");
@@ -616,7 +645,7 @@ test_compose_directory_unit ()
  * test_compose_locale_stats:
  */
 static void
-test_compose_locale_stats ()
+test_compose_locale_stats (void)
 {
 	gboolean ret;
 	g_autoptr(GError) error = NULL;
@@ -791,6 +820,61 @@ test_compose_video_info (void)
 	asc_video_info_free (vinfo);
 }
 
+static void
+test_compose_font (void)
+{
+	gboolean ret;
+	g_autoptr(GError) error = NULL;
+	g_autoptr(AscResult) cres = NULL;
+	g_autoptr(AsMetadata) mdata = NULL;
+	g_autoptr(AscIconPolicy) icon_policy = NULL;
+	g_autoptr(AscDirectoryUnit) dirunit = asc_directory_unit_new (datadir);
+	const gchar *export_tmpdir = "/tmp/asc-font-export";
+
+	/* cleanup */
+	if (g_file_test (export_tmpdir, G_FILE_TEST_EXISTS)) {
+		ret = as_utils_delete_dir_recursive (export_tmpdir);
+		g_assert_true (ret);
+	}
+
+	/* open sample data directory unit */
+	asc_unit_set_bundle_id (ASC_UNIT (dirunit), "dummy");
+	ret = asc_unit_open (ASC_UNIT (dirunit), &error);
+	g_assert_no_error (error);
+	g_assert_true (ret);
+
+	/* load dummy font component and register it */
+	mdata = as_metadata_new ();
+	as_metadata_set_locale (mdata, "C");
+	as_metadata_set_format_style (mdata, AS_FORMAT_STYLE_METAINFO);
+	{
+		g_autoptr(GFile) file = NULL;
+		g_autofree gchar *fname = g_build_filename (datadir, "usr", "share", "metainfo", "org.example.fonttest.metainfo.xml", NULL);
+		file = g_file_new_for_path (fname);
+		ret = as_metadata_parse_file (mdata, file, AS_FORMAT_KIND_XML, &error);
+		g_assert_no_error (error);
+		g_assert_true (ret);
+	}
+
+	cres = asc_result_new ();
+	ret = asc_result_add_component_with_string (cres,
+						    as_metadata_get_component (mdata),
+						    "<testdata_font/>",
+						    &error);
+	g_assert_no_error (error);
+	g_assert_true (ret);
+
+	icon_policy = asc_icon_policy_new ();
+	asc_process_fonts (cres,
+			   ASC_UNIT (dirunit),
+			   export_tmpdir,
+			   NULL, /* no icon export dir */
+			   icon_policy,
+			   ASC_COMPOSE_FLAG_STORE_SCREENSHOTS |
+			   ASC_COMPOSE_FLAG_PROCESS_FONTS);
+	asc_assert_no_hints_in_result (cres);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -813,6 +897,7 @@ main (int argc, char **argv)
 
 	g_test_add ("/AppStream/Compose/OptipngNotfound", Fixture, NULL, setup, test_compose_optipng_not_found, teardown);
 	g_test_add_func ("/AppStream/Compose/Utils", test_utils);
+	g_test_add_func ("/AppStream/Compose/IssueTagSanity", test_compose_issue_tag_sanity);
 	g_test_add_func ("/AppStream/Compose/FontInfo", test_read_fontinfo);
 	g_test_add_func ("/AppStream/Compose/Image", test_image_transform);
 	g_test_add_func ("/AppStream/Compose/Canvas", test_canvas);
@@ -823,6 +908,7 @@ main (int argc, char **argv)
 	g_test_add_func ("/AppStream/Compose/LocaleStats", test_compose_locale_stats);
 	g_test_add_func ("/AppStream/Compose/SourceLocale", test_compose_source_locale);
 	g_test_add_func ("/AppStream/Compose/VideoInfo", test_compose_video_info);
+	g_test_add_func ("/AppStream/Compose/Font", test_compose_font);
 
 	ret = g_test_run ();
 	g_free (datadir);

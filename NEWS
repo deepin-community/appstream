@@ -1,3 +1,328 @@
+Version 0.16.1
+~~~~~~~~~~~~~~
+Released: 2023-02-10
+
+Notes:
+ * This is a bugfix-only release to primarily address an issue introduced
+   in v0.15.6 that caused any clients using GIR bindings to crash after a while.
+
+Specification:
+ * docs: Clarify the locations where catalog icons should be placed
+ * spec: Expand documentation for <issue> elements
+ * spec: Mention that <issues> is not part of the description
+ * spec: Give some guidance about tone in release descriptions
+
+Bugfixes:
+ * Fix binding helper macro to behave correctly if a function is passed directly
+ * Override-merge icons and provided items correctly
+ * tests: Ensure locale is C.UTF-8 in pool tests
+
+Miscellaneous:
+ * release: Add sanity checks at beginning of each function
+
+Contributors:
+ Corentin Noël, Matthias Klumpp, Pablo Correa Gómez, Philip Withnall
+
+Version 0.16.0
+~~~~~~~~~~~~~~
+Released: 2023-01-26
+
+Features:
+ * pool: Offer API to look up components by bundles
+ * Bump format version to 0.16
+ * Add new AsSystemInfo to read information about the current OS and device
+ * Add helper to get device names from a modalias
+ * Implement support for external release metadata
+ * Add validation support for external release metadata
+ * compose: Validate external release metadata used for the catalog as well
+ * its: Add rule for standalone release metadata
+ * Add function to test if an AsRelation is satisfied on the current system
+ * cli: Add command to list category contents
+ * cli: Display colored checkmarks if possible
+ * cli: Add new is-satisfied check to test relations from the command-line
+ * cli: Add Markdown export support for metainfo-to-news
+ * qt: Add support for SystemInfo & relation satisfication checks
+
+Specification:
+ * spec: Specify a metadata format for external release descriptions
+
+Bugfixes:
+ * Fix build with Clang 15
+ * Give a better error message if trying to list too many categories
+ * Adjust documentation of AsPool.get_components_by_categories to reflect reality
+ * validator: Validate merge component catalog data properly again
+
+Miscellaneous:
+ * Consistently name catalog metadata as such everywhere
+
+Contributors:
+ Aleix Pol, Matthias Klumpp, Rafael Fontenelle
+
+Version 0.15.6
+~~~~~~~~~~~~~~
+Released: 2022-12-22
+
+Features:
+ * qt: Add API for ContentRating descriptions and ratingIds
+ * Add some coccinelle semantic patches for common style issues
+ * compose: Allow building without SVG support (for bootstrap only)
+ * validator: Check for nodes that are text nodes even though they shouldn't be
+ * validator: Extend validation for custom tag
+ * validator: Improve Screenshot validation
+
+Specification:
+ * docs: Fix typos in <extends> documentation
+
+Bugfixes:
+ * validator: internat: Don't allow bandwidth_mbitps when value is offline-only
+ * validator: Fix timestamp validation
+ * validator: Allow release descriptions to start with punctuation
+ * compose: Only add no-metainfo tag if component isn't already ignored
+ * compose: Show better error in AscImage if compose was build without rsvg
+ * Add a hack to clarify proper PtrArray element ownership for language bindings
+ * qt: Port away from deprecated QDateTime API
+ * qt: Deprecate Component::requires
+ * qt: Fix warning
+ * qt: Fix stringListToCharArray and Pool::componentsByCategories
+ * qt: Port away from deprecated foreach
+ * as-review: Add a typedef for property enums
+ * as-review: Install properties at once rather than individually
+ * as-review: Specify G_PARAM_STATIC_STRINGS for properties
+ * as-review: Emit GObject::notify on property value changes
+ * as-review: Add missing property for as_review_{get,set}_priority()
+ * ascli: fix NULL pointer dereference
+
+Miscellaneous:
+ * docs: Split releases specification into its own section
+ * style: Make code easier to read by using helper macros in all places
+ * Make some compiler warnings fatal unconditionally
+
+Contributors:
+ Aleix Pol, JakobDev, Matthias Klumpp, Nicolas Fella, Philip Withnall,
+ r-ricci, Will Thompson
+
+Version 0.15.5
+~~~~~~~~~~~~~~
+Released: 2022-08-22
+
+Features:
+ * validator: Allow severity downgrade of releases-not-in-order for GNOME
+ * validator: Perform stricter integer validation
+ * validator: Check for url redefinitions
+ * Implement the "replaces" tag
+ * Add convenience function that check if component is free by license and origin
+ * qt: Add wrappers for AsComponent isFree/supports/replaces
+ * Always add untranslated component names to the search index
+ * validator: Validate the "internet" relation item
+ * validator: Add validation for memory relation
+ * Implement internet relation item
+
+Specification:
+ * spec: Specify a proper "replaces" tag
+ * spec: Add an <internet/> kind to requires/recommends/supports
+
+Bugfixes:
+ * validator: Don't permit overriding the unknown root tag issue
+ * compose: Don't crash if metainfo file contains an invalid stock icon
+ * spdx: Fix possible crash when NULL is passed to is_free_license
+ * compose: Don't synthesize components for desktop files of settings apps
+ * Return the correct values in as_display_length_kind_from_px()
+ * validator: Distinguish translatable from not-translatable tags in duplicate checks
+
+Miscellaneous:
+ * Silence static analyzer false-positives based on GCC version
+ * data: use lxml to get the XDG categories
+
+Contributors:
+ JakobDev, Philip Withnall, Pino Toscano, Matthias Klumpp
+
+Version 0.15.4
+~~~~~~~~~~~~~~
+Released: 2022-05-22
+
+Features:
+ * validator: Check timestamp validity
+ * validator: Allow (limited) overriding of issue tag severities
+ * validator: Add strict mode
+ * ascli: validate: Allow simple overriding of issue tags
+ * validator: Check for exact relation item redefinitions
+
+Bugfixes:
+ * Add vcs-browser URL to metainfo.xml
+ * compose: Improve media-baseurl sanity checks for icon/screenshot policies
+ * compose: Don't create bad data when localized screenshots exist
+ * compose: Sanitize prefix value and verify all units for results
+ * compose: Fail and not just warn if we couldn't open a unit
+ * compose: Make no-result detection a bit more robust
+ * compose: Properly handle localized screenshots
+ * compose: Ignore current locale when analyzing screencasts
+
+Contributors:
+ JakobDev, Matthias Klumpp
+
+Version 0.15.3
+~~~~~~~~~~~~~~
+Released: 2022-04-10
+
+Features:
+ * qt: Include enums for VcsBrowser and Contribute
+ * Add vcs-browser and contribute URL type
+ * validate: Improve validation of desktop files alongside metainfo data
+ * its: Mark deprecated rules as deprecated
+ * Implement l10n support for metainfo keyword tags
+ * validator: Perform basic validation of keywords in metainfo data
+ * compose: Prefer metainfo keywords over desktop-entry keywords
+ * meson: Bump minimum version to 0.62
+
+Specification:
+ * docs: Document keywords for metainfo files as well
+ * docs: Spell it metainfo, not meta-info if referencing metainfo.xml files
+ * spec: Document how keywords in metainfo files should be translated
+
+Bugfixes:
+ * qt: If the timestamp is 0, return a default QDateTime()
+ * docs: Include compose manual page
+ * validate: Point at the right line for description-enum-item-invalid
+ * validator: Find data if /usr prefix is missing as well
+ * validator: Make insufficient launch data for desktop-apps a hard error
+ * Don't fail downloads or URL checks if redirects were involved
+ * apt: Only refresh the OS data cache (not the whole system cache) on APT update
+ * compose: Emit error if filters are set but no output was generated
+ * Centralize GOnce guard to fix an assertion failure in AsComponent
+
+Contributors:
+ Aleix Pol, JakobDev, Matthias Klumpp, Simon McVittie
+
+Version 0.15.2
+~~~~~~~~~~~~~~
+Released: 2022-02-22
+
+Features:
+ * compose: Allow setting a custom CAInfo file
+ * qt: Always use C library for enum-to-string conversions
+ * compose: Allow any amount of release entries for OS components
+ * compose: Implement more flexible icon policy
+ * validator: Ensure component-ID has no punctuation prefix
+ * validator: Check existence of version and date release properties
+ * Implement component-wide end-of-life date attribute
+ * compose: Build API documentation
+ * Relicense remaining GPL-2.0 code to LGPL-2.1+
+ * No longer mark compose build option as experimental
+ * Support the new swcatalog catalog metadata location and add app-info fallback
+ * When finding components by ID, use provided IDs if no exact matches were found
+ * ascli: Fix install/remove commands, add Flatpak support
+ * Implement XML & YAML read/write of the "branding" tag group
+ * Handle embedded lists in YAML release info paragraphs
+
+Specification:
+ * spec: Specify a "date_eol" property for the component itself
+ * spec: Specify the new "branding" tag
+ * docs: Update links to API reference pages
+ * spec: Require that branding colours start with a hash symbol
+ * docs: Clarify license and ship license copies
+ * docs: Document media_baseurl property of components
+
+Bugfixes:
+ * qt: Fix crash when moving a Component
+ * qt: Fix translate URL string<->enum conversion
+ * qt: Deprecate mistyped UrlTranslate enum value
+ * Filter out components without ID as early as possible (resolves crash)
+ * Don't terminate the client if we can't get a writable cache location
+ * Fix a possible parsing crash when converting markup
+ * ascli: Display better messages if appstream-compose is unavailable
+ * Install new collection XML to the right location
+ * compose: Skip further processing if component was already dropped
+ * compose: Fix SVG scaling with librsvg 2.52
+ * compose: Handle missing export paths gracefully
+ * Replace symlink hacks with new Meson install_symlink function
+ * ci: Drop outdated libsoup dep
+
+Contributors:
+ Aleix Pol, fortysixandtwo, JakobDev, Jan Alexander Steffens, pabloyoyoista,
+ Phaedrus Leeds, Philip Withnall, Matthias Klumpp
+
+Version 0.15.1
+~~~~~~~~~~~~~~
+Released: 2021-12-22
+
+Features:
+ * Bump GLib version requirement to >= 2.62
+ * compose: Port over font support from appstream-generator
+ * compose: Allow overriding unit used for locale processing
+ * compose: Refine legacy support for desktop-id launchables
+ * compose: Allow setting the custom desktop-entry translation function
+ * compose: Allow to run with threading (mostly) disabled
+ * compose: Reorganize feature flags, allow to disable l10n
+ * compose: Allow setting a screenshot file size limit
+ * compose: Allow to disable screencast processing explicitly
+ * compose: Allow to test whether result has a specific hint tag
+ * news-convert: Support a "Translators" section
+ * validator: Check that first rDNS component-ID parts are always lowercased
+ * validator: Validate capitalization for some selected text blocks
+
+Bugfixes:
+ * vapi: Rename PoolFlag to PoolFlags to add the missing deprecated flags
+ * Fix cache always getting updated even if unnacessary on Debian systems
+ * Still verify download return codes if download was aborted intentionally
+ * compose: Warn if metainfo files are missing and data was processed anyway
+
+Contributors:
+ Corentin Noël, Matthias Klumpp
+
+Version 0.15.0
+~~~~~~~~~~~~~~
+Released: 2021-12-02
+
+Notes:
+ * This release contains a complete rewrite of AppStream's caching code, making use of
+   libxmlb instead of LMDB now. This will allow for more complex queries and simplifies
+   the caching code a bit.
+   As part of this change, AsPool is now quite a bit more powerful in what it can do.
+ * Caches are now always shared between applications, client-specific caches do no longer
+   exist. If requested, an AsPool can now also transparently reload metadata in the
+   background in case it changes on disk.
+ * A few new tags have also been added, most notably "supports" for indicating
+   hardware or input support.
+
+Features:
+ * Refactor the caching code and partition cache into sections
+ * cli: Display nicer status information when refreshing caches
+ * cli: Allow limiting refresh action to data from certain groups
+ * Allow clients to configure the addon autoresolve magic
+ * Allow clients to control the local metainfo preference
+ * qt: Add wrappers for new AsPool API
+ * Add directory monitoring helper for AsPool
+ * Add an auto-reload mechanism to refresh cache sections when data changes
+ * Implement support for a "supports" relation kind
+ * qt: Wrap the AsPool ::changed signal
+ * qt: Add version test macro for Qt library as well
+ * cli: Make validator output a bit nicer
+ * cli: Base "status" command on metadata source layout from AsPool
+ * Implement the new "Tags" tag
+ * Make component-ID search case-insensitive
+
+Specification:
+ * spec: Add a "supports" relation type
+ * Add support for specifying a graphics tablet as input control method
+ * Add support for the "hardware" relation item
+ * spec: Add "tags" tag for tagging components
+ * apidoc: Document file not found error code
+ * docs: Fix various typos and grammar issues
+
+Bugfixes:
+ * compose: Adjust to rsvg API changes
+ * qt: Pass NULL to C function when overriding cache location with empty string
+ * tests: Make unit tests clean up temporary caches if possible
+ * qt: Align API deprecations with C library API
+ * Cache Flatpak data properly, and add some quirk fixes for it
+ * file-monitor: Explicitly cancel GFileMonitor before unreffing it
+ * Fix broken markup by using itstool to generate final translated metainfo
+ * validator: Fix some issues pointing at the wrong node
+ * validator: Validate the "tags" tag group
+
+Contributors:
+ Phaedrus Leeds, Matthias Klumpp
+
 Version 0.14.6
 ~~~~~~~~~~~~~~
 Released: 2021-10-08

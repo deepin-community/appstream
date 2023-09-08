@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -28,6 +28,8 @@
 #include "asc-utils-screenshots.h"
 
 #include <glib/gstdio.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 #include "as-utils-private.h"
 
@@ -63,6 +65,19 @@ asc_video_info_free (AscVideoInfo *vinfo)
 	g_free (vinfo->audio_codec_name);
 	g_free (vinfo->format_name);
 	g_free (vinfo);
+}
+
+
+static gsize
+asc_get_filesize (const gchar *filename)
+{
+	struct stat st;
+	if (lstat (filename, &st) == -1) {
+		g_debug ("Unable to determine size of file '%s': %s",
+			 filename, g_strerror (errno));
+		return 0;
+	}
+	return st.st_size;
 }
 
 /**
@@ -248,17 +263,22 @@ asc_process_screenshot_videos (AscResult *cres,
 			       AsCurl *acurl,
 			       const gchar *scr_export_dir,
 			       const gchar *scr_base_url,
+			       const gssize max_size_bytes,
 			       gboolean store_screenshots,
 			       guint scr_no)
 {
 	GPtrArray *vids = NULL;
 	g_autoptr(GPtrArray) valid_vids = NULL;
 
-	vids = as_screenshot_get_videos (scr);
+	vids = as_screenshot_get_videos_all (scr);
 	if (vids->len == 0) {
 		asc_result_add_hint_simple (cres, cpt, "metainfo-screenshot-but-no-media");
 		return NULL;
 	}
+
+	/* if size is zero, we can't store any screenshots */
+	if (max_size_bytes == 0)
+		store_screenshots = FALSE;
 
 	/* ensure export dir exists */
 	if (g_mkdir_with_parents (scr_export_dir, 0755) != 0)
@@ -267,20 +287,34 @@ asc_process_screenshot_videos (AscResult *cres,
 	valid_vids = g_ptr_array_new_with_free_func (g_object_unref);
 	for (guint i = 0; i < vids->len; i++) {
 		const gchar *orig_vid_url = NULL;
+		const gchar *video_locale = NULL;
 		g_autofree gchar *scr_vid_name = NULL;
 		g_autofree gchar *scr_vid_path = NULL;
 		g_autofree gchar *scr_vid_url = NULL;
 		g_autofree gchar *fname_from_url = NULL;
 		AscVideoInfo *vinfo = NULL;
 		g_autoptr(GError) error = NULL;
+		gsize video_size;
 		AsVideo *vid = AS_VIDEO (g_ptr_array_index (vids, i));
 
 		orig_vid_url = as_video_get_url (vid);
 		if (orig_vid_url == NULL)
 			continue;
 
+		video_locale = as_video_get_locale (vid);
 		fname_from_url = asc_filename_from_url (orig_vid_url);
-		scr_vid_name = g_strdup_printf ("vid%i-%i_%s", scr_no, i, fname_from_url);
+
+		if (g_strcmp0 (video_locale, "C") == 0)
+			scr_vid_name = g_strdup_printf ("vid%i-%i_%s",
+							scr_no,
+							i,
+							fname_from_url);
+		else
+			scr_vid_name = g_strdup_printf ("vid%i-%i_%s_%s",
+							scr_no,
+							i,
+							fname_from_url,
+							video_locale);
 		scr_vid_path = g_build_filename (scr_export_dir, scr_vid_name, NULL);
 		scr_vid_url = g_build_filename (scr_base_url, scr_vid_name, NULL);
 
@@ -292,6 +326,24 @@ asc_process_screenshot_videos (AscResult *cres,
 						"error", error->message,
 						NULL);
 			return NULL;
+		}
+
+		video_size = asc_get_filesize (scr_vid_path);
+		if (max_size_bytes > 0 && video_size > (gsize) max_size_bytes) {
+			g_autofree gchar *max_vid_size_str = NULL;
+			g_autofree gchar *vid_size_str = NULL;
+
+			max_vid_size_str = g_format_size (max_size_bytes);
+			vid_size_str = g_format_size (video_size);
+			asc_result_add_hint (cres,
+					     cpt,
+					     "screenshot-video-too-big",
+					     "fname", scr_vid_name,
+					     "max_size", max_vid_size_str,
+					     "size", vid_size_str,
+					     NULL);
+			g_unlink (scr_vid_path);
+			continue;
 		}
 
 		vinfo = asc_extract_video_info (cres, cpt, scr_vid_path);
@@ -345,22 +397,26 @@ asc_process_screenshot_videos (AscResult *cres,
 }
 
 /**
- * asc_process_screenshot_images:
+ * asc_process_screenshot_images_lang:
+ *
+ * Process image @orig_img for screenshot @scr and language @locale
+ *
+ * Returns: %TRUE on success, %FALSE if we rejected this screenshot.
  */
-static AsScreenshot*
-asc_process_screenshot_images (AscResult *cres,
-			       AsComponent *cpt,
-			       AsScreenshot *scr,
-			       AsCurl *acurl,
-			       const gchar *scr_export_dir,
-			       const gchar *scr_base_url,
-			       gboolean store_screenshots,
-			       guint scr_no)
+static gboolean
+asc_process_screenshot_images_lang (AscResult *cres,
+				    AsComponent *cpt,
+				    AsScreenshot *scr,
+				    AsImage *orig_img,
+				    const gchar *locale,
+				    AsCurl *acurl,
+				    const gchar *scr_export_dir,
+				    const gchar *scr_base_url,
+				    const gssize max_size_bytes,
+				    gboolean store_screenshots,
+				    guint scr_no)
 {
-	GPtrArray *imgs = NULL;
-	g_autoptr(AsImage) orig_img = NULL;
 	const gchar *orig_img_url = NULL;
-	const gchar *orig_img_locale = NULL;
 	const gchar *gcid = NULL;
 	g_autoptr(GBytes) img_bytes = NULL;
 	gconstpointer img_data;
@@ -370,33 +426,13 @@ asc_process_screenshot_images (AscResult *cres,
 	gboolean thumbnails_generated = FALSE;
 	g_autoptr(GError) error = NULL;
 
-	imgs = as_screenshot_get_images (scr);
-	if (imgs->len == 0) {
-		asc_result_add_hint_simple (cres, cpt, "metainfo-screenshot-but-no-media");
-		return NULL;
-	}
-
-	/* try to find the source image, in case upstream has provided their own thumbnails */
-	for (guint i = 0; i < imgs->len; i++) {
-		AsImage *img = AS_IMAGE (g_ptr_array_index (imgs, i));
-		if (as_image_get_kind (img) == AS_IMAGE_KIND_SOURCE) {
-			orig_img = g_object_ref (img);
-			break;
-		}
-	}
-
-	/* just take the first image if we couldn't find a source */
-	if (orig_img == NULL)
-		orig_img = g_object_ref (AS_IMAGE (g_ptr_array_index (imgs, 0)));
-
-	/* drop metainfo images */
-	g_ptr_array_remove_range (imgs, 0, imgs->len);
-
 	orig_img_url = as_image_get_url (orig_img);
-	orig_img_locale = as_image_get_locale (orig_img);
-
 	if (orig_img_url == NULL)
-		return NULL;
+		return FALSE;
+
+	/* if size is zero, we can't store any screenshots */
+	if (max_size_bytes == 0)
+		store_screenshots = FALSE;
 
 	/* download our image */
 	img_bytes = as_curl_download_bytes (acurl, orig_img_url, &error);
@@ -407,7 +443,7 @@ asc_process_screenshot_images (AscResult *cres,
 				     "url", orig_img_url,
 				     "error", error->message,
 				     NULL);
-		return NULL;
+		return FALSE;
 	}
 	img_data = g_bytes_get_data (img_bytes, &img_data_len);
 
@@ -418,13 +454,28 @@ asc_process_screenshot_images (AscResult *cres,
 				     "internal-error",
 				     "msg", "No global ID could be found for component when processing screenshot images.",
 				     NULL);
-		return NULL;
+		return FALSE;
+	}
+
+	if (max_size_bytes > 0 && img_data_len > (gsize) max_size_bytes) {
+		g_autofree gchar *max_img_size_str = NULL;
+		g_autofree gchar *img_size_str = NULL;
+
+		max_img_size_str = g_format_size (max_size_bytes);
+		img_size_str = g_format_size (img_data_len);
+		asc_result_add_hint (cres,
+					cpt,
+					"screenshot-image-too-big",
+					"fname", orig_img_url,
+					"max_size", max_img_size_str,
+					"size", img_size_str,
+					NULL);
+		return FALSE;
 	}
 
 	/* ensure export dir exists */
 	if (g_mkdir_with_parents (scr_export_dir, 0755) != 0)
 		g_warning ("Failed to create directory tree '%s'", scr_export_dir);
-
 
 	{
 		g_autoptr(AscImage) src_image = NULL;
@@ -433,7 +484,10 @@ asc_process_screenshot_images (AscResult *cres,
 		g_autofree gchar *src_img_url = NULL;
 		g_autoptr(AsImage) simg = NULL;
 
-		src_img_name = g_strdup_printf ("image-%i_orig.png", scr_no);
+		if (g_strcmp0 (locale, "C") == 0)
+			src_img_name = g_strdup_printf ("image-%i_orig.png", scr_no);
+		else
+			src_img_name = g_strdup_printf ("image-%i_%s_orig.png", scr_no, locale);
 		src_img_path = g_build_filename (scr_export_dir, src_img_name, NULL);
 		src_img_url = g_build_filename (scr_base_url, src_img_name, NULL);
 
@@ -452,7 +506,7 @@ asc_process_screenshot_images (AscResult *cres,
 					     "url", orig_img_url,
 					     "error", msg,
 					     NULL);
-			return NULL;
+			return FALSE;
 		}
 
 		if (!asc_image_save_filename (src_image,
@@ -467,12 +521,12 @@ asc_process_screenshot_images (AscResult *cres,
 					     "url", orig_img_url,
 					     "error", msg,
 					     NULL);
-			return NULL;
+			return FALSE;
 		}
 
 		simg = as_image_new ();
 		as_image_set_kind (simg, AS_IMAGE_KIND_SOURCE);
-		as_image_set_locale (simg, orig_img_locale);
+		as_image_set_locale (simg, locale);
 
 		source_scr_width = asc_image_get_width (src_image);
 		source_scr_height = asc_image_get_height (src_image);
@@ -488,7 +542,7 @@ asc_process_screenshot_images (AscResult *cres,
 
 			/* drop screenshot storage directory, in this mode it is only ever used temporarily */
 			as_utils_delete_dir_recursive (scr_export_dir);
-			return g_object_ref (scr);
+			return TRUE;
 		}
 
 		as_image_set_url (simg, src_img_url);
@@ -537,10 +591,17 @@ asc_process_screenshot_images (AscResult *cres,
 			asc_image_scale_to_height (thumb, target_height);
 
 		/* create thumbnail storage path and URL component*/
-		thumb_img_name = g_strdup_printf ("image-%i_%ix%i.png",
-						  scr_no,
-						  asc_image_get_width (thumb),
-						  asc_image_get_height (thumb));
+		if (g_strcmp0 (locale, "C") == 0)
+			thumb_img_name = g_strdup_printf ("image-%i_%ix%i.png",
+							  scr_no,
+							  asc_image_get_width (thumb),
+							  asc_image_get_height (thumb));
+		else
+			thumb_img_name = g_strdup_printf ("image-%i_%ix%i_%s.png",
+							  scr_no,
+							  asc_image_get_width (thumb),
+							  asc_image_get_height (thumb),
+							  locale);
 		thumb_img_path = g_build_filename (scr_export_dir, thumb_img_name, NULL);
 		thumb_img_url = g_build_filename (scr_base_url, thumb_img_name, NULL);
 
@@ -561,9 +622,9 @@ asc_process_screenshot_images (AscResult *cres,
 			continue;
 		}
 
-		// finally prepare the thumbnail definition and add it to the metadata
+		/* finally prepare the thumbnail definition and add it to the metadata */
 		img = as_image_new ();
-		as_image_set_locale (img, orig_img_locale);
+		as_image_set_locale (img, locale);
 		as_image_set_kind (img, AS_IMAGE_KIND_THUMBNAIL);
 		as_image_set_width (img, asc_image_get_width (thumb));
 		as_image_set_height (img, asc_image_get_height (thumb));
@@ -580,6 +641,76 @@ asc_process_screenshot_images (AscResult *cres,
 				     "url", orig_img_url,
 				      NULL);
 
+	return TRUE;
+}
+
+/**
+ * asc_process_screenshot_images:
+ *
+ * Returns: (transfer full): The processed screenshot.
+ */
+static AsScreenshot*
+asc_process_screenshot_images (AscResult *cres,
+			       AsComponent *cpt,
+			       AsScreenshot *scr,
+			       AsCurl *acurl,
+			       const gchar *scr_export_dir,
+			       const gchar *scr_base_url,
+			       const gssize max_size_bytes,
+			       gboolean store_screenshots,
+			       guint scr_no)
+{
+	GPtrArray *imgs = NULL;
+	GHashTableIter ht_iter;
+	gpointer ht_key, ht_value;
+	g_autoptr(GHashTable) ht_lang_img = g_hash_table_new_full (g_str_hash,
+								   g_str_equal,
+								   g_free,
+								   g_object_unref);
+
+	imgs = as_screenshot_get_images_all (scr);
+	if (imgs->len == 0) {
+		asc_result_add_hint_simple (cres, cpt, "metainfo-screenshot-but-no-media");
+		return NULL;
+	}
+
+	/* try to find the source images, in case upstream has provided their own thumbnails.
+	 * We use a hash-table to remove any possible duplicate original images of the same locale */
+	for (guint i = 0; i < imgs->len; i++) {
+		AsImage *img = AS_IMAGE (g_ptr_array_index (imgs, i));
+		if (as_image_get_kind (img) == AS_IMAGE_KIND_SOURCE)
+			g_hash_table_insert (ht_lang_img,
+					     g_strdup (as_image_get_locale (img)),
+					     g_object_ref (img));
+	}
+
+
+
+	/* just take the first image if we couldn't find a source */
+	if (g_hash_table_size (ht_lang_img) == 0)
+		g_hash_table_insert (ht_lang_img,
+					g_strdup ("C"),
+					g_object_ref (AS_IMAGE (g_ptr_array_index (imgs, 0))));
+
+	/* drop metainfo images */
+	as_screenshot_clear_images (scr);
+
+	/* process images per locale */
+	g_hash_table_iter_init (&ht_iter, ht_lang_img);
+	while (g_hash_table_iter_next (&ht_iter, &ht_key, &ht_value))
+		if (!asc_process_screenshot_images_lang (cres,
+							 cpt,
+							 scr,
+							 AS_IMAGE (ht_value),
+							 (const gchar *) ht_key,
+							 acurl,
+							 scr_export_dir,
+							 scr_base_url,
+							 max_size_bytes,
+							 store_screenshots,
+							 scr_no))
+			return NULL;
+
 	return g_object_ref (scr);
 }
 
@@ -593,6 +724,8 @@ asc_process_screenshots (AscResult *cres,
 			 AsComponent *cpt,
 			 AsCurl *acurl,
 			 const gchar *media_export_root,
+			 const gssize max_size_bytes,
+			 gboolean process_videos,
 			 gboolean store_screenshots)
 {
 	GPtrArray *screenshots = NULL;
@@ -633,14 +766,16 @@ asc_process_screenshots (AscResult *cres,
 		AsScreenshot *res_scr = NULL;
 
 		if (as_screenshot_get_media_kind (scr) == AS_SCREENSHOT_MEDIA_KIND_VIDEO) {
-			res_scr = asc_process_screenshot_videos (cres,
-								 cpt,
-								 scr,
-								 acurl,
-								 scr_export_dir,
-								 scr_base_url,
-								 store_screenshots,
-								 i + 1);
+			if (process_videos)
+				res_scr = asc_process_screenshot_videos (cres,
+									 cpt,
+									 scr,
+									 acurl,
+									 scr_export_dir,
+									 scr_base_url,
+									 max_size_bytes,
+									 store_screenshots,
+									 i + 1);
 		} else {
 			res_scr = asc_process_screenshot_images (cres,
 								 cpt,
@@ -648,6 +783,7 @@ asc_process_screenshots (AscResult *cres,
 								 acurl,
 								 scr_export_dir,
 								 scr_base_url,
+								 max_size_bytes,
 								 store_screenshots,
 								 i + 1);
 		}
