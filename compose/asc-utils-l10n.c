@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2015 Richard Hughes <richard@hughsie.com>
  * Copyright (C) 2019 Kalev Lember <klember@redhat.com>
  *
@@ -66,6 +66,7 @@ asc_locale_ctx_new (void)
 {
 	AscLocaleContext *ctx;
 	ctx = g_new0 (AscLocaleContext, 1);
+	ctx->translations = NULL;
 	return ctx;
 }
 
@@ -341,7 +342,7 @@ asc_l10n_search_translations_qt (AscLocaleContext *ctx,
 	/* search for each translation ID */
 	for (guint i = 0; i < ctx->translations->len; i++) {
 		const gchar *location_hint;
-		AsTranslation *t = g_ptr_array_index (ctx->translations, i);
+		AsTranslation *t = AS_TRANSLATION (g_ptr_array_index (ctx->translations, i));
 
 		if (as_translation_get_kind (t) != AS_TRANSLATION_KIND_QT &&
 		    as_translation_get_kind (t) != AS_TRANSLATION_KIND_UNKNOWN)
@@ -493,8 +494,8 @@ asc_read_translation_status (AscResult *cres,
 		 * to exist, so would break that check.
 		 * as_component_add_language() will deduplicate in case that’s
 		 * needed. */
-		for (guint i = 0; i < ctx->translations->len; i++) {
-			AsTranslation *t = g_ptr_array_index (ctx->translations, i);
+		for (guint j = 0; j < ctx->translations->len; j++) {
+			AsTranslation *t = g_ptr_array_index (ctx->translations, j);
 
 			as_component_add_language (cpt,
 						   as_translation_get_source_locale (t),

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -46,10 +46,15 @@ struct _AsDistroDetailsClass
 
 AsDistroDetails		*as_distro_details_new (void);
 
+G_DEPRECATED_FOR(as_system_info_get_os_id)
 const gchar		*as_distro_details_get_id (AsDistroDetails *distro);
+G_DEPRECATED_FOR(as_system_info_get_os_cid)
 const gchar		*as_distro_details_get_cid (AsDistroDetails *distro);
+G_DEPRECATED_FOR(as_system_info_get_os_name)
 const gchar		*as_distro_details_get_name (AsDistroDetails *distro);
+G_DEPRECATED_FOR(as_system_info_get_os_version)
 const gchar		*as_distro_details_get_version (AsDistroDetails *distro);
+G_DEPRECATED_FOR(as_system_info_get_os_homepage)
 const gchar		*as_distro_details_get_homepage (AsDistroDetails *distro);
 
 gchar			*as_distro_details_get_str (AsDistroDetails *distro,
@@ -57,8 +62,6 @@ gchar			*as_distro_details_get_str (AsDistroDetails *distro,
 gboolean		as_distro_details_get_bool (AsDistroDetails *distro,
 							const gchar *key,
 							gboolean default_val);
-
-gchar 			*as_get_current_distro_component_id (void);
 
 G_END_DECLS
 

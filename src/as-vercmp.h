@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -43,17 +43,21 @@ typedef enum {
 } AsVercmpFlags;
 
 
-gint		as_vercmp (const gchar* a,
-			   const gchar *b,
-			   AsVercmpFlags flags);
-gint		as_vercmp_simple (const gchar* a,
-				  const gchar *b);
+gint			as_vercmp (const gchar* a,
+				   const gchar *b,
+				   AsVercmpFlags flags);
+gint			as_vercmp_simple (const gchar* a,
+					  const gchar *b);
 
+gboolean		as_vercmp_test_match (const gchar *ver1,
+						AsRelationCompare compare,
+						const gchar *ver2,
+						AsVercmpFlags flags);
 
 /* DEPRECATED */
 
 G_DEPRECATED_FOR(as_vercmp_simple)
-gint		as_utils_compare_versions (const gchar* a,
-					   const gchar *b);
+gint			as_utils_compare_versions (const gchar* a,
+						   const gchar *b);
 
 G_END_DECLS

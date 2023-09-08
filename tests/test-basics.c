@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -18,10 +18,11 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <config.h>
 #include <glib.h>
 #include "appstream.h"
 #include "as-component-private.h"
-#include "as-distro-details-private.h"
+#include "as-system-info-private.h"
 #include "as-utils-private.h"
 
 #include "as-test-utils.h"
@@ -34,7 +35,7 @@ static gchar *datadir = NULL;
  * Test our version of strstrip.
  */
 static void
-test_strstripnl ()
+test_strstripnl (void)
 {
 	gchar *tmp;
 
@@ -63,7 +64,7 @@ test_strstripnl ()
  * test_random:
  */
 static void
-test_random ()
+test_random (void)
 {
 	g_autofree gchar *str1 = NULL;
 	g_autofree gchar *str2 = NULL;
@@ -83,7 +84,7 @@ test_random ()
  * Test safe variable assignment macros.
  */
 static void
-test_safe_assign ()
+test_safe_assign (void)
 {
 	gchar *tmp;
 	g_autofree gchar *member1 = g_strdup ("Test A");
@@ -120,15 +121,29 @@ test_safe_assign ()
 }
 
 /**
+ * test_verify_int_str:
+ */
+static void
+test_verify_int_str (void)
+{
+	g_assert_false (as_str_verify_integer ("", G_MININT64, G_MAXINT64));
+	g_assert_true (as_str_verify_integer ("64", G_MININT64, G_MAXINT64));
+	g_assert_false (as_str_verify_integer ("128Kb", G_MININT64, G_MAXINT64));
+	g_assert_false (as_str_verify_integer ("Hello42", G_MININT64, G_MAXINT64));
+	g_assert_true (as_str_verify_integer ("-400", G_MININT64, G_MAXINT64));
+	g_assert_false (as_str_verify_integer ("-400", 1, G_MAXINT64));
+	g_assert_false (as_str_verify_integer ("4800", G_MININT64, 4000));
+}
+
+/**
  * test_categories:
  *
  * Test #AsCategory properties.
  */
 static void
-test_categories ()
+test_categories (void)
 {
-	g_autoptr(GPtrArray) default_cats;
-
+	g_autoptr(GPtrArray) default_cats = NULL;
 	default_cats = as_get_default_categories (TRUE);
 	g_assert_cmpint (default_cats->len, ==, 10);
 }
@@ -139,7 +154,7 @@ test_categories ()
  * Test as_description_markup_convert_simple()
  */
 static void
-test_simplemarkup ()
+test_simplemarkup (void)
 {
 	g_autofree gchar *str = NULL;
 	g_autoptr(GError) error = NULL;
@@ -186,7 +201,7 @@ _get_dummy_strv (const gchar *value)
  * Test basic properties of an #AsComponent.
  */
 static void
-test_component ()
+test_component (void)
 {
 	g_autoptr(AsComponent) cpt = NULL;
 	g_autoptr(AsMetadata) metad = NULL;
@@ -207,7 +222,7 @@ test_component ()
 	metad = as_metadata_new ();
 	as_metadata_add_component (metad, cpt);
 	str = as_metadata_component_to_metainfo (metad, AS_FORMAT_KIND_XML, NULL);
-	str2 = as_metadata_components_to_collection (metad, AS_FORMAT_KIND_XML, NULL);
+	str2 = as_metadata_components_to_catalog (metad, AS_FORMAT_KIND_XML, NULL);
 	g_debug ("%s", str2);
 
 	g_assert_cmpstr (str, ==, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
@@ -218,7 +233,7 @@ test_component ()
 				  "  <pkgname>fedex</pkgname>\n"
 				  "</component>\n");
 	g_assert_cmpstr (str2, ==, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-				   "<components version=\"0.14\">\n"
+				   "<components version=\"0.16\">\n"
 				   "  <component type=\"desktop-application\">\n"
 				   "    <id>org.example.test.desktop</id>\n"
 				   "    <name>Test</name>\n"
@@ -274,6 +289,7 @@ test_locale_compat (void)
 	g_assert_true (!as_utils_locale_is_compatible ("ca@valencia", "de"));
 	g_assert_true (!as_utils_locale_is_compatible ("de_CH", "de_DE"));
 	g_assert_true (as_utils_locale_is_compatible ("de", "de_CH"));
+	g_assert_true (as_utils_locale_is_compatible ("C", "C"));
 }
 
 /**
@@ -468,7 +484,7 @@ test_spdx (void)
  * Read XDG desktop-entry file.
  */
 static void
-test_read_desktop_entry_simple ()
+test_read_desktop_entry_simple (void)
 {
 	static const gchar *desktop_entry_data =
 		"[Desktop Entry]\n"
@@ -540,7 +556,7 @@ test_read_desktop_entry_simple ()
  * Test reading a desktop-entry.
  */
 static void
-test_desktop_entry_convert ()
+test_desktop_entry_convert (void)
 {
 	g_autoptr(AsMetadata) metad = NULL;
 	g_autofree gchar *nautilus_de_fname = NULL;
@@ -611,7 +627,7 @@ test_desktop_entry_convert ()
 	g_assert_no_error (error);
 	g_free (tmp);
 
-	tmp = as_metadata_components_to_collection (metad, AS_FORMAT_KIND_XML, &error);
+	tmp = as_metadata_components_to_catalog (metad, AS_FORMAT_KIND_XML, &error);
 	g_assert_no_error (error);
 	g_assert_true (as_test_compare_lines (tmp, expected_xml));
 	g_free (tmp);
@@ -623,7 +639,7 @@ test_desktop_entry_convert ()
  * Test version comparisons.
  */
 static void
-test_version_compare ()
+test_version_compare (void)
 {
 	g_assert_cmpint (as_vercmp_simple ("6", "8"), <, 0);
 	g_assert_cmpint (as_vercmp_simple ("0.6.12b-d", "0.6.12a"), >, 0);
@@ -697,29 +713,50 @@ test_version_compare ()
 	g_assert_cmpint (as_vercmp_simple ("9+", "10"), <, 0);
 	g_assert_cmpint (as_vercmp_simple ("9half", "10"), <, 0);
 	g_assert_cmpint (as_vercmp_simple ("9.5", "10"), <, 0);
+
+	/* test match */
+	g_assert_true (as_vercmp_test_match ("1", AS_RELATION_COMPARE_LT, "2", AS_VERCMP_FLAG_NONE));
+	g_assert_true (as_vercmp_test_match ("2", AS_RELATION_COMPARE_GT, "1", AS_VERCMP_FLAG_NONE));
+	g_assert_true (as_vercmp_test_match ("3", AS_RELATION_COMPARE_EQ, "3", AS_VERCMP_FLAG_NONE));
+	g_assert_true (as_vercmp_test_match ("4", AS_RELATION_COMPARE_NE, "3", AS_VERCMP_FLAG_NONE));
+	g_assert_true (as_vercmp_test_match ("4", AS_RELATION_COMPARE_GE, "3", AS_VERCMP_FLAG_NONE));
+	g_assert_false (as_vercmp_test_match ("5", AS_RELATION_COMPARE_GE, "6", AS_VERCMP_FLAG_NONE));
 }
 
 /**
- * test_distro_details:
+ * test_system_info:
  *
- * Test fetching distro details.
+ * Test fetching OS details and device info.
  */
 static void
-test_distro_details ()
+test_system_info (void)
 {
+	g_autoptr(AsSystemInfo) sysinfo = as_system_info_new ();
 	g_autofree gchar *osrelease_fname = NULL;
-	g_autoptr(AsDistroDetails) distro = as_distro_details_new ();
+	g_autofree gchar *dev_name = NULL;
+	g_autoptr(GError) error = NULL;
 
 	osrelease_fname = g_build_filename (datadir, "os-release-1", NULL);
 
-	as_distro_details_load_data (distro, osrelease_fname, NULL);
+	as_system_info_load_os_release (sysinfo, osrelease_fname);
 
-	g_assert_cmpstr (as_distro_details_get_name (distro), ==, "Debian GNU/Linux");
-	g_assert_cmpstr (as_distro_details_get_version (distro), ==, "10.0");
-	g_assert_cmpstr (as_distro_details_get_homepage (distro), ==, "https://www.debian.org/");
+	g_assert_cmpstr (as_system_info_get_os_name (sysinfo), ==, "Debian GNU/Linux");
+	g_assert_cmpstr (as_system_info_get_os_version (sysinfo), ==, "10.0");
+	g_assert_cmpstr (as_system_info_get_os_homepage (sysinfo), ==, "https://www.debian.org/");
 
-	g_assert_cmpstr (as_distro_details_get_id (distro), ==, "debian");
-	g_assert_cmpstr (as_distro_details_get_cid (distro), ==, "org.debian.debian");
+	g_assert_cmpstr (as_system_info_get_os_id (sysinfo), ==, "debian");
+	g_assert_cmpstr (as_system_info_get_os_cid (sysinfo), ==, "org.debian.debian");
+
+	g_assert_nonnull (as_system_info_get_kernel_name (sysinfo));
+	g_assert_nonnull (as_system_info_get_kernel_version (sysinfo));
+
+	g_assert_cmpint (as_system_info_get_memory_total (sysinfo), >=, 128);
+
+	/* We can't properly test this as most build environments lack the udev hardware database.
+	 * We still run the code for potential leak detection etc. */
+	dev_name = as_system_info_get_device_name_for_modalias (sysinfo, "usb:v1130p0202d*", FALSE, &error);
+	if (error != NULL)
+		g_error_free (g_steal_pointer (&error));
 }
 
 /**
@@ -728,7 +765,7 @@ test_distro_details ()
  * Test URL to component-ID conversion.
  */
 static void
-test_rdns_convert ()
+test_rdns_convert (void)
 {
 	gchar *tmp;
 
@@ -757,7 +794,7 @@ test_rdns_convert ()
  * test_filebasename_from_uri:
  */
 static void
-test_filebasename_from_uri ()
+test_filebasename_from_uri (void)
 {
 	gchar *tmp;
 
@@ -877,7 +914,7 @@ as_test_content_rating_from_locale (void)
  *
  * Shows the data-id globbing functions at work
  */
-void
+static void
 test_utils_data_id_hash (void)
 {
 	AsComponent *found;
@@ -937,7 +974,7 @@ test_utils_data_id_hash (void)
  *
  * Shows the as_utils_data_id_* functions are safe with bare text.
  */
-void
+static void
 test_utils_data_id_hash_str (void)
 {
 	AsComponent *found;
@@ -965,7 +1002,7 @@ test_utils_data_id_hash_str (void)
 /**
  * test_utils_platform_triplet:
  */
-void
+static void
 test_utils_platform_triplet (void)
 {
 	g_assert_true (as_utils_is_platform_triplet ("x86_64-linux-gnu"));
@@ -1006,6 +1043,7 @@ main (int argc, char **argv)
 	g_test_add_func ("/AppStream/Strstrip", test_strstripnl);
 	g_test_add_func ("/AppStream/Random", test_random);
 	g_test_add_func ("/AppStream/SafeAssign", test_safe_assign);
+	g_test_add_func ("/AppStream/VerifyIntStr", test_verify_int_str);
 	g_test_add_func ("/AppStream/Categories", test_categories);
 	g_test_add_func ("/AppStream/SimpleMarkupConvert", test_simplemarkup);
 	g_test_add_func ("/AppStream/Component", test_component);
@@ -1015,7 +1053,7 @@ main (int argc, char **argv)
 	g_test_add_func ("/AppStream/ReadDesktopEntry", test_read_desktop_entry_simple);
 	g_test_add_func ("/AppStream/ConvertDesktopEntry", test_desktop_entry_convert);
 	g_test_add_func ("/AppStream/VersionCompare", test_version_compare);
-	g_test_add_func ("/AppStream/DistroDetails", test_distro_details);
+	g_test_add_func ("/AppStream/SystemInfo", test_system_info);
 	g_test_add_func ("/AppStream/rDNSConvert", test_rdns_convert);
 	g_test_add_func ("/AppStream/URIToBasename", test_filebasename_from_uri);
 	g_test_add_func ("/AppStream/ContentRating/Mapings", test_content_rating_mappings);

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -37,6 +37,7 @@ G_BEGIN_DECLS
 
 gchar		*as_xml_get_node_value (const xmlNode *node);
 GRefString	*as_xml_get_node_value_refstr (const xmlNode *node);
+#define as_xml_get_node_value_raw(node)	(gchar*) (xmlNodeGetContent (node))
 
 #define as_xml_get_prop_value(node, prop_name)	(gchar*) (xmlGetProp (node, (xmlChar*) prop_name))
 GRefString	*as_xml_get_prop_value_refstr (const xmlNode *node, const gchar *prop_name);
@@ -88,6 +89,8 @@ void		as_xml_add_custom_node (xmlNode *root,
 					const gchar *node_name,
 					GHashTable *custom);
 
+#define as_xml_node_new(name)		xmlNewNode (NULL, (xmlChar*) name)
+#define as_xml_add_node(root, name)	xmlNewChild (root, NULL, (xmlChar*) name, NULL)
 xmlNode		*as_xml_add_text_node (xmlNode *root,
 					const gchar *name,
 					const gchar *value);
@@ -99,7 +102,8 @@ xmlDoc		*as_xml_parse_document (const gchar *data,
 					gssize len,
 					GError **error);
 
-gchar		*as_xml_node_to_str (xmlNode *root, GError **error);
+gchar		*as_xml_node_free_to_str (xmlNode *root,
+					  GError **error);
 
 #pragma GCC visibility pop
 G_END_DECLS

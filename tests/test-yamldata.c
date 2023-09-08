@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -44,7 +44,7 @@ as_yaml_test_serialize (AsComponent *cpt)
 	as_metadata_add_component (metad, cpt);
 	as_metadata_set_write_header (metad, TRUE);
 
-	data = as_metadata_components_to_collection (metad, AS_FORMAT_KIND_YAML, &error);
+	data = as_metadata_components_to_catalog (metad, AS_FORMAT_KIND_YAML, &error);
 	g_assert_no_error (error);
 
 	return data;
@@ -64,12 +64,12 @@ as_yaml_test_read_data (const gchar *data, GError **error)
 
 	data_full = g_strdup_printf ("---\n"
 				     "File: DEP-11\n"
-				     "Version: '0.14'\n"
+				     "Version: '0.16'\n"
 				     "---\n%s", data);
 
 	metad = as_metadata_new ();
 	as_metadata_set_locale (metad, "ALL");
-	as_metadata_set_format_style (metad, AS_FORMAT_STYLE_COLLECTION);
+	as_metadata_set_format_style (metad, AS_FORMAT_STYLE_CATALOG);
 
 	if (error == NULL) {
 		g_autoptr(GError) local_error = NULL;
@@ -104,18 +104,18 @@ as_yaml_test_compare_yaml (const gchar *result, const gchar *expected)
 	g_autofree gchar *expected_full = NULL;
 	expected_full = g_strdup_printf ("---\n"
 					 "File: DEP-11\n"
-					 "Version: '0.14'\n"
+					 "Version: '0.16'\n"
 					 "---\n%s", expected);
 	return as_test_compare_lines (result, expected_full);
 }
 
 /**
- * test_basic:
+ * test_yaml_basic:
  *
  * Test basic functions related to YAML processing.
  */
 static void
-test_basic (void)
+test_yaml_basic (void)
 {
 	g_autoptr(AsMetadata) mdata = NULL;
 	gchar *path;
@@ -127,7 +127,7 @@ test_basic (void)
 
 	mdata = as_metadata_new ();
 	as_metadata_set_locale (mdata, "C");
-	as_metadata_set_format_style (mdata, AS_FORMAT_STYLE_COLLECTION);
+	as_metadata_set_format_style (mdata, AS_FORMAT_STYLE_CATALOG);
 
 	path = g_build_filename (datadir, "dep11-0.8.yml", NULL);
 	file = g_file_new_for_path (path);
@@ -216,6 +216,7 @@ test_yamlwrite_misc (void)
 	const gchar *expected_yaml =
 				"Type: firmware\n"
 				"ID: org.example.test.firmware\n"
+				"DateEOL: 2022-02-22T00:00:00Z\n"
 				"Package: fwdummy\n"
 				"Extends:\n"
 				"- org.example.alpha\n"
@@ -307,6 +308,7 @@ test_yamlwrite_misc (void)
 	cpt = as_component_new ();
 	as_component_set_kind (cpt, AS_COMPONENT_KIND_FIRMWARE);
 	as_component_set_id (cpt, "org.example.test.firmware");
+	as_component_set_date_eol (cpt, "2022-02-22");
 	as_component_set_pkgnames (cpt, _PKGNAME1);
 	as_component_set_name (cpt, "Unittest Firmware", "C");
 	as_component_set_name (cpt, "Ünittest Fürmwäre (dummy Eintrag)", "de_DE");
@@ -396,7 +398,7 @@ test_yamlwrite_misc (void)
 	g_object_unref (cpt);
 
 	/* serialize and validate */
-	resdata = as_metadata_components_to_collection (metad, AS_FORMAT_KIND_YAML, &error);
+	resdata = as_metadata_components_to_catalog (metad, AS_FORMAT_KIND_YAML, &error);
 	g_assert_no_error (error);
 
 	g_assert_true (as_yaml_test_compare_yaml (resdata, expected_yaml));
@@ -526,7 +528,9 @@ test_yaml_read_url (void)
 				"  homepage: https://example.org\n"
 				"  faq: https://example.org/faq\n"
 				"  donation: https://example.org/donate\n"
-				"  contact: https://example.org/contact\n";
+				"  contact: https://example.org/contact\n"
+				"  vcs-browser: https://example.org/source\n"
+				"  contribute: https://example.org/contribute\n";
 
 	cpt = as_yaml_test_read_data (yamldata_urls, NULL);
 	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.Test");
@@ -535,6 +539,8 @@ test_yaml_read_url (void)
 	g_assert_cmpstr (as_component_get_url (cpt, AS_URL_KIND_FAQ), ==, "https://example.org/faq");
 	g_assert_cmpstr (as_component_get_url (cpt, AS_URL_KIND_DONATION), ==, "https://example.org/donate");
 	g_assert_cmpstr (as_component_get_url (cpt, AS_URL_KIND_CONTACT), ==, "https://example.org/contact");
+	g_assert_cmpstr (as_component_get_url (cpt, AS_URL_KIND_VCS_BROWSER), ==, "https://example.org/source");
+	g_assert_cmpstr (as_component_get_url (cpt, AS_URL_KIND_CONTRIBUTE), ==, "https://example.org/contribute");
 }
 
 /**
@@ -559,6 +565,7 @@ test_yaml_corrupt_data (void)
 static const gchar *yamldata_simple_fields =
 					"Type: generic\n"
 					"ID: org.example.SimpleTest\n"
+					"DateEOL: 2022-02-22T00:00:00Z\n"
 					"Name:\n"
 					"  C: TestComponent\n"
 					"Summary:\n"
@@ -580,12 +587,13 @@ test_yaml_write_simple (void)
 	cpt = as_component_new ();
 	as_component_set_kind (cpt, AS_COMPONENT_KIND_GENERIC);
 	as_component_set_id (cpt, "org.example.SimpleTest");
+	as_component_set_date_eol (cpt, "2022-02-22");
 
 	as_component_set_name (cpt, "TestComponent", "C");
 	as_component_set_summary (cpt, "Just part of an unittest", "C");
 	as_component_set_name_variant_suffix (cpt, "Generic", "C");
 
-	/* test collection serialization */
+	/* test catalog serialization */
 	res = as_yaml_test_serialize (cpt);
 	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_simple_fields));
 }
@@ -606,6 +614,8 @@ test_yaml_read_simple (void)
 	g_assert_cmpstr (as_component_get_name (cpt), ==, "TestComponent");
 	g_assert_cmpstr (as_component_get_summary (cpt), ==, "Just part of an unittest");
 	g_assert_cmpstr (as_component_get_name_variant_suffix (cpt), ==, "Generic");
+	g_assert_cmpstr (as_component_get_date_eol (cpt), ==, "2022-02-22T00:00:00Z");
+	g_assert_cmpint (as_component_get_timestamp_eol (cpt), ==, 1645488000);
 }
 
 /**
@@ -674,7 +684,7 @@ test_yaml_write_provides (void)
 	as_provided_add_item (prov_firmware_flashed, "84f40464-9272-4ef7-9399-cd95f12da696");
 	as_component_add_provided (cpt, prov_firmware_flashed);
 
-	/* test collection serialization */
+	/* test catalog serialization */
 	res = as_yaml_test_serialize (cpt);
 	g_assert_true (as_yaml_test_compare_yaml (res, expected_prov_yaml));
 }
@@ -788,7 +798,7 @@ test_yaml_write_suggests (void)
 	as_suggested_add_id (sug_hr, "org.example.Stuff");
 	as_component_add_suggested (cpt, sug_hr);
 
-	/* test collection serialization */
+	/* test catalog serialization */
 	res = as_yaml_test_serialize (cpt);
 	g_assert_true (as_yaml_test_compare_yaml (res, expected_sug_yaml));
 }
@@ -864,7 +874,7 @@ test_yaml_write_custom (void)
 	as_component_insert_custom_value (cpt, "foo bar", "value-with space");
 	as_component_insert_custom_value (cpt, "Oh::Snap::Punctuation!", "Awesome!");
 
-	/* test collection serialization */
+	/* test catalog serialization */
 	res = as_yaml_test_serialize (cpt);
 	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_custom_field));
 }
@@ -919,7 +929,7 @@ test_yaml_write_content_rating (void)
 
 	as_component_add_content_rating (cpt, rating);
 
-	/* test collection serialization */
+	/* test catalog serialization */
 	res = as_yaml_test_serialize (cpt);
 	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_content_rating_field));
 }
@@ -977,7 +987,7 @@ test_yaml_write_launchable (void)
 
 	as_component_add_launchable (cpt, launch);
 
-	/* test collection serialization */
+	/* test catalog serialization */
 	res = as_yaml_test_serialize (cpt);
 	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_launchable_field));
 }
@@ -1004,28 +1014,37 @@ test_yaml_read_launchable (void)
 	g_assert_cmpstr (g_ptr_array_index (as_launchable_get_entries (launch), 1), ==, "kde4-kool.desktop");
 }
 
-static const gchar *yamldata_requires_recommends_field =
-					"Type: generic\n"
-					"ID: org.example.RelationsTest\n"
-					"Recommends:\n"
-					"- memory: 2500\n"
-					"- modalias: usb:v1130p0202d*\n"
-					"- display_length: <= xlarge\n"
-					"  side: longest\n"
-					"Requires:\n"
-					"- kernel: Linux\n"
-					"  version: '>= 4.15'\n"
-					"- id: org.example.TestDependency\n"
-					"  version: == 1.2\n"
-					"- display_length: 4200\n";
+static const gchar *yamldata_relations_field =
+				"Type: generic\n"
+				"ID: org.example.RelationsTest\n"
+				"Replaces:\n"
+				"- id: org.example.old_test\n"
+				"Requires:\n"
+				"- kernel: Linux\n"
+				"  version: '>= 4.15'\n"
+				"- id: org.example.TestDependency\n"
+				"  version: == 1.2\n"
+				"- display_length: 4200\n"
+				"- internet: always\n"
+				"  bandwidth_mbitps: 2\n"
+				"Recommends:\n"
+				"- memory: 2500\n"
+				"- modalias: usb:v1130p0202d*\n"
+				"- display_length: <= xlarge\n"
+				"  side: longest\n"
+				"- internet: first-run\n"
+				"Supports:\n"
+				"- control: gamepad\n"
+				"- control: keyboard\n"
+				"- internet: offline-only\n";
 
 /**
- * test_yaml_write_requires_recommends:
+ * test_yaml_write_relations:
  *
  * Test writing the Requires/Recommends fields.
  */
 static void
-test_yaml_write_requires_recommends (void)
+test_yaml_write_relations (void)
 {
 	g_autoptr(AsComponent) cpt = NULL;
 	g_autofree gchar *res = NULL;
@@ -1035,6 +1054,11 @@ test_yaml_write_requires_recommends (void)
 	g_autoptr(AsRelation) id_relation = NULL;
 	g_autoptr(AsRelation) dl_relation1 = NULL;
 	g_autoptr(AsRelation) dl_relation2 = NULL;
+	g_autoptr(AsRelation) ctl_relation1 = NULL;
+	g_autoptr(AsRelation) ctl_relation2 = NULL;
+	g_autoptr(AsRelation) internet_relation1 = NULL;
+	g_autoptr(AsRelation) internet_relation2 = NULL;
+	g_autoptr(AsRelation) internet_relation3 = NULL;
 
 	cpt = as_component_new ();
 	as_component_set_kind (cpt, AS_COMPONENT_KIND_GENERIC);
@@ -1046,6 +1070,11 @@ test_yaml_write_requires_recommends (void)
 	id_relation = as_relation_new ();
 	dl_relation1 = as_relation_new ();
 	dl_relation2 = as_relation_new ();
+	ctl_relation1 = as_relation_new ();
+	ctl_relation2 = as_relation_new ();
+	internet_relation1 = as_relation_new ();
+	internet_relation2 = as_relation_new ();
+	internet_relation3 = as_relation_new ();
 
 	as_relation_set_kind (mem_relation, AS_RELATION_KIND_RECOMMENDS);
 	as_relation_set_kind (moda_relation, AS_RELATION_KIND_RECOMMENDS);
@@ -1053,6 +1082,11 @@ test_yaml_write_requires_recommends (void)
 	as_relation_set_kind (id_relation, AS_RELATION_KIND_REQUIRES);
 	as_relation_set_kind (dl_relation1, AS_RELATION_KIND_RECOMMENDS);
 	as_relation_set_kind (dl_relation2, AS_RELATION_KIND_REQUIRES);
+	as_relation_set_kind (ctl_relation1, AS_RELATION_KIND_SUPPORTS);
+	as_relation_set_kind (ctl_relation2, AS_RELATION_KIND_SUPPORTS);
+	as_relation_set_kind (internet_relation1, AS_RELATION_KIND_REQUIRES);
+	as_relation_set_kind (internet_relation2, AS_RELATION_KIND_RECOMMENDS);
+	as_relation_set_kind (internet_relation3, AS_RELATION_KIND_SUPPORTS);
 
 	as_relation_set_item_kind (mem_relation, AS_RELATION_ITEM_KIND_MEMORY);
 	as_relation_set_value_int (mem_relation, 2500);
@@ -1078,39 +1112,68 @@ test_yaml_write_requires_recommends (void)
 	as_relation_set_value_int (dl_relation2, 4200);
 	as_relation_set_compare (dl_relation2, AS_RELATION_COMPARE_GE);
 
+	as_relation_set_item_kind (internet_relation1, AS_RELATION_ITEM_KIND_INTERNET);
+	as_relation_set_value_internet_kind (internet_relation1, AS_INTERNET_KIND_ALWAYS);
+	as_relation_set_value_internet_bandwidth (internet_relation1, 2);
+
+	as_relation_set_item_kind (internet_relation2, AS_RELATION_ITEM_KIND_INTERNET);
+	as_relation_set_value_internet_kind (internet_relation2, AS_INTERNET_KIND_FIRST_RUN);
+
+	as_relation_set_item_kind (internet_relation3, AS_RELATION_ITEM_KIND_INTERNET);
+	as_relation_set_value_internet_kind (internet_relation3, AS_INTERNET_KIND_OFFLINE_ONLY);
+
+	as_relation_set_item_kind (ctl_relation1, AS_RELATION_ITEM_KIND_CONTROL);
+	as_relation_set_item_kind (ctl_relation2, AS_RELATION_ITEM_KIND_CONTROL);
+	as_relation_set_value_control_kind (ctl_relation1, AS_CONTROL_KIND_GAMEPAD);
+	as_relation_set_value_control_kind (ctl_relation2, AS_CONTROL_KIND_KEYBOARD);
+
 	as_component_add_relation (cpt, mem_relation);
 	as_component_add_relation (cpt, moda_relation);
 	as_component_add_relation (cpt, kernel_relation);
 	as_component_add_relation (cpt, id_relation);
 	as_component_add_relation (cpt, dl_relation1);
 	as_component_add_relation (cpt, dl_relation2);
+	as_component_add_relation (cpt, ctl_relation1);
+	as_component_add_relation (cpt, ctl_relation2);
+	as_component_add_relation (cpt, internet_relation1);
+	as_component_add_relation (cpt, internet_relation2);
+	as_component_add_relation (cpt, internet_relation3);
 
-	/* test collection serialization */
+	as_component_add_replaces (cpt, "org.example.old_test");
+
+	/* test catalog serialization */
 	res = as_yaml_test_serialize (cpt);
-	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_requires_recommends_field));
+	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_relations_field));
 }
 
 /**
- * test_yaml_read_requires_recommends:
+ * test_yaml_read_relations:
  *
  * Test if reading the Requires/Recommends fields works.
  */
 static void
-test_yaml_read_requires_recommends (void)
+test_yaml_read_relations (void)
 {
 	g_autoptr(AsComponent) cpt = NULL;
 	GPtrArray *recommends;
 	GPtrArray *requires;
+	GPtrArray *supports;
 	AsRelation *relation;
 
-	cpt = as_yaml_test_read_data (yamldata_requires_recommends_field, NULL);
+	cpt = as_yaml_test_read_data (yamldata_relations_field, NULL);
 	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.RelationsTest");
 
-	recommends = as_component_get_recommends (cpt);
 	requires = as_component_get_requires (cpt);
+	recommends = as_component_get_recommends (cpt);
+	supports = as_component_get_supports (cpt);
 
-	g_assert_cmpint (recommends->len, ==, 3);
-	g_assert_cmpint (requires->len, ==, 3);
+	g_assert_cmpint (requires->len, ==, 4);
+	g_assert_cmpint (recommends->len, ==, 4);
+	g_assert_cmpint (supports->len, ==, 3);
+
+	/* component replacement */
+	g_assert_cmpint (as_component_get_replaces (cpt)->len, ==, 1);
+	g_assert_cmpstr (g_ptr_array_index (as_component_get_replaces (cpt), 0), ==, "org.example.old_test");
 
 	/* memory relation */
 	relation = AS_RELATION (g_ptr_array_index (recommends, 0));
@@ -1130,6 +1193,13 @@ test_yaml_read_requires_recommends (void)
 	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_DISPLAY_LENGTH);
 	g_assert_cmpint (as_relation_get_value_display_length_kind (relation), ==, AS_DISPLAY_LENGTH_KIND_XLARGE);
 	g_assert_cmpint (as_relation_get_compare (relation), ==, AS_RELATION_COMPARE_LE);
+
+	/* internet relation (REC) */
+	relation = AS_RELATION (g_ptr_array_index (recommends, 3));
+	g_assert_cmpint (as_relation_get_kind (relation), ==, AS_RELATION_KIND_RECOMMENDS);
+	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_INTERNET);
+	g_assert_cmpint (as_relation_get_value_internet_kind (relation), ==, AS_INTERNET_KIND_FIRST_RUN);
+	g_assert_cmpint (as_relation_get_value_internet_bandwidth (relation), ==, 0);
 
 	/* kernel relation */
 	relation = AS_RELATION (g_ptr_array_index (requires, 0));
@@ -1153,6 +1223,30 @@ test_yaml_read_requires_recommends (void)
 	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_DISPLAY_LENGTH);
 	g_assert_cmpint (as_relation_get_value_px (relation), ==, 4200);
 	g_assert_cmpint (as_relation_get_compare (relation), ==, AS_RELATION_COMPARE_GE);
+
+	/* internet relation (REQ) */
+	relation = AS_RELATION (g_ptr_array_index (requires, 3));
+	g_assert_cmpint (as_relation_get_kind (relation), ==, AS_RELATION_KIND_REQUIRES);
+	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_INTERNET);
+	g_assert_cmpint (as_relation_get_value_internet_kind (relation), ==, AS_INTERNET_KIND_ALWAYS);
+	g_assert_cmpint (as_relation_get_value_internet_bandwidth (relation), ==, 2);
+
+	/* control relation */
+	relation = AS_RELATION (g_ptr_array_index (supports, 0));
+	g_assert_cmpint (as_relation_get_kind (relation), ==, AS_RELATION_KIND_SUPPORTS);
+	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_CONTROL);
+	g_assert_cmpint (as_relation_get_value_control_kind (relation), ==, AS_CONTROL_KIND_GAMEPAD);
+	relation = AS_RELATION (g_ptr_array_index (supports, 1));
+	g_assert_cmpint (as_relation_get_kind (relation), ==, AS_RELATION_KIND_SUPPORTS);
+	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_CONTROL);
+	g_assert_cmpint (as_relation_get_value_control_kind (relation), ==, AS_CONTROL_KIND_KEYBOARD);
+
+	/* internet relation (supports) */
+	relation = AS_RELATION (g_ptr_array_index (supports, 2));
+	g_assert_cmpint (as_relation_get_kind (relation), ==, AS_RELATION_KIND_SUPPORTS);
+	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_INTERNET);
+	g_assert_cmpint (as_relation_get_value_internet_kind (relation), ==, AS_INTERNET_KIND_OFFLINE_ONLY);
+	g_assert_cmpint (as_relation_get_value_internet_bandwidth (relation), ==, 0);
 }
 
 
@@ -1161,7 +1255,7 @@ static const gchar *yamldata_agreements =
 				"ID: org.example.AgreementsTest\n"
 				"Agreements:\n"
 				"- type: eula\n"
-				"  version_id: 1.2.3a\n"
+				"  version-id: 1.2.3a\n"
 				"  sections:\n"
 				"  - type: intro\n"
 				"    name:\n"
@@ -1204,7 +1298,7 @@ test_yaml_write_agreements (void)
 	as_agreement_add_section (agreement, sect);
 	as_component_add_agreement (cpt, agreement);
 
-	/* test collection serialization */
+	/* test catalog serialization */
 	res = as_yaml_test_serialize (cpt);
 	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_agreements));
 }
@@ -1335,7 +1429,7 @@ test_yaml_write_screenshots (void)
 	as_component_add_screenshot (cpt, scr1);
 	as_component_add_screenshot (cpt, scr2);
 
-	/* test collection serialization */
+	/* test catalog serialization */
 	res = as_yaml_test_serialize (cpt);
 	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_screenshots));
 }
@@ -1546,7 +1640,7 @@ test_yaml_write_releases (void)
 	as_artifact_set_platform (af2, "x86_64-linux-gnu");
 	as_release_add_artifact (rel2, af2);
 
-	/* test collection serialization */
+	/* test catalog serialization */
 	res = as_yaml_test_serialize (cpt);
 	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_releases_field));
 }
@@ -1624,6 +1718,75 @@ test_yaml_read_releases (void)
 }
 
 /**
+ * test_yaml_rw_tags:
+ */
+static void
+test_yaml_rw_tags (void)
+{
+	static const gchar *yamldata_tags =
+			"Type: generic\n"
+			"ID: org.example.TagsTest\n"
+			"Tags:\n"
+			"- namespace: lvfs\n"
+			"  tag: vendor-2021q1\n"
+			"- namespace: plasma\n"
+			"  tag: featured\n";
+	g_autoptr(AsComponent) cpt = NULL;
+	g_autofree gchar *res = NULL;
+
+	/* read */
+	cpt = as_yaml_test_read_data (yamldata_tags, NULL);
+	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.TagsTest");
+
+	/* validate */
+	g_assert_true (as_component_has_tag (cpt, "lvfs", "vendor-2021q1"));
+	g_assert_true (as_component_has_tag (cpt, "plasma", "featured"));
+
+	/* write */
+	res = as_yaml_test_serialize (cpt);
+	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_tags));
+}
+
+/**
+ * test_yaml_rw_branding:
+ */
+static void
+test_yaml_rw_branding (void)
+{
+	static const gchar *yamldata_tags =
+			"Type: generic\n"
+			"ID: org.example.BrandingTest\n"
+			"Branding:\n"
+			"  colors:\n"
+			"  - type: primary\n"
+			"    scheme-preference: light\n"
+			"    value: '#ff00ff'\n"
+			"  - type: primary\n"
+			"    scheme-preference: dark\n"
+			"    value: '#993d3d'\n";
+	g_autoptr(AsComponent) cpt = NULL;
+	g_autofree gchar *res = NULL;
+	AsBranding *branding;
+
+	/* read */
+	cpt = as_yaml_test_read_data (yamldata_tags, NULL);
+	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.BrandingTest");
+
+	/* validate */
+	branding = as_component_get_branding (cpt);
+	g_assert_nonnull (branding);
+
+	g_assert_cmpstr (as_branding_get_color (branding, AS_COLOR_KIND_PRIMARY, AS_COLOR_SCHEME_KIND_LIGHT),
+			 ==, "#ff00ff");
+	g_assert_cmpstr (as_branding_get_color (branding, AS_COLOR_KIND_PRIMARY, AS_COLOR_SCHEME_KIND_DARK),
+			 ==, "#993d3d");
+
+	/* write */
+	res = as_yaml_test_serialize (cpt);
+	g_assert_true (as_yaml_test_compare_yaml (res, yamldata_tags));
+}
+
+/**
  * main:
  */
 int
@@ -1647,7 +1810,7 @@ main (int argc, char **argv)
 	/* only critical and error are fatal */
 	g_log_set_fatal_mask (NULL, G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL);
 
-	g_test_add_func ("/YAML/Basic", test_basic);
+	g_test_add_func ("/YAML/Basic", test_yaml_basic);
 	g_test_add_func ("/YAML/Write/Misc", test_yamlwrite_misc);
 
 	g_test_add_func ("/YAML/Read/CorruptData", test_yaml_corrupt_data);
@@ -1673,8 +1836,8 @@ main (int argc, char **argv)
 	g_test_add_func ("/YAML/Read/Launchable", test_yaml_read_launchable);
 	g_test_add_func ("/YAML/Write/Launchable", test_yaml_write_launchable);
 
-	g_test_add_func ("/YAML/Read/RequiresRecommends", test_yaml_read_requires_recommends);
-	g_test_add_func ("/YAML/Write/RequiresRecommends", test_yaml_write_requires_recommends);
+	g_test_add_func ("/YAML/Read/Relations", test_yaml_read_relations);
+	g_test_add_func ("/YAML/Write/Relations", test_yaml_write_relations);
 
 	g_test_add_func ("/YAML/Read/Agreements", test_yaml_read_agreements);
 	g_test_add_func ("/YAML/Write/Agreements", test_yaml_write_agreements);
@@ -1684,6 +1847,9 @@ main (int argc, char **argv)
 
 	g_test_add_func ("/YAML/Read/Releases", test_yaml_read_releases);
 	g_test_add_func ("/YAML/Write/Releases", test_yaml_write_releases);
+
+	g_test_add_func ("/YAML/ReadWrite/Tags", test_yaml_rw_tags);
+	g_test_add_func ("/YAML/ReadWrite/Branding", test_yaml_rw_branding);
 
 	ret = g_test_run ();
 	g_free (datadir);

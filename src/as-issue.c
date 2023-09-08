@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2019-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2019-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -216,7 +216,7 @@ as_issue_load_from_xml (AsIssue *issue, AsContext *ctx, xmlNode *node, GError **
 	AsIssuePrivate *priv = GET_PRIVATE (issue);
 	g_autofree gchar *prop = NULL;
 
-	prop = (gchar*) xmlGetProp (node, (xmlChar*) "type");
+	prop = as_xml_get_prop_value (node, "type");
 	priv->kind = as_issue_kind_from_string (prop);
 	if (priv->kind == AS_ISSUE_KIND_UNKNOWN)
 		return FALSE;
@@ -225,7 +225,7 @@ as_issue_load_from_xml (AsIssue *issue, AsContext *ctx, xmlNode *node, GError **
 	priv->id = as_xml_get_node_value (node);
 
 	g_free (priv->url);
-	priv->url = (gchar*) xmlGetProp (node, (xmlChar*) "url");
+	priv->url = as_xml_get_prop_value (node, "url");
 
 	return TRUE;
 }
@@ -249,20 +249,14 @@ as_issue_to_xml_node (AsIssue *issue, AsContext *ctx, xmlNode *root)
 	if (priv->id == NULL)
 		return;
 
-	n = xmlNewTextChild (root, NULL,
-			     (xmlChar*) "issue",
-			     (xmlChar*) priv->id);
+	n = as_xml_add_text_node (root, "issue", priv->id);
 
 	if (priv->kind != AS_ISSUE_KIND_GENERIC)
-		xmlNewProp (n,
-			    (xmlChar*) "type",
-			    (xmlChar*) as_issue_kind_to_string (priv->kind));
+		as_xml_add_text_prop (n, "type", as_issue_kind_to_string (priv->kind));
 
 	if (priv->url != NULL) {
 		g_strstrip (priv->url);
-		xmlNewProp (n,
-			    (xmlChar*) "url",
-			    (xmlChar*) priv->url);
+		as_xml_add_text_prop (n, "url", priv->url);
 	}
 }
 

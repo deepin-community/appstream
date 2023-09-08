@@ -1,20 +1,20 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
- * Licensed under the GNU General Public License Version 2
+ * Licensed under the GNU Lesser General Public License Version 2.1
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the license, or
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 2.1 of the license, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -41,9 +41,14 @@ int		ascli_get_component (const gchar *cachepath,
 					gboolean detailed,
 					gboolean no_cache);
 
+int		ascli_list_categories (const gchar *cachepath,
+					gchar **categories,
+					gboolean detailed,
+					gboolean no_cache);
+
 int		ascli_refresh_cache (const gchar *cachepath,
 					const gchar *datapath,
-					gboolean user,
+					const gchar * const* sources_str,
 					gboolean forced);
 
 int		ascli_dump_component (const gchar *cachepath,
@@ -59,12 +64,13 @@ int		ascli_convert_data (const gchar *in_fname,
 				    const gchar *out_fname,
 				    AsFormatKind mformat);
 
-int		ascli_show_os_info (const gchar *cachepath,
-				    gboolean no_cache);
-
 int		ascli_create_metainfo_template (const gchar *out_fname,
 						const gchar *cpt_kind_str,
 						const gchar *desktop_file);
+
+gint		ascli_check_is_satisfied (const gchar *fname_or_cid,
+					  const gchar *cachepath,
+					  gboolean no_cache);
 
 
 G_END_DECLS

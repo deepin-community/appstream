@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -32,6 +32,12 @@ G_BEGIN_DECLS
 #define AS_DATA_ID_WILDCARD	"*"
 #define	AS_DATA_ID_PARTS_COUNT	5
 
+/**
+ * as_str_equal0:
+ * Returns TRUE if strings are equal, ignoring NULL strings.
+ * This is a convenience wrapper around g_strcmp0
+ */
+#define as_str_equal0(str1, str2) (g_strcmp0 ((gchar*) str1,(gchar*) str2) == 0)
 
 /**
  * as_assign_string_safe:
@@ -46,7 +52,7 @@ G_BEGIN_DECLS
  */
 #define as_assign_string_safe(target, new_val) \
   G_STMT_START { \
-    if (G_LIKELY ((target) != (new_val))) { \
+    if (G_LIKELY (!as_str_equal0(target, new_val))) { \
 	g_free (target); \
 	target = g_strdup (new_val); \
       } \
@@ -69,6 +75,23 @@ G_BEGIN_DECLS
 	g_ptr_array_unref (target); \
 	target = g_ptr_array_ref (new_ptrarray); \
       } \
+  } G_STMT_END
+
+#define AS_PTR_ARRAY_SET_FREE_FUNC(array, func) \
+  G_STMT_START { \
+    if ((array) != NULL) \
+      g_ptr_array_set_free_func ((array), (GDestroyNotify)(func)); \
+  } G_STMT_END
+#define AS_PTR_ARRAY_CLEAR_FREE_FUNC(array) \
+  AS_PTR_ARRAY_SET_FREE_FUNC(array, NULL)
+#define AS_PTR_ARRAY_STEAL_FULL(arrptr) \
+  ({ AS_PTR_ARRAY_CLEAR_FREE_FUNC (*(arrptr)); \
+     g_steal_pointer ((arrptr)); })
+#define AS_PTR_ARRAY_RETURN_CLEAR_FREE_FUNC(array) \
+  G_STMT_START { \
+	GPtrArray *_tmp_array = (array); \
+	AS_PTR_ARRAY_CLEAR_FREE_FUNC (_tmp_array); \
+	return _tmp_array; \
   } G_STMT_END
 
 /**
@@ -102,6 +125,11 @@ gboolean		as_is_empty (const gchar *str);
 GDateTime		*as_iso8601_to_datetime (const gchar *iso_date);
 
 AS_INTERNAL_VISIBLE
+gboolean		as_str_verify_integer (const gchar *str,
+						gint64 min_value,
+						gint64 max_value);
+
+AS_INTERNAL_VISIBLE
 gboolean		as_utils_delete_dir_recursive (const gchar* dirname);
 
 AS_INTERNAL_VISIBLE
@@ -114,6 +142,7 @@ GPtrArray		*as_utils_find_files (const gchar *dir,
 						gboolean recursive,
 						GError **error);
 
+AS_INTERNAL_VISIBLE
 gboolean		as_utils_is_root (void);
 
 AS_INTERNAL_VISIBLE
@@ -132,6 +161,8 @@ void			as_hash_table_string_keys_to_array (GHashTable *table,
 							    GPtrArray *array);
 
 gboolean		as_touch_location (const gchar *fname);
+
+AS_INTERNAL_VISIBLE
 void			as_reset_umask (void);
 
 AS_INTERNAL_VISIBLE
@@ -169,8 +200,6 @@ gchar			*as_ptr_array_to_str (GPtrArray *array,
 AS_INTERNAL_VISIBLE
 gchar			*as_filebasename_from_uri (const gchar *uri);
 
-gchar			*as_date_time_format_iso8601 (GDateTime *datetime);
-
 AS_INTERNAL_VISIBLE
 gchar			*as_strstripnl (gchar *string);
 
@@ -191,10 +220,11 @@ gboolean		as_utils_is_platform_triplet_arch (const gchar *arch);
 gboolean		as_utils_is_platform_triplet_oskernel (const gchar *os);
 gboolean		as_utils_is_platform_triplet_osenv (const gchar *env);
 
-gchar			*as_get_user_cache_dir ();
+gchar			*as_get_user_cache_dir (GError **error);
 
 gboolean		as_unichar_accepted (gunichar c);
 
+AS_INTERNAL_VISIBLE
 gchar			*as_sanitize_text_spaces (const gchar *text);
 
 AS_INTERNAL_VISIBLE
@@ -205,6 +235,8 @@ gchar			*as_utils_find_stock_icon_filename_full (const gchar *root_dir,
 								 guint icon_size,
 								 guint icon_scale,
 								 GError **error);
+AS_INTERNAL_VISIBLE
+void			as_utils_ensure_resources (void);
 
 #pragma GCC visibility pop
 G_END_DECLS

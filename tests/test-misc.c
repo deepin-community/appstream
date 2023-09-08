@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2018-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2018-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -22,6 +22,7 @@
 #include "appstream.h"
 #include "as-news-convert.h"
 #include "as-utils-private.h"
+#include "as-system-info-private.h"
 
 #include "as-test-utils.h"
 
@@ -33,7 +34,7 @@ static gchar *datadir = NULL;
  * Read & write YAML NEWS file.
  */
 static void
-test_readwrite_yaml_news ()
+test_readwrite_yaml_news (void)
 {
 	static const gchar *yaml_news_data =
 		"---\n"
@@ -50,6 +51,11 @@ test_readwrite_yaml_news ()
 		"  A freeform description text.\n"
 		"\n"
 		"  Second paragraph. XML <> YAML\n"
+		"   * List item 1\n"
+		"   * List item 2\n"
+		"     Line two of list item.\n"
+		"\n"
+		"  Third paragraph.\n"
 		"---\n"
 		"Version: 1.0\n"
 		"Date: 2019-02-24\n"
@@ -72,6 +78,11 @@ test_readwrite_yaml_news ()
 		"      <description>\n"
 		"        <p>A freeform description text.</p>\n"
 		"        <p>Second paragraph. XML &lt;&gt; YAML</p>\n"
+		"        <ul>\n"
+		"          <li>List item 1</li>\n"
+		"          <li>List item 2 Line two of list item.</li>\n"
+		"        </ul>\n"
+		"        <p>Third paragraph.</p>\n"
 		"      </description>\n"
 		"    </release>\n"
 		"    <release type=\"stable\" version=\"1.0\" date=\"2019-02-24T00:00:00Z\">\n"
@@ -96,13 +107,18 @@ test_readwrite_yaml_news ()
 		"      </description>\n"
 		"    </release>\n"
 		"    <release type=\"stable\" version=\"1.1\" date=\"2019-04-12T00:00:00Z\">\n"
-		"      <description translatable=\"no\">\n"
+		"      <description translate=\"no\">\n"
 		"        <p>A freeform description text.</p>\n"
 		"        <p>Second paragraph. XML &lt;&gt; YAML</p>\n"
+		"        <ul>\n"
+		"          <li>List item 1</li>\n"
+		"          <li>List item 2 Line two of list item.</li>\n"
+		"        </ul>\n"
+		"        <p>Third paragraph.</p>\n"
 		"      </description>\n"
 		"    </release>\n"
 		"    <release type=\"stable\" version=\"1.0\" date=\"2019-02-24T00:00:00Z\">\n"
-		"      <description translatable=\"no\">\n"
+		"      <description translate=\"no\">\n"
 		"        <ul>\n"
 		"          <li>Introduced feature A</li>\n"
 		"          <li>Introduced feature B</li>\n"
@@ -116,6 +132,10 @@ test_readwrite_yaml_news ()
 	g_autoptr(GError) error = NULL;
 	gchar *tmp;
 	gboolean ret;
+	g_autofree gchar *yaml_news_data_brclean = as_str_replace (yaml_news_data,
+								   "item 2\n     Line two",
+								   "item 2 Line two",
+								   -1);
 
 	/* read */
 	releases = as_news_to_releases_from_data (yaml_news_data,
@@ -139,7 +159,7 @@ test_readwrite_yaml_news ()
 					&error);
 	g_assert_no_error (error);
 	g_assert_true (ret);
-	g_assert_true (as_test_compare_lines (tmp, yaml_news_data));
+	g_assert_true (as_test_compare_lines (tmp, yaml_news_data_brclean));
 	g_free (tmp);
 
 	/* read for translatable test */
@@ -165,7 +185,7 @@ test_readwrite_yaml_news ()
  * Read & write text NEWS file.
  */
 static void
-test_readwrite_text_news ()
+test_readwrite_text_news (void)
 {
 	static const gchar *text_news_data =
 			"Version 0.12.8\n"
@@ -245,8 +265,11 @@ test_readwrite_text_news ()
 	g_free (tmp);
 }
 
+/**
+ * test_locale_strip_encoding:
+ */
 static void
-test_locale_strip_encoding ()
+test_locale_strip_encoding (void)
 {
 	g_autofree gchar *c = NULL;
 	g_autofree gchar *cutf8 = NULL;
@@ -259,6 +282,81 @@ test_locale_strip_encoding ()
 	g_assert_cmpstr (c, ==, "C");
 	g_assert_cmpstr (cutf8, ==, "C");
 	g_assert_cmpstr (cutf8valencia, ==, "C@valencia");
+}
+
+/**
+ * test_relation_satisfy_check:
+ */
+static void
+test_relation_satisfy_check (void)
+{
+	g_autoptr(AsSystemInfo) sysinfo = NULL;
+	g_autoptr(AsRelation) relation = NULL;
+	g_autofree gchar *osrelease_fname = NULL;
+	AsCheckResult r;
+	g_autoptr(GError) error = NULL;
+
+	sysinfo = as_system_info_new ();
+	relation = as_relation_new ();
+
+	osrelease_fname = g_build_filename (datadir, "os-release-1", NULL);
+	as_system_info_load_os_release (sysinfo, osrelease_fname);
+	as_system_info_set_kernel (sysinfo, "Linux", "6.2.0-1");
+	as_system_info_set_memory_total (sysinfo, 4096);
+	as_system_info_set_display_length (sysinfo, AS_DISPLAY_SIDE_KIND_LONGEST, 3840);
+	as_system_info_set_display_length (sysinfo, AS_DISPLAY_SIDE_KIND_SHORTEST, 2160);
+
+	/* test memory */
+	as_relation_set_kind (relation, AS_RELATION_KIND_RECOMMENDS);
+	as_relation_set_item_kind (relation, AS_RELATION_ITEM_KIND_MEMORY);
+	as_relation_set_value_int (relation, 2500);
+
+	r = as_relation_is_satisfied (relation, sysinfo, NULL, NULL, &error);
+	g_assert_no_error (error);
+	g_assert_cmpint (r, ==, AS_CHECK_RESULT_TRUE);
+
+	as_relation_set_value_int (relation, 8000);
+	r = as_relation_is_satisfied (relation, sysinfo, NULL, NULL, &error);
+	g_assert_no_error (error);
+	g_assert_cmpint (r, ==, AS_CHECK_RESULT_FALSE);
+
+	/* test kernel */
+	as_relation_set_kind (relation, AS_RELATION_KIND_REQUIRES);
+	as_relation_set_item_kind (relation, AS_RELATION_ITEM_KIND_KERNEL);
+	as_relation_set_value_str (relation, "Linux");
+	as_relation_set_version (relation, "6.2");
+	as_relation_set_compare (relation, AS_RELATION_COMPARE_GE);
+
+	r = as_relation_is_satisfied (relation, sysinfo, NULL, NULL, &error);
+	g_assert_no_error (error);
+	g_assert_cmpint (r, ==, AS_CHECK_RESULT_TRUE);
+
+	as_relation_set_value_str (relation, "FreeBSD");
+	r = as_relation_is_satisfied (relation, sysinfo, NULL, NULL, &error);
+	g_assert_no_error (error);
+	g_assert_cmpint (r, ==, AS_CHECK_RESULT_FALSE);
+
+	as_relation_set_value_str (relation, "Linux");
+	as_relation_set_compare (relation, AS_RELATION_COMPARE_LT);
+	r = as_relation_is_satisfied (relation, sysinfo, NULL, NULL, &error);
+	g_assert_no_error (error);
+	g_assert_cmpint (r, ==, AS_CHECK_RESULT_FALSE);
+
+	/* test display length */
+	as_relation_set_kind (relation, AS_RELATION_KIND_RECOMMENDS);
+	as_relation_set_item_kind (relation, AS_RELATION_ITEM_KIND_DISPLAY_LENGTH);
+	as_relation_set_display_side_kind (relation, AS_DISPLAY_SIDE_KIND_LONGEST);
+	as_relation_set_compare (relation, AS_RELATION_COMPARE_LE);
+	as_relation_set_value_int (relation, 640);
+
+	r = as_relation_is_satisfied (relation, sysinfo, NULL, NULL, &error);
+	g_assert_no_error (error);
+	g_assert_cmpint (r, ==, AS_CHECK_RESULT_FALSE);
+
+	as_relation_set_compare (relation, AS_RELATION_COMPARE_GE);
+	r = as_relation_is_satisfied (relation, sysinfo, NULL, NULL, &error);
+	g_assert_no_error (error);
+	g_assert_cmpint (r, ==, AS_CHECK_RESULT_TRUE);
 }
 
 int
@@ -284,6 +382,7 @@ main (int argc, char **argv)
 	g_test_add_func ("/AppStream/Misc/YAMLNews", test_readwrite_yaml_news);
 	g_test_add_func ("/AppStream/Misc/TextNews", test_readwrite_text_news);
 	g_test_add_func ("/AppStream/Misc/StripLocaleEncoding", test_locale_strip_encoding);
+	g_test_add_func ("/AppStream/Misc/RelationSatisfyCheck", test_relation_satisfy_check);
 
 	ret = g_test_run ();
 	g_free (datadir);

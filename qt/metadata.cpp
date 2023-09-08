@@ -78,29 +78,14 @@ QString AppStream::Metadata::formatKindToString(AppStream::Metadata::FormatKind 
     return QLatin1String("unknown");
 }
 
-typedef QHash<Metadata::FormatVersion, QString> VersionMap;
-Q_GLOBAL_STATIC_WITH_ARGS(VersionMap, versionMap, ( {
-    { Metadata::FormatVersionV06, QLatin1String("0.6") },
-    { Metadata::FormatVersionV07, QLatin1String("0.7") },
-    { Metadata::FormatVersionV08, QLatin1String("0.8") },
-    { Metadata::FormatVersionV09, QLatin1String("0.9") },
-    { Metadata::FormatVersionV010, QLatin1String("0.10") },
-    { Metadata::FormatVersionV011, QLatin1String("0.11") },
-    }
-));
-
 AppStream::Metadata::FormatVersion AppStream::Metadata::stringToFormatVersion(const QString& formatVersionString)
 {
-    return versionMap->key(formatVersionString, AppStream::Metadata::FormatVersionV010);
+    return static_cast<Metadata::FormatVersion>(as_format_version_from_string(qPrintable(formatVersionString)));
 }
 
 QString AppStream::Metadata::formatVersionToString(AppStream::Metadata::FormatVersion version)
 {
-    const QString value = versionMap->value(version);
-    if (value.isEmpty()) {
-        return QLatin1String("?.??");
-    }
-    return value;
+    return QString::fromUtf8(as_format_version_to_string(static_cast<AsFormatVersion>(version)));
 }
 
 Metadata::Metadata()
@@ -234,15 +219,20 @@ AppStream::Metadata::MetadataError AppStream::Metadata::saveMetainfo(const QStri
     return AppStream::Metadata::MetadataErrorNoError;
 }
 
-QString AppStream::Metadata::componentsToCollection(AppStream::Metadata::FormatKind format) const
+QString AppStream::Metadata::componentsToCatalog(AppStream::Metadata::FormatKind format) const
 {
-    return valueWrap(as_metadata_components_to_collection(d->m_metadata, (AsFormatKind) format, nullptr));
+    return valueWrap(as_metadata_components_to_catalog(d->m_metadata, (AsFormatKind) format, nullptr));
 }
 
-AppStream::Metadata::MetadataError AppStream::Metadata::saveCollection(const QString& collection, AppStream::Metadata::FormatKind format)
+QString AppStream::Metadata::componentsToCollection(AppStream::Metadata::FormatKind format) const
+{
+    return componentsToCatalog(format);
+}
+
+AppStream::Metadata::MetadataError AppStream::Metadata::saveCatalog(const QString& filename, AppStream::Metadata::FormatKind format)
 {
     g_autoptr(GError) error = nullptr;
-    as_metadata_save_collection(d->m_metadata, qPrintable(collection), (AsFormatKind) format, &error);
+    as_metadata_save_catalog(d->m_metadata, qPrintable(filename), (AsFormatKind) format, &error);
 
     if (error != nullptr) {
         d->lastError = QString::fromUtf8(error->message);
@@ -253,6 +243,11 @@ AppStream::Metadata::MetadataError AppStream::Metadata::saveCollection(const QSt
     }
 
     return AppStream::Metadata::MetadataErrorNoError;
+}
+
+AppStream::Metadata::MetadataError AppStream::Metadata::saveCollection(const QString& collection, AppStream::Metadata::FormatKind format)
+{
+    return saveCatalog(collection, format);
 }
 
 AppStream::Metadata::FormatVersion AppStream::Metadata::formatVersion() const
@@ -325,10 +320,16 @@ void AppStream::Metadata::setArchitecture(const QString& architecture)
     as_metadata_set_architecture(d->m_metadata, qPrintable(architecture));
 }
 
+QString Metadata::lastError() const
+{
+    return d->lastError;
+}
+
 QDebug operator<<(QDebug s, const AppStream::Metadata& metadata)
 {
     QStringList list;
-    foreach (const AppStream::Component& component, metadata.components()) {
+    const auto components = metadata.components();
+    for (const AppStream::Component& component : components) {
         list << component.id();
     }
     s.nospace() << "AppStream::Metadata(" << list << ")";

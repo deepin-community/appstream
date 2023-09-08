@@ -10,12 +10,14 @@ ascompose_src = [
     'asc-globals.c',
     'asc-hint.c',
     'asc-hint-tags.c',
+    'asc-icon-policy.c',
     'asc-image.c',
     'asc-result.c',
     'asc-unit.c',
     'asc-utils-l10n.c',
     'asc-utils-metainfo.c',
     'asc-utils-screenshots.c',
+    'asc-utils-fonts.c',
     'asc-utils.c'
 ]
 
@@ -24,15 +26,12 @@ ascompose_pub_headers = [
     'asc-canvas.h',
     'asc-compose.h',
     'asc-directory-unit.h',
-    'asc-font.h',
     'asc-globals.h',
     'asc-hint.h',
+    'asc-icon-policy.h',
     'asc-image.h',
     'asc-result.h',
     'asc-unit.h',
-    'asc-utils-l10n.h',
-    'asc-utils-metainfo.h',
-    'asc-utils-screenshots.h',
     'asc-utils.h'
 ]
 
@@ -43,9 +42,15 @@ ascompose_pub_enums = glib.mkenums_simple('asc-enums-types',
 )
 
 ascompose_priv_headers = [
+    'asc-canvas-private.h',
+    'asc-font.h',
     'asc-font-private.h',
     'asc-globals-private.h',
-    'asc-hint-tags.h'
+    'asc-hint-tags.h',
+    'asc-utils-l10n.h',
+    'asc-utils-metainfo.h',
+    'asc-utils-screenshots.h',
+    'asc-utils-fonts.h',
 ]
 
 asclib_res = glib.compile_resources (
@@ -55,12 +60,18 @@ asclib_res = glib.compile_resources (
 )
 
 # extra dependencies we need just for AppStream Compose
-cairo_dep      = dependency('cairo', version : '>= 1.12')
+cairo_dep      = dependency('cairo', version: '>= 1.12')
 gdkpixbuf_dep  = dependency('gdk-pixbuf-2.0')
-rsvg_dep       = dependency('librsvg-2.0')
 freetype_dep   = dependency('freetype2')
 pango_dep      = dependency('pango')
 fontconfig_dep = dependency('fontconfig')
+m_dep          = cc.find_library('m', required: false)
+if get_option ('svg-support')
+    rsvg_dep       = dependency('librsvg-2.0', version: '>= 2.48')
+else
+    rsvg_dep = dependency('', required: false)
+    warning('Building without SVG support. Therefore appstream-compose will be unable to render SVG icons.')
+endif
 
 appstream_compose_lib = library ('appstream-compose',
     [ascompose_src,
@@ -71,6 +82,7 @@ appstream_compose_lib = library ('appstream-compose',
     soversion: '0',
     version: as_version,
     dependencies: [appstream_dep,
+                   m_dep,
                    gio_dep,
                    cairo_dep,
                    gdkpixbuf_dep,
@@ -96,7 +108,7 @@ pkgc.generate(
                'gio-2.0',
                'gobject-2.0',
                'gdk-pixbuf-2.0',
-               'appstream']
+               'appstream'],
 )
 
 appstream_compose_dep = declare_dependency(
@@ -119,7 +131,8 @@ sed_prog = find_program('sed')
 pc_fixup = run_command(sed_prog,
                        '-i',
                        '/^Requires.private\|^Libs.private/ d',
-                       join_paths(meson.build_root(), 'meson-private', 'appstream-compose.pc'))
+                       join_paths(meson.project_build_root(), 'meson-private', 'appstream-compose.pc'),
+                       check: false)
 if pc_fixup.returncode() != 0
     error('Unable to fix up the .pc file:\n' + pc_fixup.stderr())
 endif

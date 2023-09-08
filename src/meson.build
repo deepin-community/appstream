@@ -9,6 +9,7 @@ aslib_src = [
     'as-curl.c',
     'as-desktop-entry.c',
     'as-distro-extras.c',
+    'as-file-monitor.c',
     'as-news-convert.c',
     'as-profile.c',
     'as-stemmer.c',
@@ -19,6 +20,7 @@ aslib_src = [
     'as-agreement.c',
     'as-agreement-section.c',
     'as-artifact.c',
+    'as-branding.c',
     'as-bundle.c',
     'as-category.c',
     'as-checksum.c',
@@ -40,6 +42,7 @@ aslib_src = [
     'as-screenshot.c',
     'as-spdx.c',
     'as-suggested.c',
+    'as-system-info.c',
     'as-translation.c',
     'as-validator.c',
     'as-validator-issue.c',
@@ -53,6 +56,7 @@ aslib_pub_headers = [
     'as-agreement.h',
     'as-agreement-section.h',
     'as-artifact.h',
+    'as-branding.h',
     'as-bundle.h',
     'as-category.h',
     'as-checksum.h',
@@ -74,12 +78,18 @@ aslib_pub_headers = [
     'as-screenshot.h',
     'as-spdx.h',
     'as-suggested.h',
+    'as-system-info.h',
     'as-translation.h',
     'as-utils.h',
     'as-validator.h',
     'as-validator-issue.h',
     'as-vercmp.h',
     'as-video.h'
+]
+
+aslib_gir_headers = [
+    'as-pool-gir.h',
+    'as-category-gir.h',
 ]
 
 aslib_priv_headers = [
@@ -95,6 +105,7 @@ aslib_priv_headers = [
     'as-desktop-entry.h',
     'as-distro-details-private.h',
     'as-distro-extras.h',
+    'as-file-monitor.h',
     'as-icon-private.h',
     'as-image-private.h',
     'as-issue-private.h',
@@ -115,10 +126,10 @@ aslib_priv_headers = [
 ]
 
 as_version_h = configure_file(
-  input: 'as-version.h.in',
-  output: 'as-version.h',
-  install_dir: join_paths(get_option('includedir'), 'appstream'),
-  configuration: conf
+    input: 'as-version.h.in',
+    output: 'as-version.h',
+    install_dir: join_paths(get_option('includedir'), 'appstream'),
+    configuration: conf
 )
 
 aslib_pub_enums = glib.mkenums_simple('as-enum-types',
@@ -139,7 +150,7 @@ aslib_gperf_xml = custom_target(
     output: 'as-tag-xml-private.h',
     input: 'as-tag-xml.gperf',
     command: [
-        gperf.path(),
+        gperf,
         '@INPUT@',
         '--output-file',
         '@OUTPUT@'
@@ -150,7 +161,7 @@ aslib_gperf_yaml = custom_target(
     output: 'as-tag-yaml-private.h',
     input: 'as-tag-yaml.gperf',
     command: [
-        gperf.path(),
+        gperf,
         '@INPUT@',
         '--output-file',
         '@OUTPUT@'
@@ -162,12 +173,10 @@ aslib_deps = [glib_dep,
               gobject_dep,
               gio_unix_dep,
               curl_dep,
-              lmdb_dep,
+              xmlb_dep,
               xml2_dep,
-              yaml_dep]
-if not lmdb_dep.found()
-    aslib_deps += [lmdb_lib]
-endif
+              yaml_dep,
+              libsystemd_dep]
 if get_option ('stemming')
     aslib_deps += [stemmer_lib]
 endif
@@ -175,6 +184,7 @@ endif
 appstream_lib = library ('appstream',
     [aslib_src,
      aslib_pub_headers,
+     aslib_gir_headers,
      aslib_priv_headers,
      aslib_res,
      aslib_pub_enums],
@@ -190,6 +200,7 @@ appstream_dep = declare_dependency(
     link_with: appstream_lib,
     sources: [
         aslib_pub_headers,
+        aslib_gir_headers,
         aslib_pub_enums
     ],
     dependencies: [glib_dep,
@@ -213,18 +224,20 @@ sed_prog = find_program('sed')
 pc_fixup = run_command(sed_prog,
                        '-i',
                        '/^Requires.private\|^Libs.private/ d',
-                       join_paths(meson.build_root(), 'meson-private', 'appstream.pc'))
+                       join_paths(meson.project_build_root(), 'meson-private', 'appstream.pc'),
+                       check: false)
 if pc_fixup.returncode() != 0
     error('Unable to fix up the .pc file:\n' + pc_fixup.stderr())
 endif
 
-install_headers(aslib_pub_headers, subdir: 'appstream')
+install_headers(aslib_pub_headers, aslib_gir_headers, subdir: 'appstream')
 
 if get_option ('gir')
-    as_gir_typelib = glib.generate_gir (
+    as_gir_typelib = glib.generate_gir(
         appstream_lib,
         sources: [aslib_src,
                   aslib_pub_headers,
+                  aslib_gir_headers,
                   aslib_pub_enums,
                   as_version_h],
         nsversion: '1.0',

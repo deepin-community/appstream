@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -188,7 +188,7 @@ as_checksum_load_from_xml (AsChecksum *cs, AsContext *ctx, xmlNode *node, GError
 	AsChecksumPrivate *priv = GET_PRIVATE (cs);
 	g_autofree gchar *prop = NULL;
 
-	prop = (gchar*) xmlGetProp (node, (xmlChar*) "type");
+	prop = as_xml_get_prop_value (node, "type");
 	priv->kind = as_checksum_kind_from_string (prop);
 	if (priv->kind == AS_CHECKSUM_KIND_NONE)
 		return FALSE;
@@ -216,12 +216,8 @@ as_checksum_to_xml_node (AsChecksum *cs, AsContext *ctx, xmlNode *root)
 	if (priv->kind == AS_CHECKSUM_KIND_NONE)
 		return;
 
-	n = xmlNewTextChild (root, NULL,
-			     (xmlChar*) "checksum",
-			     (xmlChar*) priv->value);
-	xmlNewProp (n,
-		    (xmlChar*) "type",
-		    (xmlChar*) as_checksum_kind_to_string (priv->kind));
+	n = as_xml_add_text_node (root, "checksum", priv->value);
+	as_xml_add_text_prop (n, "type", as_checksum_kind_to_string (priv->kind));
 }
 
 /**

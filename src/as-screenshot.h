@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2014 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -104,7 +104,9 @@ AsImage				*as_screenshot_get_image (AsScreenshot *screenshot,
 							  guint height);
 void				as_screenshot_add_image (AsScreenshot *screenshot,
 							 AsImage *image);
+void				as_screenshot_clear_images (AsScreenshot *screenshot);
 
+GPtrArray			*as_screenshot_get_videos_all (AsScreenshot *screenshot);
 GPtrArray			*as_screenshot_get_videos (AsScreenshot *screenshot);
 void				as_screenshot_add_video (AsScreenshot *screenshot,
 							 AsVideo *video);

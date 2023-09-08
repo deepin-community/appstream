@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -91,6 +91,10 @@ as_url_kind_to_string (AsUrlKind url_kind)
 		return "translate";
 	if (url_kind == AS_URL_KIND_CONTACT)
 		return "contact";
+	if (url_kind == AS_URL_KIND_VCS_BROWSER)
+		return "vcs-browser";
+	if (url_kind == AS_URL_KIND_CONTRIBUTE)
+		return "contribute";
 	return "unknown";
 }
 
@@ -119,6 +123,10 @@ as_url_kind_from_string (const gchar *url_kind)
 		return AS_URL_KIND_TRANSLATE;
 	if (g_strcmp0 (url_kind, "contact") == 0)
 		return AS_URL_KIND_CONTACT;
+	if (g_strcmp0 (url_kind, "vcs-browser") == 0)
+		return AS_URL_KIND_VCS_BROWSER;
+	if (g_strcmp0 (url_kind, "contribute") == 0)
+		return AS_URL_KIND_CONTRIBUTE;
 	return AS_URL_KIND_UNKNOWN;
 }
 

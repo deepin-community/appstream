@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2014 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -212,6 +212,7 @@ AsReleaseKind
 as_release_get_kind (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), AS_RELEASE_KIND_UNKNOWN);
 	return priv->kind;
 }
 
@@ -229,6 +230,7 @@ void
 as_release_set_kind (AsRelease *release, AsReleaseKind kind)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_if_fail (AS_IS_RELEASE (release));
 	priv->kind = kind;
 }
 
@@ -244,6 +246,7 @@ const gchar*
 as_release_get_version (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 	return priv->version;
 }
 
@@ -258,6 +261,7 @@ void
 as_release_set_version (AsRelease *release, const gchar *version)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_if_fail (AS_IS_RELEASE (release));
 	as_assign_string_safe (priv->version, version);
 }
 
@@ -273,6 +277,8 @@ as_release_set_version (AsRelease *release, const gchar *version)
 gint
 as_release_vercmp (AsRelease *rel1, AsRelease *rel2)
 {
+	g_return_val_if_fail (AS_IS_RELEASE (rel1), 0);
+	g_return_val_if_fail (AS_IS_RELEASE (rel2), 0);
 	return as_vercmp_simple (as_release_get_version (rel1),
 				 as_release_get_version (rel2));
 }
@@ -289,6 +295,7 @@ guint64
 as_release_get_timestamp (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), 0);
 	return priv->timestamp;
 }
 
@@ -305,9 +312,11 @@ as_release_set_timestamp (AsRelease *release, guint64 timestamp)
 	AsReleasePrivate *priv = GET_PRIVATE (release);
 	g_autoptr(GDateTime) time = g_date_time_new_from_unix_utc (timestamp);
 
+	g_return_if_fail (AS_IS_RELEASE (release));
+
 	priv->timestamp = timestamp;
 	g_free (priv->date);
-	priv->date = as_date_time_format_iso8601 (time);
+	priv->date = g_date_time_format_iso8601 (time);
 }
 
 /**
@@ -316,7 +325,7 @@ as_release_set_timestamp (AsRelease *release, guint64 timestamp)
  *
  * Gets the release date.
  *
- * Returns: The date in ISO8601 format.
+ * Returns: (nullable): The date in ISO8601 format.
  *
  * Since: 0.12.5
  **/
@@ -324,6 +333,7 @@ const gchar*
 as_release_get_date (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 	return priv->date;
 }
 
@@ -342,6 +352,9 @@ as_release_set_date (AsRelease *release, const gchar *date)
 	AsReleasePrivate *priv = GET_PRIVATE (release);
 	g_autoptr(GDateTime) time = NULL;
 
+	g_return_if_fail (AS_IS_RELEASE (release));
+	g_return_if_fail (date != NULL);
+
 	time = as_iso8601_to_datetime (date);
 	if (time != NULL) {
 		priv->timestamp = g_date_time_to_unix (time);
@@ -359,7 +372,7 @@ as_release_set_date (AsRelease *release, const gchar *date)
  *
  * Gets the end-of-life date for this release.
  *
- * Returns: The EOL date in ISO8601 format.
+ * Returns: (nullable): The EOL date in ISO8601 format.
  *
  * Since: 0.12.5
  **/
@@ -367,6 +380,7 @@ const gchar*
 as_release_get_date_eol (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 	return priv->date_eol;
 }
 
@@ -383,8 +397,9 @@ void
 as_release_set_date_eol (AsRelease *release, const gchar *date)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
-	g_free (priv->date_eol);
-	priv->date_eol = g_strdup (date);
+	g_return_if_fail (AS_IS_RELEASE (release));
+	g_return_if_fail (date != NULL);
+	as_assign_string_safe (priv->date_eol, date);
 }
 
 /**
@@ -403,6 +418,8 @@ as_release_get_timestamp_eol (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
 	g_autoptr(GDateTime) time = NULL;
+
+	g_return_val_if_fail (AS_IS_RELEASE (release), 0);
 
 	if (priv->date_eol == NULL)
 		return 0;
@@ -432,12 +449,14 @@ as_release_set_timestamp_eol (AsRelease *release, guint64 timestamp)
 	AsReleasePrivate *priv = GET_PRIVATE (release);
 	g_autoptr(GDateTime) time = NULL;
 
+	g_return_if_fail (AS_IS_RELEASE (release));
+
 	if (timestamp == 0)
 		return;
 
 	time = g_date_time_new_from_unix_utc (timestamp);
 	g_free (priv->date_eol);
-	priv->date_eol = as_date_time_format_iso8601 (time);
+	priv->date_eol = g_date_time_format_iso8601 (time);
 }
 
 /**
@@ -455,6 +474,7 @@ AsUrgencyKind
 as_release_get_urgency (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), AS_URGENCY_KIND_UNKNOWN);
 	return priv->urgency;
 }
 
@@ -471,6 +491,7 @@ void
 as_release_set_urgency (AsRelease *release, AsUrgencyKind urgency)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_if_fail (AS_IS_RELEASE (release));
 	priv->urgency = urgency;
 }
 
@@ -486,6 +507,7 @@ const gchar*
 as_release_get_description (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 	return as_context_localized_ht_get (priv->context,
 					    priv->description,
 					    priv->active_locale_override,
@@ -496,6 +518,7 @@ as_release_get_description (AsRelease *release)
  * as_release_set_description:
  * @release: a #AsRelease instance.
  * @description: the description markup.
+ * @locale: (nullable): the locale, or %NULL. e.g. "en_GB".
  *
  * Sets the description release markup.
  **/
@@ -503,6 +526,8 @@ void
 as_release_set_description (AsRelease *release, const gchar *description, const gchar *locale)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_if_fail (AS_IS_RELEASE (release));
+	g_return_if_fail (description != NULL);
 	as_context_localized_ht_set (priv->context,
 				     priv->description,
 				     description,
@@ -511,15 +536,20 @@ as_release_set_description (AsRelease *release, const gchar *description, const 
 
 /**
  * as_release_get_active_locale:
+ * @release: a #AsRelease instance.
  *
  * Get the current active locale, which
  * is used to get localized messages.
+ *
+ * Returns: the current active locale
  */
 const gchar*
 as_release_get_active_locale (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
 	const gchar *locale;
+
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 
 	/* return context locale, if the locale isn't explicitly overridden for this component */
 	if ((priv->context != NULL) && (priv->active_locale_override == NULL)) {
@@ -536,6 +566,8 @@ as_release_get_active_locale (AsRelease *release)
 
 /**
  * as_release_set_active_locale:
+ * @release: a #AsRelease instance.
+ * @locale: the locale. e.g. "en_GB".
  *
  * Set the current active locale, which
  * is used to get localized messages.
@@ -547,6 +579,9 @@ void
 as_release_set_active_locale (AsRelease *release, const gchar *locale)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+
+	g_return_if_fail (AS_IS_RELEASE (release));
+	g_return_if_fail (locale != NULL);
 
 	g_free (priv->active_locale_override);
 	priv->active_locale_override = g_strdup (locale);
@@ -566,6 +601,7 @@ GPtrArray*
 as_release_get_artifacts (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 	return priv->artifacts;
 }
 
@@ -582,6 +618,10 @@ void
 as_release_add_artifact (AsRelease *release, AsArtifact *artifact)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+
+	g_return_if_fail (AS_IS_RELEASE (release));
+	g_return_if_fail (AS_IS_ARTIFACT (artifact));
+
 	g_ptr_array_add (priv->artifacts, g_object_ref (artifact));
 }
 
@@ -598,6 +638,7 @@ GPtrArray*
 as_release_get_issues (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 	return priv->issues;
 }
 
@@ -614,6 +655,10 @@ void
 as_release_add_issue (AsRelease *release, AsIssue *issue)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+
+	g_return_if_fail (AS_IS_RELEASE (release));
+	g_return_if_fail (AS_IS_ISSUE (issue));
+
 	g_ptr_array_add (priv->issues, g_object_ref (issue));
 }
 
@@ -632,6 +677,8 @@ const gchar*
 as_release_get_url (AsRelease *release, AsReleaseUrlKind url_kind)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 
 	if (url_kind == AS_RELEASE_URL_KIND_DETAILS)
 		return priv->url_details;
@@ -653,6 +700,8 @@ as_release_set_url (AsRelease *release, AsReleaseUrlKind url_kind, const gchar *
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
 
+	g_return_if_fail (AS_IS_RELEASE (release));
+
 	if (url_kind == AS_RELEASE_URL_KIND_DETAILS)
 		as_assign_string_safe (priv->url_details, url);
 }
@@ -661,7 +710,7 @@ as_release_set_url (AsRelease *release, AsReleaseUrlKind url_kind, const gchar *
  * as_release_get_context:
  * @release: An instance of #AsRelease.
  *
- * Returns: the #AsContext associated with this release.
+ * Returns: (nullable): the #AsContext associated with this release.
  * This function may return %NULL if no context is set.
  *
  * Since: 0.11.2
@@ -670,6 +719,8 @@ AsContext*
 as_release_get_context (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
+
 	return priv->context;
 }
 
@@ -687,13 +738,12 @@ void
 as_release_set_context (AsRelease *release, AsContext *context)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
-	if (priv->context != NULL)
-		g_object_unref (priv->context);
-	priv->context = g_object_ref (context);
 
+	g_return_if_fail (AS_IS_RELEASE (release));
+
+	g_set_object (&priv->context, context);
 	/* reset individual properties, so the new context overrides them */
-	g_free (priv->active_locale_override);
-	priv->active_locale_override = NULL;
+	g_free (g_steal_pointer (&priv->active_locale_override));
 }
 
 /**
@@ -734,6 +784,7 @@ as_release_legacy_get_default_artifact (AsRelease *release)
 guint64
 as_release_get_size (AsRelease *release, AsSizeKind kind)
 {
+	g_return_val_if_fail (AS_IS_RELEASE (release), 0);
 	return as_artifact_get_size (as_release_legacy_get_default_artifact (release), kind);
 }
 
@@ -751,6 +802,7 @@ as_release_get_size (AsRelease *release, AsSizeKind kind)
 void
 as_release_set_size (AsRelease *release, guint64 size, AsSizeKind kind)
 {
+	g_return_if_fail (AS_IS_RELEASE (release));
 	return as_artifact_set_size (as_release_legacy_get_default_artifact (release), size, kind);
 }
 
@@ -767,6 +819,7 @@ as_release_set_size (AsRelease *release, guint64 size, AsSizeKind kind)
 GPtrArray*
 as_release_get_locations (AsRelease *release)
 {
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 	return as_artifact_get_locations (as_release_legacy_get_default_artifact (release));
 }
 
@@ -782,8 +835,13 @@ as_release_get_locations (AsRelease *release)
 void
 as_release_add_location (AsRelease *release, const gchar *location)
 {
-    AsArtifact *artifact = as_release_legacy_get_default_artifact (release);
-    as_artifact_add_location (artifact, location);
+	AsArtifact *artifact;
+
+	g_return_if_fail (AS_IS_RELEASE (release));
+	g_return_if_fail (location != NULL);
+
+	artifact = as_release_legacy_get_default_artifact (release);
+	as_artifact_add_location (artifact, location);
 }
 
 /**
@@ -799,6 +857,7 @@ as_release_add_location (AsRelease *release, const gchar *location)
 GPtrArray*
 as_release_get_checksums (AsRelease *release)
 {
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 	return as_artifact_get_checksums (as_release_legacy_get_default_artifact (release));
 }
 
@@ -816,6 +875,7 @@ as_release_get_checksums (AsRelease *release)
 AsChecksum*
 as_release_get_checksum (AsRelease *release, AsChecksumKind kind)
 {
+	g_return_val_if_fail (AS_IS_RELEASE (release), NULL);
 	return as_artifact_get_checksum (as_release_legacy_get_default_artifact (release), kind);
 }
 
@@ -832,6 +892,8 @@ as_release_get_checksum (AsRelease *release, AsChecksumKind kind)
 void
 as_release_add_checksum (AsRelease *release, AsChecksum *cs)
 {
+	g_return_if_fail (AS_IS_RELEASE (release));
+	g_return_if_fail (AS_IS_CHECKSUM (cs));
 	as_artifact_add_checksum (as_release_legacy_get_default_artifact (release), cs);
 }
 
@@ -848,6 +910,7 @@ gboolean
 as_release_description_translatable (AsRelease *release)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_val_if_fail (AS_IS_RELEASE (release), FALSE);
 	return priv->desc_translatable;
 }
 
@@ -863,6 +926,7 @@ void
 as_release_set_description_translatable (AsRelease *release, gboolean translatable)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
+	g_return_if_fail (AS_IS_RELEASE (release));
 	priv->desc_translatable = translatable;
 }
 
@@ -945,10 +1009,10 @@ as_release_load_from_xml (AsRelease *release, AsContext *ctx, xmlNode *node, GEr
 			}
 		} else if (g_strcmp0 ((gchar*) iter->name, "description") == 0) {
 			g_hash_table_remove_all (priv->description);
-			if (as_context_get_style (ctx) == AS_FORMAT_STYLE_COLLECTION) {
-				g_autofree gchar *lang;
+			if (as_context_get_style (ctx) == AS_FORMAT_STYLE_CATALOG) {
+				g_autofree gchar *lang = NULL;
 
-				/* for collection XML, the "description" tag has a language property, so parsing it is simple */
+				/* for catalog XML, the "description" tag has a language property, so parsing it is simple */
 				content = as_xml_dump_node_children (iter);
 				lang = as_xml_get_node_locale_match (ctx, iter);
 				if (lang != NULL)
@@ -969,12 +1033,14 @@ as_release_load_from_xml (AsRelease *release, AsContext *ctx, xmlNode *node, GEr
 			as_release_set_url (release, AS_RELEASE_URL_KIND_DETAILS, content);
 		} else if (g_strcmp0 ((gchar*) iter->name, "location") == 0) {
 			/* DEPRECATED */
+			#pragma GCC diagnostic push
 			#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 			content = as_xml_get_node_value (iter);
 			as_release_add_location (release, content);
 			#pragma GCC diagnostic pop
 		} else if (g_strcmp0 ((gchar*) iter->name, "checksum") == 0) {
 			/* DEPRECATED */
+			#pragma GCC diagnostic push
 			#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 			g_autoptr(AsChecksum) cs = NULL;
 
@@ -984,6 +1050,7 @@ as_release_load_from_xml (AsRelease *release, AsContext *ctx, xmlNode *node, GEr
 			#pragma GCC diagnostic pop
 		} else if (g_strcmp0 ((gchar*) iter->name, "size") == 0) {
 			/* DEPRECATED */
+			#pragma GCC diagnostic push
 			#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 			AsSizeKind s_kind;
 			prop = as_xml_get_prop_value (iter, "type");
@@ -1031,24 +1098,29 @@ as_release_to_xml_node (AsRelease *release, AsContext *ctx, xmlNode *root)
 	xmlNode *subnode;
 
 	/* set release version */
-	subnode = xmlNewChild (root, NULL, (xmlChar*) "release", (xmlChar*) "");
-	xmlNewProp (subnode, (xmlChar*) "type",
-		    (xmlChar*) as_release_kind_to_string (priv->kind));
-	xmlNewProp (subnode, (xmlChar*) "version", (xmlChar*) priv->version);
+	subnode = as_xml_add_node (root, "release");
+	as_xml_add_text_prop (subnode,
+			      "type",
+			      as_release_kind_to_string (priv->kind));
+	as_xml_add_text_prop (subnode,
+			      "version",
+			      priv->version);
 
 	/* set release timestamp / date */
 	if (priv->timestamp > 0) {
 		g_autofree gchar *time_str = NULL;
 
-		if (as_context_get_style (ctx) == AS_FORMAT_STYLE_COLLECTION) {
+		if (as_context_get_style (ctx) == AS_FORMAT_STYLE_CATALOG) {
 			time_str = g_strdup_printf ("%" G_GUINT64_FORMAT, priv->timestamp);
-			xmlNewProp (subnode, (xmlChar*) "timestamp",
-					(xmlChar*) time_str);
+			as_xml_add_text_prop (subnode,
+						"timestamp",
+						time_str);
 		} else {
 			g_autoptr(GDateTime) time = g_date_time_new_from_unix_utc (priv->timestamp);
-			time_str = as_date_time_format_iso8601 (time);
-			xmlNewProp (subnode, (xmlChar*) "date",
-					(xmlChar*) time_str);
+			time_str = g_date_time_format_iso8601 (time);
+			as_xml_add_text_prop (subnode,
+						"date",
+						time_str);
 		}
 	}
 
@@ -1071,11 +1143,11 @@ as_release_to_xml_node (AsRelease *release, AsContext *ctx, xmlNode *root)
 
 	/* add details URL */
 	if (priv->url_details != NULL)
-		xmlNewTextChild (subnode, NULL, (xmlChar*) "url", (xmlChar*) priv->url_details);
+		as_xml_add_text_node (subnode, "url", priv->url_details);
 
 	/* issues */
 	if (priv->issues->len > 0) {
-		xmlNode *n_issues = xmlNewChild (subnode, NULL, (xmlChar*) "issues", (xmlChar*) "");
+		xmlNode *n_issues = as_xml_add_node (subnode, "issues");
 		for (guint i = 0; i < priv->issues->len; i++) {
 			AsIssue *issue = AS_ISSUE (g_ptr_array_index (priv->issues, i));
 			as_issue_to_xml_node (issue, ctx, n_issues);
@@ -1084,7 +1156,7 @@ as_release_to_xml_node (AsRelease *release, AsContext *ctx, xmlNode *root)
 
 	/* artifacts */
 	if (priv->artifacts->len > 0) {
-		xmlNode *n_artifacts = xmlNewChild (subnode, NULL, (xmlChar*) "artifacts", (xmlChar*) "");
+		xmlNode *n_artifacts = as_xml_add_node (subnode, "artifacts");
 		for (guint i = 0; i < priv->artifacts->len; i++) {
 			AsArtifact *artifact = AS_ARTIFACT (g_ptr_array_index (priv->artifacts, i));
 			as_artifact_to_xml_node (artifact, ctx, n_artifacts);
@@ -1105,12 +1177,11 @@ gboolean
 as_release_load_from_yaml (AsRelease *release, AsContext *ctx, GNode *node, GError **error)
 {
 	AsReleasePrivate *priv = GET_PRIVATE (release);
-	GNode *n;
 
 	/* propagate locale */
 	as_release_set_context (release, ctx);
 
-	for (n = node->children; n != NULL; n = n->next) {
+	for (GNode *n = node->children; n != NULL; n = n->next) {
 		const gchar *key = as_yaml_node_get_key (n);
 		const gchar *value = as_yaml_node_get_value (n);
 
@@ -1121,8 +1192,8 @@ as_release_load_from_yaml (AsRelease *release, AsContext *ctx, GNode *node, GErr
 			if (time != NULL) {
 				priv->timestamp = g_date_time_to_unix (time);
 			} else {
-				// FIXME: Better error, maybe with line number?
-				g_debug ("Invalid ISO-8601 date in %s",
+				/* FIXME: Better error, maybe with line number? */
+				g_debug ("Invalid ISO-8601 release date in %s",
 					 as_context_get_filename (ctx));
 			}
 		} else if (g_strcmp0 (key, "date-eol") == 0) {
@@ -1140,12 +1211,12 @@ as_release_load_from_yaml (AsRelease *release, AsContext *ctx, GNode *node, GErr
 			AsReleaseUrlKind url_kind;
 
 			for (urls_n = n->children; urls_n != NULL; urls_n = urls_n->next) {
-				const gchar *key = as_yaml_node_get_key (urls_n);
-				const gchar *value = as_yaml_node_get_value (urls_n);
+				const gchar *c_key = as_yaml_node_get_key (urls_n);
+				const gchar *c_value = as_yaml_node_get_value (urls_n);
 
-				url_kind = as_release_url_kind_from_string (key);
-				if ((url_kind != AS_RELEASE_URL_KIND_UNKNOWN) && (value != NULL))
-					as_release_set_url (release, url_kind, value);
+				url_kind = as_release_url_kind_from_string (c_key);
+				if ((url_kind != AS_RELEASE_URL_KIND_UNKNOWN) && (c_value != NULL))
+					as_release_set_url (release, url_kind, c_value);
 			}
 
 		} else if (g_strcmp0 (key, "issues") == 0) {
@@ -1196,13 +1267,13 @@ as_release_emit_yaml (AsRelease *release, AsContext *ctx, yaml_emitter_t *emitte
 	if (priv->timestamp > 0) {
 		g_autofree gchar *time_str = NULL;
 
-		if (as_context_get_style (ctx) == AS_FORMAT_STYLE_COLLECTION) {
+		if (as_context_get_style (ctx) == AS_FORMAT_STYLE_CATALOG) {
 			as_yaml_emit_entry_timestamp (emitter,
 						      "unix-timestamp",
 						      priv->timestamp);
 		} else {
 			g_autoptr(GDateTime) time = g_date_time_new_from_unix_utc (priv->timestamp);
-			time_str = as_date_time_format_iso8601 (time);
+			time_str = g_date_time_format_iso8601 (time);
 			as_yaml_emit_entry (emitter, "date", time_str);
 		}
 	}

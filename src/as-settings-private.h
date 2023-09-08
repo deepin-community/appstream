@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -29,11 +29,6 @@ G_BEGIN_DECLS
 #define AS_INTERNAL_VISIBLE __attribute__((visibility("default")))
 
 #define AS_CONFIG_NAME "/etc/appstream.conf"
-#define AS_APPSTREAM_CACHE_PATH "/var/cache/app-info/cache"
-
-/* declared in as-data-pool.c */
-AS_INTERNAL_VISIBLE
-extern const gchar *AS_SYSTEM_COLLECTION_METADATA_PATHS[4];
 
 #pragma GCC visibility pop
 G_END_DECLS

@@ -1,6 +1,6 @@
 # IANA TLDs we recognize for AppStream IDs.
 # Derived from the full list at https://data.iana.org/TLD/tlds-alpha-by-domain.txt
-# Last updated on 2021-10-06
+# Last updated on 2023-01-24
 aaa
 aarp
 abb
@@ -9,7 +9,6 @@ able
 ac
 aco
 ad
-adac
 ads
 ae
 aeg
@@ -140,7 +139,6 @@ coop
 cpa
 cr
 crs
-csc
 cu
 cv
 cw
@@ -172,7 +170,6 @@ docs
 dog
 dot
 dtv
-duck
 dvag
 dvr
 dz
@@ -328,6 +325,7 @@ kg
 kh
 ki
 kia
+kids
 kim
 kiwi
 km
@@ -361,7 +359,6 @@ lk
 llc
 llp
 loan
-loft
 lol
 love
 lpl
@@ -454,7 +451,6 @@ nu
 nyc
 nz
 obi
-off
 ollo
 om
 one
@@ -504,8 +500,6 @@ pwc
 py
 qa
 qpon
-qvc
-raid
 re
 read
 red
@@ -545,7 +539,6 @@ sd
 se
 seat
 seek
-ses
 sew
 sex
 sexy

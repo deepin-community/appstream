@@ -1,20 +1,20 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
- * Licensed under the GNU General Public License Version 2
+ * Licensed under the GNU Lesser General Public License Version 2.1
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the license, or
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 2.1 of the license, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -26,6 +26,7 @@
 #include <stdio.h>
 
 #include "as-profile.h"
+#include "as-utils-private.h"
 
 #include "ascli-utils.h"
 #include "ascli-actions-mdata.h"
@@ -42,16 +43,16 @@ static gboolean optn_no_color = FALSE;
 
 /*** COMMAND OPTIONS ***/
 
-/* for data_collection_options */
+/* for data_catalog_options */
 static gchar *optn_cachepath = NULL;
 static gchar *optn_datapath = NULL;
 static gboolean optn_no_cache = FALSE;
 
 /**
  * General options used for any operations on
- * metadata collections and the cache.
+ * metadata catalogs and the cache.
  */
-const GOptionEntry data_collection_options[] = {
+const GOptionEntry data_catalog_options[] = {
 	{ "cachepath", 0, 0,
 		G_OPTION_ARG_STRING,
 		&optn_cachepath,
@@ -66,7 +67,7 @@ const GOptionEntry data_collection_options[] = {
 		G_OPTION_ARG_NONE,
 		&optn_no_cache,
 		/* TRANSLATORS: ascli flag description for: --no-cache */
-		N_("Make request without any caching."),
+		N_("Ignore cache age and build a fresh cache before performing the query."),
 		NULL },
 	{ NULL }
 };
@@ -105,7 +106,9 @@ const GOptionEntry find_options[] = {
 /* used by validate_options */
 static gboolean optn_pedantic = FALSE;
 static gboolean optn_explain = FALSE;
-static gboolean optn_nonet = FALSE;
+static gboolean optn_no_net = FALSE;
+static gboolean optn_validate_strict = FALSE;
+static gchar *optn_issue_overrides = NULL;
 
 /**
  * General options for validation.
@@ -123,17 +126,29 @@ const GOptionEntry validate_options[] = {
 		N_("Print detailed explanation for found issues."), NULL },
 	{ "no-net", (gchar) 0, 0,
 		G_OPTION_ARG_NONE,
-		&optn_nonet,
+		&optn_no_net,
 		/* TRANSLATORS: ascli flag description for: --no-net (used by the "validate" command) */
 		N_("Do not use network access."), NULL },
+	{ "strict", (gchar) 0, 0,
+		G_OPTION_ARG_NONE,
+		&optn_validate_strict,
+		/* TRANSLATORS: ascli flag description for: --strict (used by the "validate" command) */
+		N_("Fail validation if any issue is emitted that is not of pedantic severity."), NULL },
 	{ "format", 0, 0,
 		G_OPTION_ARG_STRING,
 		&optn_format,
 		/* TRANSLATORS: ascli flag description for: --format  when validating XML files */
 		N_("Format of the generated report (valid values are 'text' and 'yaml')."), NULL },
+	{ "override", 0, 0,
+		G_OPTION_ARG_STRING,
+		&optn_issue_overrides,
+		/* TRANSLATORS: ascli flag description for: --override  when validating XML files */
+		N_("Override the severities of selected issue tags."), NULL },
+
+	/* DEPRECATED */
 	{ "nonet", (gchar) 0, G_OPTION_FLAG_HIDDEN,
 		G_OPTION_ARG_NONE,
-		&optn_nonet,
+		&optn_no_net,
 		NULL, NULL },
 	{ NULL }
 };
@@ -236,7 +251,8 @@ as_client_run_refresh_cache (const gchar *command, char **argv, int argc)
 	g_autoptr(GOptionContext) opt_context = NULL;
 	gint ret;
 	gboolean optn_force = FALSE;
-	gboolean optn_user = FALSE;
+	g_auto(GStrv) optn_sources = NULL;
+	g_auto(GStrv) optn_sources_real = NULL;
 
 	const GOptionEntry refresh_options[] = {
 		{ "force", (gchar) 0, 0,
@@ -245,26 +261,33 @@ as_client_run_refresh_cache (const gchar *command, char **argv, int argc)
 			/* TRANSLATORS: ascli flag description for: --force */
 			_("Enforce a cache refresh."),
 			NULL },
-		{ "user", (gchar) 0, 0,
-			G_OPTION_ARG_NONE,
-			&optn_user,
-			/* TRANSLATORS: ascli flag description for: --user */
-			_("Update the user-specific instead of the system-wide cache."),
+		{ "source", (gchar) 0, 0,
+			G_OPTION_ARG_STRING_ARRAY,
+			&optn_sources,
+			/* TRANSLATORS: ascli flag description for: --source in a refresh action. Don't translate strings in backticks: `name` */
+			_("Limit cache refresh to data from a specific source, e.g. `os` or `flatpak`. May be specified multiple times."),
 			NULL },
 		{ NULL }
 	};
 
 	opt_context = as_client_new_subcommand_option_context (command, refresh_options);
-	g_option_context_add_main_entries (opt_context, data_collection_options, NULL);
+	g_option_context_add_main_entries (opt_context, data_catalog_options, NULL);
 
 	ret = as_client_option_context_parse (opt_context,
 					      command, &argc, &argv);
 	if (ret != 0)
 		return ret;
 
+	if (optn_sources != NULL) {
+		if (g_strv_length (optn_sources) == 1)
+			optn_sources_real = g_strsplit (optn_sources[0], ",", -1);
+		else
+			optn_sources_real = g_steal_pointer (&optn_sources);
+	}
+
 	return ascli_refresh_cache (optn_cachepath,
 				    optn_datapath,
-				    optn_user,
+				    (const gchar * const*) optn_sources_real,
 				    optn_force);
 }
 
@@ -281,7 +304,7 @@ as_client_run_search (const gchar *command, char **argv, int argc)
 	gint ret;
 
 	opt_context = as_client_new_subcommand_option_context (command, find_options);
-	g_option_context_add_main_entries (opt_context, data_collection_options, NULL);
+	g_option_context_add_main_entries (opt_context, data_catalog_options, NULL);
 
 	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
 	if (ret != 0)
@@ -317,7 +340,7 @@ as_client_run_get (const gchar *command, char **argv, int argc)
 	const gchar *value = NULL;
 
 	opt_context = as_client_new_subcommand_option_context (command, find_options);
-	g_option_context_add_main_entries (opt_context, data_collection_options, NULL);
+	g_option_context_add_main_entries (opt_context, data_catalog_options, NULL);
 
 	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
 	if (ret != 0)
@@ -345,7 +368,7 @@ as_client_run_dump (const gchar *command, char **argv, int argc)
 	const gchar *value = NULL;
 	AsFormatKind mformat;
 
-	opt_context = as_client_new_subcommand_option_context (command, data_collection_options);
+	opt_context = as_client_new_subcommand_option_context (command, data_catalog_options);
 	g_option_context_add_main_entries (opt_context, format_options, NULL);
 
 	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
@@ -376,7 +399,7 @@ as_client_run_what_provides (const gchar *command, char **argv, int argc)
 	const gchar *vvalue = NULL;
 
 	opt_context = as_client_new_subcommand_option_context (command, find_options);
-	g_option_context_add_main_entries (opt_context, data_collection_options, NULL);
+	g_option_context_add_main_entries (opt_context, data_catalog_options, NULL);
 
 	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
 	if (ret != 0)
@@ -391,6 +414,37 @@ as_client_run_what_provides (const gchar *command, char **argv, int argc)
 				    vtype,
 				    vvalue,
 				    optn_details);
+}
+
+/**
+ * as_client_run_list_categories:
+ *
+ * Find components that are in the listed categories.
+ */
+static int
+as_client_run_list_categories (const gchar *command, char **argv, int argc)
+{
+	g_autoptr(GOptionContext) opt_context = NULL;
+	gint ret;
+	g_auto(GStrv) categories = NULL;
+
+	opt_context = as_client_new_subcommand_option_context (command, find_options);
+	g_option_context_add_main_entries (opt_context, data_catalog_options, NULL);
+
+	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
+	if (ret != 0)
+		return ret;
+
+	if (argc > 2) {
+		categories = g_new0 (gchar*, argc - 1);
+		for (gint i = 0; i < (argc - 2); i++)
+			categories[i] = g_strdup (argv[i + 2]);
+	}
+
+	return ascli_list_categories (optn_cachepath,
+					categories,
+					optn_details,
+					optn_no_cache);
 }
 
 /**
@@ -414,12 +468,16 @@ as_client_run_validate (const gchar *command, char **argv, int argc)
 					     argc-2,
 					     optn_pedantic,
 					     optn_explain,
-					     !optn_nonet);
+					     optn_validate_strict,
+					     !optn_no_net,
+					     optn_issue_overrides);
 	} else {
 		return ascli_validate_files_format (&argv[2],
 						    argc-2,
 						    optn_format,
-						    !optn_nonet);
+						    optn_validate_strict,
+						    !optn_no_net,
+						    optn_issue_overrides);
 	}
 }
 
@@ -448,11 +506,15 @@ as_client_run_validate_tree (const gchar *command, char **argv, int argc)
 		return ascli_validate_tree (value,
 					    optn_pedantic,
 					    optn_explain,
-					    !optn_nonet);
+					    optn_validate_strict,
+					    !optn_no_net,
+					    optn_issue_overrides);
 	} else {
 		return ascli_validate_tree_format (value,
 						   optn_format,
-						   !optn_nonet);
+						   optn_validate_strict,
+						   !optn_no_net,
+						   optn_issue_overrides);
 	}
 }
 
@@ -481,6 +543,33 @@ as_client_run_check_license (const gchar *command, char **argv, int argc)
 }
 
 /**
+ * as_client_run_is_satisfied:
+ *
+ * Test if a component has its relations satisfied on the current system.
+ */
+static int
+as_client_run_is_satisfied (const gchar *command, char **argv, int argc)
+{
+	g_autoptr(GOptionContext) opt_context = NULL;
+	gint ret;
+	const gchar *fname_or_cid = NULL;
+
+	opt_context = as_client_new_subcommand_option_context (command, find_options);
+	g_option_context_add_main_entries (opt_context, data_catalog_options, NULL);
+
+	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
+	if (ret != 0)
+		return ret;
+
+	if (argc > 2)
+		fname_or_cid = argv[2];
+
+	return ascli_check_is_satisfied (fname_or_cid,
+					 optn_cachepath,
+					 optn_no_cache);
+}
+
+/**
  * as_client_run_put:
  *
  * Place a metadata file in the right directory.
@@ -499,7 +588,7 @@ as_client_run_put (const gchar *command, char **argv, int argc)
 			G_OPTION_ARG_STRING,
 			&optn_origin,
 			/* TRANSLATORS: ascli flag description for: --origin (part of the "put" subcommand) */
-			N_("Set the data origin for the installed metadata collection file."), NULL },
+			N_("Set the data origin for the installed metadata catalog file."), NULL },
 		{ "user", 0, 0,
 			G_OPTION_ARG_NONE,
 			&optn_usermode,
@@ -524,6 +613,24 @@ as_client_run_put (const gchar *command, char **argv, int argc)
 	return ascli_put_metainfo (fname, optn_origin, optn_usermode);
 }
 
+static const gchar *optn_bundle_type = NULL;
+static gboolean optn_choose_first = FALSE;
+
+const GOptionEntry pkgmanage_options[] = {
+	{ "bundle-type", 0, 0,
+		G_OPTION_ARG_STRING,
+		&optn_bundle_type,
+		/* TRANSLATORS: ascli flag description for: --bundle-type (part of the "remove" and "install" subcommands) */
+		N_("Limit the command to use only components from the given bundling system (`flatpak` or `package`)."), NULL },
+	{ "first", 0, 0,
+		G_OPTION_ARG_NONE,
+		&optn_choose_first,
+		/* TRANSLATORS: ascli flag description for: --first (part of the "remove" and "install" subcommands) */
+		N_("Do not ask for which software component should be used and always choose the first entry."),
+		NULL },
+	{ NULL }
+};
+
 /**
  * as_client_run_install:
  *
@@ -532,7 +639,15 @@ as_client_run_put (const gchar *command, char **argv, int argc)
 static int
 as_client_run_install (const gchar *command, char **argv, int argc)
 {
+	g_autoptr(GOptionContext) opt_context = NULL;
 	const gchar *value = NULL;
+	AsBundleKind bundle_kind;
+	gint ret;
+
+	opt_context = as_client_new_subcommand_option_context (command, pkgmanage_options);
+	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
+	if (ret != 0)
+		return ret;
 
 	if (argc > 2)
 		value = argv[2];
@@ -541,7 +656,16 @@ as_client_run_install (const gchar *command, char **argv, int argc)
 		return 1;
 	}
 
-	return ascli_install_component (value);
+	bundle_kind = as_bundle_kind_from_string (optn_bundle_type);
+	if (optn_bundle_type != NULL && bundle_kind == AS_BUNDLE_KIND_UNKNOWN) {
+		/* TRANSLATORS: ascli install currently only supports two values for --bundle-type. */
+		ascli_print_stderr (_("No valid bundle kind was specified. Only `package` and `flatpak` are currently recognized."));
+		return ASCLI_EXIT_CODE_BAD_INPUT;
+	}
+
+	return ascli_install_component (value,
+					bundle_kind,
+					optn_choose_first);
 }
 
 /**
@@ -552,7 +676,15 @@ as_client_run_install (const gchar *command, char **argv, int argc)
 static int
 as_client_run_remove (const gchar *command, char **argv, int argc)
 {
+	g_autoptr(GOptionContext) opt_context = NULL;
 	const gchar *value = NULL;
+	AsBundleKind bundle_kind;
+	gint ret;
+
+	opt_context = as_client_new_subcommand_option_context (command, pkgmanage_options);
+	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
+	if (ret != 0)
+		return ret;
 
 	if (argc > 2)
 		value = argv[2];
@@ -561,7 +693,16 @@ as_client_run_remove (const gchar *command, char **argv, int argc)
 		return 1;
 	}
 
-	return ascli_remove_component (value);
+	bundle_kind = as_bundle_kind_from_string (optn_bundle_type);
+	if (optn_bundle_type != NULL && bundle_kind == AS_BUNDLE_KIND_UNKNOWN) {
+		/* TRANSLATORS: ascli install currently only supports two values for --bundle-type. */
+		ascli_print_stderr (_("No valid bundle kind was specified. Only `package` and `flatpak` are currently recognized."));
+		return ASCLI_EXIT_CODE_BAD_INPUT;
+	}
+
+	return ascli_remove_component (value,
+					bundle_kind,
+					optn_choose_first);
 }
 
 /**
@@ -581,18 +722,18 @@ as_client_run_status (const gchar *command, char **argv, int argc)
 }
 
 /**
- * as_client_run_os_info:
+ * as_client_run_sysinfo:
  *
- * Show information about the current operating system.
+ * Show information about the current operating system and device.
  */
 static int
-as_client_run_os_info (const gchar *command, char **argv, int argc)
+as_client_run_sysinfo (const gchar *command, char **argv, int argc)
 {
 	g_autoptr(GOptionContext) opt_context = NULL;
 	gint ret;
 
 	opt_context = as_client_new_subcommand_option_context (command, find_options);
-	g_option_context_add_main_entries (opt_context, data_collection_options, NULL);
+	g_option_context_add_main_entries (opt_context, data_catalog_options, NULL);
 
 	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
 	if (ret != 0)
@@ -603,7 +744,7 @@ as_client_run_os_info (const gchar *command, char **argv, int argc)
 		return 1;
 	}
 
-	return ascli_show_os_info (optn_cachepath, optn_no_cache);
+	return ascli_show_sysinfo (optn_cachepath, optn_no_cache, optn_details);
 }
 
 /**
@@ -838,7 +979,7 @@ as_client_run_news_to_metainfo (const gchar *command, char **argv, int argc)
 			G_OPTION_ARG_STRING,
 			&optn_format_text,
 			/* TRANSLATORS: ascli flag description for: --format as part of the news-to-metainfo command */
-			N_("Assume the input file is in the selected format ('yaml' or 'text')."),
+			N_("Assume the input file is in the selected format ('yaml', 'text' or 'markdown')."),
 			NULL },
 		{ "limit", 'l', 0,
 			G_OPTION_ARG_INT,
@@ -894,7 +1035,7 @@ as_client_run_metainfo_to_news (const gchar *command, char **argv, int argc)
 			G_OPTION_ARG_STRING,
 			&optn_format_text,
 			/* TRANSLATORS: ascli flag description for: --format as part of the metainfo-to-news command */
-			N_("Generate the output in the selected format ('yaml' or 'text')."), NULL },
+			N_("Generate the output in the selected format ('yaml', 'text' or 'markdown')."), NULL },
 		{ NULL }
 	};
 
@@ -914,6 +1055,15 @@ as_client_run_metainfo_to_news (const gchar *command, char **argv, int argc)
 }
 
 /**
+ * as_client_check_compose_available:
+ */
+static gboolean
+as_client_check_compose_available (void)
+{
+	return g_file_test (LIBEXECDIR "/appstreamcli-compose", G_FILE_TEST_EXISTS);
+}
+
+/**
  * as_client_run_compose:
  *
  * Delegate the "compose" command to the appstream-compose binary,
@@ -926,7 +1076,11 @@ as_client_run_compose (const gchar *command, char **argv, int argc)
 	g_autofree const gchar **asc_argv = NULL;
 
 	if (!g_file_test (ascompose_exe, G_FILE_TEST_EXISTS)) {
+		/* TRANSLATORS: appstreamcli-compose was not found */
 		ascli_print_stderr (_("Compose binary '%s' was not found! Can not continue."), ascompose_exe);
+		/* TRANSLATORS: appstreamcli-compose was not found - info text */
+		ascli_print_stderr (_("You may be able to install the AppStream Compose addon via: `%s`"),
+				    "sudo appstreamcli install org.freedesktop.appstream.compose");
 		return 4;
 	}
 
@@ -1014,6 +1168,7 @@ static gchar*
 as_client_get_help_summary (GPtrArray *commands)
 {
 	guint current_block_id = 0;
+	gboolean compose_available = FALSE;
 	g_autoptr(GArray) blocks_maxlen = NULL;
 	GString *string = g_string_new ("");
 
@@ -1022,6 +1177,7 @@ as_client_get_help_summary (GPtrArray *commands)
 				/* these are commands we can use with appstreamcli */
 				_("Subcommands:"));
 
+	compose_available = as_client_check_compose_available ();
 	blocks_maxlen = g_array_new (FALSE, FALSE, sizeof (guint));
 	for (guint i = 0; i < commands->len; i++) {
 		guint nlen;
@@ -1044,6 +1200,10 @@ as_client_get_help_summary (GPtrArray *commands)
 		guint synopsis_len;
 		g_autofree gchar *summary_wrap = NULL;
 		AsCliCommandItem *item = (AsCliCommandItem *) g_ptr_array_index (commands, i);
+
+		/* don't display compose help if ascompose binary was not found */
+		if (!compose_available && g_strcmp0 (item->name, "compose") == 0)
+			continue;
 
 		if (item->block_id != current_block_id) {
 			current_block_id = item->block_id;
@@ -1151,6 +1311,11 @@ as_client_run (char **argv, int argc)
 			/* TRANSLATORS: `appstreamcli what-provides` command description. */
 			_("Get components which provide the given item. Needs an item type (e.g. lib, bin, python3, …) and item value as parameter."),
 			as_client_run_what_provides);
+	ascli_add_cmd (commands,
+			0, "list-categories", NULL, "NAMES",
+			/* TRANSLATORS: `appstreamcli list-categories` command description. */
+			_("List components that are part of the specified categories."),
+			as_client_run_list_categories);
 
 	ascli_add_cmd (commands,
 			1, "dump", NULL, "COMPONENT-ID",
@@ -1178,6 +1343,11 @@ as_client_run (char **argv, int argc)
 			/* TRANSLATORS: `appstreamcli `check-license` command description. */
 			_("Check license string for validity and print details about it."),
 			as_client_run_check_license);
+	ascli_add_cmd (commands,
+			2, "is-satisfied", NULL, "FILE|COMPONENT-ID",
+			/* TRANSLATORS: `appstreamcli `check-license` command description. */
+			_("Check if requirements of a component (via its ID or MetaInfo file) are satisfied on this system."),
+			as_client_run_is_satisfied);
 
 	ascli_add_cmd (commands,
 			3, "install", NULL, "COMPONENT-ID",
@@ -1196,10 +1366,10 @@ as_client_run (char **argv, int argc)
 			_("Display status information about available AppStream metadata."),
 			as_client_run_status);
 	ascli_add_cmd (commands,
-			4, "os-info", NULL, NULL,
-			/* TRANSLATORS: `appstreamcli os-info` command description. */
-			_("Show information about the current operating system from the metadata index."),
-			as_client_run_os_info);
+			4, "sysinfo", NULL, NULL,
+			/* TRANSLATORS: `appstreamcli sysinfo` command description. */
+			_("Show information about the current device and used operating system."),
+			as_client_run_sysinfo);
 	ascli_add_cmd (commands,
 			4, "put", NULL, "FILE",
 			/* TRANSLATORS: `appstreamcli put` command description. */
@@ -1207,11 +1377,11 @@ as_client_run (char **argv, int argc)
 			as_client_run_put);
 	ascli_add_cmd (commands,
 			4, "convert", NULL, "FILE FILE",
-			/* TRANSLATORS: `appstreamcli convert` command description. "Collection XML" is a term describing a specific type of AppStream XML data. */
-			_("Convert collection XML to YAML or vice versa."),
+			/* TRANSLATORS: `appstreamcli convert` command description. "Catalog XML" is a term describing a specific type of AppStream XML data. */
+			_("Convert metadata catalog XML to YAML or vice versa."),
 			as_client_run_convert);
 	ascli_add_cmd (commands,
-			4, "compare-versions", "vercmp", "VER1 [COMP] VER2",
+			4, "vercmp", "compare-versions", "VER1 [COMP] VER2",
 			/* TRANSLATORS: `appstreamcli vercmp` command description. */
 			_("Compare two version numbers."),
 			as_client_run_compare_versions);
@@ -1236,12 +1406,11 @@ as_client_run (char **argv, int argc)
 			/* TRANSLATORS: `appstreamcli metainfo-to-news` command description. */
 			_("Write NEWS text or YAML file with information from a metainfo file."),
 			as_client_run_metainfo_to_news);
-	if (g_file_test (LIBEXECDIR "/appstreamcli-compose", G_FILE_TEST_EXISTS))
-		ascli_add_cmd (commands,
-				5, "compose", NULL, NULL,
-				/* TRANSLATORS: `appstreamcli compose` command description. */
-				_("Compose AppStream collection metadata from directory trees."),
-				as_client_run_compose);
+	ascli_add_cmd (commands,
+			5, "compose", NULL, NULL,
+			/* TRANSLATORS: `appstreamcli compose` command description. */
+			_("Compose AppStream metadata catalog from directory trees."),
+			as_client_run_compose);
 
 	/* we handle the unknown options later in the individual subcommands */
 	g_option_context_set_ignore_unknown_options (opt_context, TRUE);
@@ -1288,7 +1457,16 @@ as_client_run (char **argv, int argc)
 	/* allow disabling network access via an environment variable */
 	if (g_getenv ("AS_VALIDATE_NONET") != NULL) {
 		g_debug ("Disabling network usage: Environment variable AS_VALIDATE_NONET is set.");
-		optn_nonet = TRUE;
+		optn_no_net = TRUE;
+	}
+
+	/* set some global defaults, in case we run as root in an unsafe environment */
+	if (as_utils_is_root ()) {
+		/* users umask shouldn't interfere with us creating new files when we are root */
+		as_reset_umask ();
+
+		/* ensure we never start gvfsd as root: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=852696 */
+		g_setenv ("GIO_USE_VFS", "local", TRUE);
 	}
 
 	ascli_set_output_colored (!optn_no_color);
@@ -1297,7 +1475,7 @@ as_client_run (char **argv, int argc)
 	if (!isatty (fileno (stdout)))
 		ascli_set_output_colored (FALSE);
 
-	/* don't let gvfsd start it's own session bus: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=852696 */
+	/* don't let gvfsd start its own session bus: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=852696 */
 	g_setenv ("GIO_USE_VFS", "local", TRUE);
 
 	/* prepare profiler */

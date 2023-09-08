@@ -1,6 +1,5 @@
 # Meson definition for AppStream Documentation
 
-
 #
 # Manual pages
 #
@@ -59,10 +58,10 @@ as_doc_src = [
     'xml/AppStream.xml',
     'xml/Author_Group.xml',
     'xml/Book_Info.xml',
-    'xml/CollectionData.xml',
-    'xml/collection-iconcache.xml',
-    'xml/collection-xmldata.xml',
-    'xml/collection-yamldata.xml',
+    'xml/CatalogData.xml',
+    'xml/catalog-iconcache.xml',
+    'xml/catalog-xmldata.xml',
+    'xml/catalog-yamldata.xml',
     'xml/Legal_Notice.xml',
     'xml/man/appstreamcli.1.xml',
     'xml/Manpages.xml',
@@ -83,6 +82,7 @@ as_doc_src = [
     'xml/metainfo-runtime.xml',
     'xml/metainfo-service.xml',
     'xml/metainfo-webapp.xml',
+    'xml/releases-data.xml',
     'xml/Miscellaneous.xml',
     'xml/misc-vercmp.xml',
     'xml/misc-urihandler.xml',
@@ -94,6 +94,7 @@ as_doc_src = [
     'xml/quickstart-translation.xml',
 ]
 
+hljs_installed_file = '/usr/share/javascript/highlight.js/highlight.min.js'
 if get_option('docs')
     daps_exe = find_program('daps')
     python_exe = find_program('python3', 'python')
@@ -120,12 +121,13 @@ if get_option('docs')
 
     if get_option('install-docs')
         install_subdir('html', install_dir: as_doc_target_dir)
-
-        meson.add_install_script('sh', '-c',
-                          'if [ -f "@0@" ]; then mkdir -p $DESTDIR/@1@ && ln -sf @0@ $DESTDIR/@1@; fi'
-                          .format('/usr/share/javascript/highlight.js/highlight.min.js',
-                                  join_paths(get_option('prefix'), as_doc_target_dir, 'html', 'static', 'js'))
-        )
+        if fs.is_file(hljs_installed_file)
+            install_symlink(
+                'highlight.min.js',
+                pointing_to: hljs_installed_file,
+                install_dir: join_paths(get_option('prefix'), as_doc_target_dir, 'html', 'static', 'js')
+            )
+        endif
     endif
 
     # add an extra testcase for documentation validation
@@ -133,17 +135,19 @@ if get_option('docs')
           python_exe,
           args: [join_paths(meson.current_source_dir(), 'doc-build-helper.py'),
                  '--validate',
-                 '--src', meson.current_source_dir()]
+                 '--src', meson.current_source_dir()],
+          timeout: 60
     )
 elif get_option('install-docs')
-    if run_command('[', '-d', join_paths(meson.current_source_dir(), 'html'), ']').returncode() == 0
+    if fs.is_dir(join_paths(meson.current_source_dir(), 'html'))
         # install documentation, if it exists
         install_subdir('html', install_dir: as_doc_target_dir)
-
-        meson.add_install_script('sh', '-c',
-                          'if [ -f "@0@" ]; then mkdir -p $DESTDIR/@1@ && ln -sf @0@ $DESTDIR/@1@; fi'
-                          .format('/usr/share/javascript/highlight.js/highlight.min.js',
-                                  join_paths(get_option('prefix'), as_doc_target_dir, 'html', 'static', 'js'))
-        )
+        if fs.is_file(hljs_installed_file)
+            install_symlink(
+                'highlight.min.js',
+                pointing_to: hljs_installed_file,
+                install_dir: join_paths(get_option('prefix'), as_doc_target_dir, 'html', 'static', 'js')
+            )
+        endif
     endif
 endif

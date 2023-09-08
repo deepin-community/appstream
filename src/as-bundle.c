@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -24,7 +24,7 @@
  * @include: appstream.h
  *
  * This class provides information contained in an AppStream bundle tag.
- * See https://www.freedesktop.org/software/appstream/docs/chap-CollectionData.html#tag-ct-bundle
+ * See https://www.freedesktop.org/software/appstream/docs/chap-CatalogData.html#tag-ct-bundle
  * for more information.
  *
  * See also: #AsComponent
@@ -210,7 +210,7 @@ as_bundle_load_from_xml (AsBundle *bundle, AsContext *ctx, xmlNode *node, GError
 	if (content == NULL)
 		return FALSE;
 
-	type_str = (gchar*) xmlGetProp (node, (xmlChar*) "type");
+	type_str = as_xml_get_prop_value (node, "type");
 	priv->kind = as_bundle_kind_from_string (type_str);
 	if (priv->kind == AS_BUNDLE_KIND_UNKNOWN)
 		priv->kind = AS_BUNDLE_KIND_LIMBA;
@@ -237,12 +237,8 @@ as_bundle_to_xml_node (AsBundle *bundle, AsContext *ctx, xmlNode *root)
 	if (priv->id == NULL)
 		return;
 
-	n = xmlNewTextChild (root, NULL,
-			     (xmlChar*) "bundle",
-			     (xmlChar*) priv->id);
-	xmlNewProp (n,
-		    (xmlChar*) "type",
-		    (xmlChar*) as_bundle_kind_to_string (priv->kind));
+	n = as_xml_add_text_node (root, "bundle", priv->id);
+	as_xml_add_text_prop (n, "type", as_bundle_kind_to_string (priv->kind));
 }
 
 /**

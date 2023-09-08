@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2014 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -265,6 +265,39 @@ as_screenshot_add_image (AsScreenshot *screenshot, AsImage *image)
 }
 
 /**
+ * as_screenshot_clear_images:
+ * @screenshot: a #AsScreenshot instance.
+ *
+ * Remove all images associated with this screenshot.
+ *
+ * Since: 0.15.4
+ **/
+void
+as_screenshot_clear_images (AsScreenshot *screenshot)
+{
+	AsScreenshotPrivate *priv = GET_PRIVATE (screenshot);
+
+	g_ptr_array_remove_range (priv->images, 0, priv->images->len);
+	g_ptr_array_remove_range (priv->images_lang, 0, priv->images_lang->len);
+}
+
+/**
+ * as_screenshot_get_videos_all:
+ * @screenshot: a #AsScreenshot instance.
+ *
+ * Returns an array of all screencast videos we have, regardless of their
+ * size and locale.
+ *
+ * Returns: (transfer none) (element-type AsVideo): an array
+ **/
+GPtrArray*
+as_screenshot_get_videos_all (AsScreenshot *screenshot)
+{
+	AsScreenshotPrivate *priv = GET_PRIVATE (screenshot);
+	return priv->images;
+}
+
+/**
  * as_screenshot_get_videos:
  * @screenshot: a #AsScreenshot instance.
  *
@@ -395,11 +428,10 @@ as_screenshot_get_active_locale (AsScreenshot *screenshot)
 	const gchar *locale;
 
 	/* return context locale, if the locale isn't explicitly overridden for this component */
-	if ((priv->context != NULL) && (priv->active_locale_override == NULL)) {
+	if (priv->context != NULL && priv->active_locale_override == NULL)
 		locale = as_context_get_locale (priv->context);
-	} else {
+	else
 		locale = priv->active_locale_override;
-	}
 
 	if (locale == NULL)
 		return "C";
@@ -481,8 +513,7 @@ as_screenshot_set_context (AsScreenshot *screenshot, AsContext *context)
 	priv->context = g_object_ref (context);
 
 	/* reset individual properties, so the new context overrides them */
-	g_free (priv->active_locale_override);
-	priv->active_locale_override = NULL;
+	g_free (g_steal_pointer (&priv->active_locale_override));
 
 	as_screenshot_rebuild_suitable_media_list (screenshot);
 }
@@ -504,7 +535,7 @@ as_screenshot_load_from_xml (AsScreenshot *screenshot, AsContext *ctx, xmlNode *
 	g_autofree gchar *prop = NULL;
 	gboolean children_found = FALSE;
 
-	prop = (gchar*) xmlGetProp (node, (xmlChar*) "type");
+	prop = as_xml_get_prop_value (node, "type");
 	if (g_strcmp0 (prop, "default") == 0)
 		priv->kind = AS_SCREENSHOT_KIND_DEFAULT;
 	else
@@ -573,9 +604,9 @@ as_screenshot_to_xml_node (AsScreenshot *screenshot, AsContext *ctx, xmlNode *ro
 	AsScreenshotPrivate *priv = GET_PRIVATE (screenshot);
 	xmlNode *subnode;
 
-	subnode = xmlNewChild (root, NULL, (xmlChar*) "screenshot", NULL);
+	subnode = as_xml_add_node (root, "screenshot");
 	if (priv->kind == AS_SCREENSHOT_KIND_DEFAULT)
-		xmlNewProp (subnode, (xmlChar*) "type", (xmlChar*) "default");
+		as_xml_add_text_prop (subnode, "type", "default");
 
 	as_xml_add_localized_text_node (subnode, "caption", priv->caption);
 

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -22,6 +22,8 @@
 #define __AS_CONTEXT_PRIVATE_H
 
 #include "as-context.h"
+#include "as-component.h"
+#include "as-curl.h"
 
 G_BEGIN_DECLS
 #pragma GCC visibility push(hidden)
@@ -42,6 +44,9 @@ void			as_context_localized_ht_set (AsContext *ctx,
 						     GHashTable *lht,
 						     const gchar *value,
 						     const gchar *locale);
+
+AsCurl			*as_context_get_curl (AsContext *ctx,
+					      GError **error);
 
 #pragma GCC visibility pop
 G_END_DECLS

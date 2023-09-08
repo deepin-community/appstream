@@ -1,13 +1,13 @@
 project('AppStream', 'c',
-  meson_version: '>=0.48',
+  meson_version: '>=0.62',
   default_options: ['c_std=c11', 'cpp_std=gnu++14'],
 
-  license: 'LGPL-2.1+ and GPL-2.0+',
-  version: '0.14.6',
+  license: 'LGPL-2.1+',
+  version: '0.16.1',
 )
 
 cc = meson.get_compiler('c')
-source_root = meson.source_root()
+source_root = meson.project_source_root()
 
 as_version = meson.project_version()
 as_api_level = '4'
@@ -47,8 +47,11 @@ conf.set_quoted('BINDIR',
 conf.set_quoted('SYSCONFDIR',
                 join_paths(get_option('prefix'),
                            get_option('sysconfdir')))
+conf.set('_DEFAULT_SOURCE', true)
 conf.set('HAVE_APT_SUPPORT', get_option('apt-support'))
 conf.set('HAVE_STEMMING', get_option('stemming'))
+conf.set('HAVE_SYSTEMD', get_option('systemd'))
+conf.set('HAVE_SVG_SUPPORT', get_option('svg-support'))
 
 configure_file(output: 'config.h', configuration: conf)
 root_inc_dir = include_directories ('.')
@@ -64,43 +67,105 @@ if get_option('maintainer')
                          '-Wcast-align',
                          '-Wno-uninitialized',
                          '-Wempty-body',
-                         '-Wformat-security',
                          '-Winit-self',
                          '-Wnull-dereference',
                          '-Wfloat-equal',
-                         #'-Wformat-signedness',
-                         '-Winline'
+                         '-Winline',
+                         '-Wno-error=comment',
     ]
     add_project_arguments(maintainer_c_args, language: 'c')
     add_project_arguments(maintainer_c_args, language: 'cpp')
 endif
 
+if get_option('static-analysis') and host_machine.system() != 'windows'
+  if cc.get_id() != 'gcc'
+    error('You need to compile with GCC to run the static analyzer!')
+  endif
+
+  # enable statuc analyzer
+  add_project_arguments(['-fanalyzer'], language : 'c')
+
+  # silence false-positives for NULL dereference.
+  # GCC does not appear to recognize that functions like as_is_empty()
+  # ensure that a pointer can not be NULL, and therefore is emitting it
+  # even in cases where it shouldn't.
+  add_project_arguments(['-Wno-analyzer-null-dereference'], language : 'c')
+
+  # make false-positive non-fatal with GCC 12 for now
+  if cc.version().version_compare('>11<13')
+    add_project_arguments(['-Wno-error=analyzer-use-of-uninitialized-value'], language : 'c')
+  endif
+endif
+
 # a few compiler warning flags we always want enabled
-add_project_arguments('-Werror=implicit-function-declaration', '-Wno-unused-parameter', language: 'c')
-add_project_arguments('-Wno-unused-parameter', language: 'cpp')
-add_project_arguments('-DAS_COMPILATION', language: 'c')
+add_project_arguments(
+  cc.get_supported_arguments([
+    '-Werror=shadow',
+    '-Werror=empty-body',
+    '-Werror=strict-prototypes',
+    '-Werror=missing-prototypes',
+    '-Werror=implicit-function-declaration',
+    '-Werror=pointer-arith',
+    '-Werror=missing-declarations',
+    '-Werror=return-type',
+    '-Werror=int-conversion',
+    '-Werror=incompatible-pointer-types',
+    '-Werror=misleading-indentation',
+    '-Werror=missing-include-dirs',
+    '-Werror=declaration-after-statement',
+    '-Werror=format-security',
+
+    '-Wno-missing-field-initializers',
+    '-Wno-error=missing-field-initializers',
+    '-Wno-unused-parameter',
+    '-Wno-error=unused-parameter',
+  ]),
+  language: 'c'
+)
+add_project_arguments(
+  '-Wno-unused-parameter',
+  '-Werror=shadow',
+  '-Werror=empty-body',
+  '-Werror=pointer-arith',
+  '-Werror=init-self',
+  '-Werror=missing-declarations',
+  '-Werror=return-type',
+  '-Werror=misleading-indentation',
+  '-Werror=format-security',
+
+  # NOTE: Can be removed with AppStream 1.0
+  '-Wno-error=c++20-compat',
+  language: 'cpp'
+)
 
 # Vendor extensions in system headers
-add_project_arguments('-D_POSIX_C_SOURCE=200112L', language: 'c')
+add_project_arguments('-D_POSIX_C_SOURCE=200809L', language: 'c')
+
+if cc.get_id() == 'clang'
+    # Clang doesn't understand autofree helpers on GMutexLocker and thinks
+    # these variables are irrelevant, so this warning when used with Clang
+    # gives many false-positives
+    add_project_arguments(
+      '-Wno-unused-variable',
+      language: 'c'
+    )
+endif
+
+add_project_arguments('-DAS_COMPILATION', language: 'c')
 
 #
 # Dependencies
 #
-glib_dep = dependency('glib-2.0', version: '>=2.58')
-gobject_dep = dependency('gobject-2.0', version: '>=2.58')
-gio_dep = dependency('gio-2.0', version: '>=2.58')
-gio_unix_dep = dependency('gio-unix-2.0', version: '>=2.58')
-curl_dep = dependency('libcurl', version : '>= 7.62')
+glib_dep = dependency('glib-2.0', version: '>= 2.62')
+gobject_dep = dependency('gobject-2.0', version: '>= 2.62')
+gio_dep = dependency('gio-2.0', version: '>= 2.62')
+gio_unix_dep = dependency('gio-unix-2.0', version: '>= 2.62')
+curl_dep = dependency('libcurl', version: '>= 7.62')
 xml2_dep = dependency('libxml-2.0')
 yaml_dep = dependency('yaml-0.1')
-lmdb_dep = dependency('lmdb', required: false)
-
-if not lmdb_dep.found()
-    lmdb_lib = cc.find_library('lmdb', required: true)
-    if not cc.has_header('lmdb.h')
-        error('Headers for dependency "lmdb" not found')
-    endif
-endif
+xmlb_dep = dependency('xmlb', version: '>= 0.3.6',
+                      fallback: ['libxmlb', 'libxmlb_dep'], default_options: ['gtkdoc=false'])
+libsystemd_dep = dependency('libsystemd', required: get_option('systemd'))
 
 if get_option ('gir')
     # ensure we have a version of GIR that isn't broken with Meson
@@ -126,6 +191,7 @@ gperf = find_program('gperf')
 #
 # Modules
 #
+fs   = import('fs')
 glib = import('gnome')
 i18n = import('i18n')
 pkgc = import('pkgconfig')
@@ -138,9 +204,9 @@ if get_option('compose')
     subdir('compose/')
 endif
 subdir('tools/')
+subdir('po/')
 subdir('data/')
 subdir('contrib/')
-subdir('po/')
 subdir('docs/')
 subdir('tests/')
 if get_option('qt')

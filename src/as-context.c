@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -35,6 +35,7 @@
 
 #include "config.h"
 #include "as-context.h"
+#include "as-context-private.h"
 
 #include "as-utils-private.h"
 
@@ -51,6 +52,9 @@ typedef struct
 
 	gboolean		internal_mode;
 	gboolean		all_locale;
+
+	AsCurl			*curl;
+	GMutex			mutex;
 } AsContextPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AsContext, as_context, G_TYPE_OBJECT)
@@ -70,24 +74,28 @@ G_DEFINE_TYPE_WITH_PRIVATE (AsContext, as_context, G_TYPE_OBJECT)
 const gchar*
 as_format_version_to_string (AsFormatVersion version)
 {
-	if (version == AS_FORMAT_VERSION_V0_6)
-		return "0.6";
-	if (version == AS_FORMAT_VERSION_V0_7)
-		return "0.7";
-	if (version == AS_FORMAT_VERSION_V0_8)
-		return "0.8";
-	if (version == AS_FORMAT_VERSION_V0_9)
-		return "0.9";
-	if (version == AS_FORMAT_VERSION_V0_10)
-		return "0.10";
-	if (version == AS_FORMAT_VERSION_V0_11)
-		return "0.11";
-	if (version == AS_FORMAT_VERSION_V0_12)
-		return "0.12";
-	if (version == AS_FORMAT_VERSION_V0_13)
-		return "0.13";
+	if (version == AS_FORMAT_VERSION_V0_16)
+		return "0.16";
+	if (version == AS_FORMAT_VERSION_V0_15)
+		return "0.15";
 	if (version == AS_FORMAT_VERSION_V0_14)
 		return "0.14";
+	if (version == AS_FORMAT_VERSION_V0_13)
+		return "0.13";
+	if (version == AS_FORMAT_VERSION_V0_12)
+		return "0.12";
+	if (version == AS_FORMAT_VERSION_V0_11)
+		return "0.11";
+	if (version == AS_FORMAT_VERSION_V0_10)
+		return "0.10";
+	if (version == AS_FORMAT_VERSION_V0_9)
+		return "0.9";
+	if (version == AS_FORMAT_VERSION_V0_8)
+		return "0.8";
+	if (version == AS_FORMAT_VERSION_V0_7)
+		return "0.7";
+	if (version == AS_FORMAT_VERSION_V0_6)
+		return "0.6";
 	return "?.??";
 }
 
@@ -105,6 +113,10 @@ as_format_version_to_string (AsFormatVersion version)
 AsFormatVersion
 as_format_version_from_string (const gchar *version_str)
 {
+	if (g_strcmp0 (version_str, "0.16") == 0)
+		return AS_FORMAT_VERSION_V0_16;
+	if (g_strcmp0 (version_str, "0.15") == 0)
+		return AS_FORMAT_VERSION_V0_15;
 	if (g_strcmp0 (version_str, "0.14") == 0)
 		return AS_FORMAT_VERSION_V0_14;
 	if (g_strcmp0 (version_str, "0.13") == 0)
@@ -123,7 +135,7 @@ as_format_version_from_string (const gchar *version_str)
 		return AS_FORMAT_VERSION_V0_7;
 	if (g_strcmp0 (version_str, "0.6") == 0)
 		return AS_FORMAT_VERSION_V0_6;
-	return AS_FORMAT_VERSION_V0_10;
+	return AS_FORMAT_VERSION_UNKNOWN;
 }
 
 static void
@@ -137,6 +149,10 @@ as_context_finalize (GObject *object)
 	as_ref_string_release (priv->media_baseurl);
 	as_ref_string_release (priv->arch);
 	as_ref_string_release (priv->fname);
+	g_mutex_clear (&priv->mutex);
+
+	if (priv->curl != NULL)
+		g_object_unref (priv->curl);
 
 	G_OBJECT_CLASS (as_context_parent_class)->finalize (object);
 }
@@ -146,6 +162,7 @@ as_context_init (AsContext *ctx)
 {
 	AsContextPrivate *priv = GET_PRIVATE (ctx);
 
+	g_mutex_init (&priv->mutex);
 	priv->format_version = AS_FORMAT_VERSION_CURRENT;
 	priv->style = AS_FORMAT_STYLE_UNKNOWN;
 	priv->priority = 0;
@@ -516,6 +533,28 @@ as_context_localized_ht_set (AsContext *ctx, GHashTable *lht, const gchar *value
 	g_hash_table_insert (lht,
 			     g_ref_string_new_intern (locale_noenc),
 			     g_strdup (value));
+}
+
+/**
+ * as_context_get_curl:
+ * @ctx: a #AsContext instance, or %NULL
+ * @error: a #GError
+ *
+ * Get an #AsCurl instance.
+ *
+ * Returns: (transfer full): an #AsCurl reference.
+ */
+AsCurl*
+as_context_get_curl (AsContext *ctx, GError **error)
+{
+	AsContextPrivate *priv = GET_PRIVATE (ctx);
+	g_autoptr(GMutexLocker) locker = g_mutex_locker_new (&priv->mutex);
+	if (priv->curl == NULL) {
+		priv->curl = as_curl_new (error);
+		if (priv->curl == NULL)
+			return NULL;
+	}
+	return g_object_ref (priv->curl);
 }
 
 /**

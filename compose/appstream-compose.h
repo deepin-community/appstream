@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -31,15 +31,16 @@
 
 #include <asc-globals.h>
 #include <asc-compose.h>
+#include <asc-icon-policy.h>
 #include <asc-utils.h>
-#include <asc-canvas.h>
-#include <asc-font.h>
 #include <asc-hint.h>
-#include <asc-image.h>
 #include <asc-unit.h>
 #include <asc-directory-unit.h>
 #include <asc-result.h>
 #include <asc-enums-types.h>
+
+#include <asc-image.h>
+#include <asc-canvas.h>
 
 #undef __APPSTREAM_COMPOSE_H_INSIDE__
 

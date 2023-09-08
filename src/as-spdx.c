@@ -1,7 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  * Copyright (C) 2016 Richard Hughes <richard@hughsie.com>
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -230,7 +230,7 @@ as_is_spdx_license_expression (const gchar *license)
 	gboolean expect_exception = FALSE;
 
 	/* handle nothing set */
-	if (license == NULL || license[0] == '\0')
+	if (as_is_empty (license))
 		return FALSE;
 
 	/* no license information whatsoever */
@@ -744,13 +744,18 @@ as_license_is_free_license (const gchar *license)
 	g_autoptr(GBytes) rdata = NULL;
 	gboolean is_free;
 
+	/* no license at all is "non-free" */
+	if (as_is_empty (license))
+		return FALSE;
+	if (g_strcmp0 (license, "NONE") == 0)
+		return FALSE;
+
 	/* load the readonly data section of (free) license IDs */
 	rdata = g_resource_lookup_data (as_get_resource (),
 				       "/org/freedesktop/appstream/spdx-free-license-ids.txt",
 				       G_RESOURCE_LOOKUP_FLAGS_NONE,
 				       NULL);
-	if (rdata == NULL)
-		return FALSE;
+	g_return_val_if_fail (rdata != NULL, FALSE);
 
 	/* assume we have a free software license, unless proven otherwise */
 	is_free = TRUE;

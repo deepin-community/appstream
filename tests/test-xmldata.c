@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -77,7 +77,7 @@ as_xml_test_serialize (AsComponent *cpt, AsFormatStyle mode)
 		data = as_metadata_component_to_metainfo (metad, AS_FORMAT_KIND_XML, &error);
 		g_assert_no_error (error);
 	} else {
-		data = as_metadata_components_to_collection (metad, AS_FORMAT_KIND_XML, &error);
+		data = as_metadata_components_to_catalog (metad, AS_FORMAT_KIND_XML, &error);
 		g_assert_no_error (error);
 	}
 
@@ -99,12 +99,26 @@ as_xml_test_compare_xml (const gchar *result, const gchar *expected)
 }
 
 /**
+ * test_log_allow_warnings:
+ *
+ * Helper function to temporarily allow warnings to be non-fatal.
+ */
+static gboolean
+test_log_allow_warnings (const gchar *log_domain,
+			     GLogLevelFlags log_level,
+			     const gchar *message,
+			     gpointer user_data)
+{
+	return ((log_level & G_LOG_LEVEL_MASK) <= G_LOG_LEVEL_CRITICAL);
+}
+
+/**
  * test_appstream_parser_legacy:
  *
  * Test parsing legacy metainfo files.
  */
 static void
-test_appstream_parser_legacy ()
+test_appstream_parser_legacy (void)
 {
 	AsMetadata *metad;
 	GFile *file;
@@ -140,7 +154,7 @@ test_appstream_parser_legacy ()
  * Test reading localized tags.
  */
 static void
-test_appstream_parser_locale ()
+test_appstream_parser_locale (void)
 {
 	g_autoptr(AsMetadata) metad = NULL;
 	g_autoptr(GFile) file = NULL;
@@ -204,7 +218,7 @@ test_appstream_parser_locale ()
  * Test writing fully localized entries.
  */
 static void
-test_appstream_write_locale ()
+test_appstream_write_locale (void)
 {
 	AsMetadata *metad;
 	GFile *file;
@@ -242,7 +256,7 @@ test_appstream_write_locale ()
 				    "    <keyword>internet</keyword>\n"
 				    "    <keyword>web</keyword>\n"
 				    "    <keyword>browser</keyword>\n"
-				    "    <keyword>navigateur</keyword>\n"
+				    "    <keyword xml:lang=\"fr_FR\">navigateur</keyword>\n"
 				    "  </keywords>\n"
 				    "</component>\n";
 
@@ -278,7 +292,7 @@ test_appstream_write_locale ()
  * Test writing the description tag for catalog and metainfo XML.
  */
 static void
-test_appstream_write_description ()
+test_appstream_write_description (void)
 {
 	guint i;
 	gchar *tmp;
@@ -348,7 +362,7 @@ test_appstream_write_description ()
 						"  </releases>\n"
 						"</component>\n";
 
-	const gchar *EXPECTED_XML_DISTRO = "<components version=\"0.14\">\n"
+	const gchar *EXPECTED_XML_DISTRO = "<components version=\"0.16\">\n"
 					   "  <component>\n"
 					   "    <id>org.example.Test</id>\n"
 					   "    <name>Test</name>\n"
@@ -444,26 +458,26 @@ test_appstream_write_description ()
 	g_assert_true (as_xml_test_compare_xml (tmp, EXPECTED_XML_LOCALIZED));
 	g_free (tmp);
 
-	/* test collection-xml conversion */
-	tmp = as_metadata_components_to_collection (metad, AS_FORMAT_KIND_XML, NULL);
+	/* test catalog XML conversion */
+	tmp = as_metadata_components_to_catalog (metad, AS_FORMAT_KIND_XML, NULL);
 	g_assert_true (as_xml_test_compare_xml (tmp, EXPECTED_XML_DISTRO));
 	g_free (tmp);
 
-	/* test collection XMl -> metainfo XML */
+	/* test catalog XMl -> metainfo XML */
 	as_metadata_clear_components (metad);
-	as_metadata_set_format_style (metad, AS_FORMAT_STYLE_COLLECTION);
+	as_metadata_set_format_style (metad, AS_FORMAT_STYLE_CATALOG);
 	as_metadata_parse (metad, EXPECTED_XML_DISTRO, AS_FORMAT_KIND_XML, &error);
 	g_assert_no_error (error);
 	tmp = as_metadata_component_to_metainfo (metad, AS_FORMAT_KIND_XML, NULL);
 	g_assert_true (as_xml_test_compare_xml (tmp, EXPECTED_XML_LOCALIZED));
 	g_free (tmp);
 
-	/* test metainfo XMl -> collection XML */
+	/* test metainfo XMl -> catalog XML */
 	as_metadata_clear_components (metad);
 	as_metadata_set_format_style (metad, AS_FORMAT_STYLE_METAINFO);
 	as_metadata_parse (metad, EXPECTED_XML_LOCALIZED, AS_FORMAT_KIND_XML, &error);
 	g_assert_no_error (error);
-	tmp = as_metadata_components_to_collection (metad, AS_FORMAT_KIND_XML, NULL);
+	tmp = as_metadata_components_to_catalog (metad, AS_FORMAT_KIND_XML, NULL);
 	g_assert_true (as_xml_test_compare_xml (tmp, EXPECTED_XML_DISTRO));
 	g_free (tmp);
 }
@@ -597,7 +611,7 @@ test_appstream_read_description (void)
 								 "<p>Paragraph</p>\n");
 }
 
-static const gchar *xmldata_simple =    "<component>\n"
+static const gchar *xmldata_simple =    "<component date_eol=\"2022-02-22T00:00:00Z\">\n"
 					"  <id>org.example.SimpleTest</id>\n"
 					"  <name>TestComponent</name>\n"
 					"  <name_variant_suffix>Generic</name_variant_suffix>\n"
@@ -620,6 +634,8 @@ test_xml_read_simple (void)
 	g_assert_cmpstr (as_component_get_name (cpt), ==, "TestComponent");
 	g_assert_cmpstr (as_component_get_summary (cpt), ==, "Just part of an unittest");
 	g_assert_cmpstr (as_component_get_name_variant_suffix (cpt), ==, "Generic");
+	g_assert_cmpstr (as_component_get_date_eol (cpt), ==, "2022-02-22T00:00:00Z");
+	g_assert_cmpint (as_component_get_timestamp_eol (cpt), ==, 1645488000);
 }
 
 /**
@@ -636,6 +652,7 @@ test_xml_write_simple (void)
 	cpt = as_component_new ();
 	as_component_set_kind (cpt, AS_COMPONENT_KIND_GENERIC);
 	as_component_set_id (cpt, "org.example.SimpleTest");
+	as_component_set_date_eol (cpt, "2022-02-22");
 
 	as_component_set_name (cpt, "TestComponent", "C");
 	as_component_set_summary (cpt, "Just part of an unittest", "C");
@@ -660,6 +677,8 @@ test_xml_read_url (void)
 					 "  <url type=\"faq\">https://example.org/faq</url>\n"
 					 "  <url type=\"donation\">https://example.org/donate</url>\n"
 					 "  <url type=\"contact\">https://example.org/contact</url>\n"
+					 "  <url type=\"vcs-browser\">https://example.org/source</url>\n"
+					 "  <url type=\"contribute\">https://example.org/contribute</url>\n"
 					 "</component>\n";
 
 	cpt = as_xml_test_read_data (xmldata_languages, AS_FORMAT_STYLE_METAINFO);
@@ -669,6 +688,8 @@ test_xml_read_url (void)
 	g_assert_cmpstr (as_component_get_url (cpt, AS_URL_KIND_FAQ), ==, "https://example.org/faq");
 	g_assert_cmpstr (as_component_get_url (cpt, AS_URL_KIND_DONATION), ==, "https://example.org/donate");
 	g_assert_cmpstr (as_component_get_url (cpt, AS_URL_KIND_CONTACT), ==, "https://example.org/contact");
+	g_assert_cmpstr (as_component_get_url (cpt, AS_URL_KIND_VCS_BROWSER), ==, "https://example.org/source");
+	g_assert_cmpstr (as_component_get_url (cpt, AS_URL_KIND_CONTRIBUTE), ==, "https://example.org/contribute");
 }
 
 /**
@@ -805,7 +826,7 @@ test_xml_write_suggests (void)
 					   "    <id>org.example.Awesome</id>\n"
 					   "  </suggests>\n"
 					   "</component>\n";
-	const gchar *expected_sug_xml_coll = "<components version=\"0.14\">\n"
+	const gchar *expected_sug_xml_coll = "<components version=\"0.16\">\n"
 					"  <component>\n"
 					"    <id>org.example.SuggestsTest</id>\n"
 					"    <suggests type=\"upstream\">\n"
@@ -837,8 +858,8 @@ test_xml_write_suggests (void)
 	g_assert_true (as_xml_test_compare_xml (res, expected_sug_xml_mi));
 	g_free (res);
 
-	/* test collection serialization */
-	res = as_xml_test_serialize (cpt, AS_FORMAT_STYLE_COLLECTION);
+	/* test catalog serialization */
+	res = as_xml_test_serialize (cpt, AS_FORMAT_STYLE_CATALOG);
 	g_assert_true (as_xml_test_compare_xml (res, expected_sug_xml_coll));
 }
 
@@ -1032,10 +1053,10 @@ test_xml_write_launchable (void)
 }
 
 /**
- * test_appstream_write_metainfo_to_collection:
+ * test_appstream_write_metainfo_to_catalog:
  */
 static void
-test_appstream_write_metainfo_to_collection (void)
+test_appstream_write_metainfo_to_catalog (void)
 {
 	gchar *tmp;
 	g_autoptr(AsMetadata) metad = NULL;
@@ -1075,6 +1096,10 @@ test_appstream_write_metainfo_to_collection (void)
 					"    </ul>\n"
 					"    <p xml:lang=\"de\">Absatz2</p>\n"
 					"  </description>\n"
+					"  <keywords>\n"
+					"    <keyword>supercalifragilisticexpialidocious</keyword>\n"
+					"    <keyword xml:lang=\"de\">Superkalifragilistischexpiallegetisch</keyword>\n"
+					"  </keywords>\n"
 					"  <icon type=\"cached\" width=\"20\" height=\"20\">test_writetest.png</icon>\n"
 					"  <icon type=\"cached\" width=\"40\" height=\"40\">test_writetest.png</icon>\n"
 					"  <icon type=\"stock\">xml-writetest</icon>\n"
@@ -1083,7 +1108,7 @@ test_appstream_write_metainfo_to_collection (void)
 					"  </releases>\n"
 					"</component>\n";
 
-	const gchar *EXPECTED_XML_COLL =   "<components version=\"0.14\">\n"
+	const gchar *EXPECTED_XML_COLL =   "<components version=\"0.16\">\n"
 					   "  <component>\n"
 					   "    <id>org.example.Test</id>\n"
 					   "    <name>Test</name>\n"
@@ -1125,6 +1150,12 @@ test_appstream_write_metainfo_to_collection (void)
 					   "    <icon type=\"cached\" width=\"20\" height=\"20\">test_writetest.png</icon>\n"
 					   "    <icon type=\"cached\" width=\"40\" height=\"40\">test_writetest.png</icon>\n"
 					   "    <icon type=\"stock\">xml-writetest</icon>\n"
+					   "    <keywords>\n"
+					   "      <keyword>supercalifragilisticexpialidocious</keyword>\n"
+					   "    </keywords>\n"
+					   "    <keywords xml:lang=\"de\">\n"
+					   "      <keyword>Superkalifragilistischexpiallegetisch</keyword>\n"
+					   "    </keywords>\n"
 					   "    <releases>\n"
 					   "      <release type=\"stable\" version=\"1.0\" timestamp=\"1460412000\"/>\n"
 					   "    </releases>\n"
@@ -1137,9 +1168,9 @@ test_appstream_write_metainfo_to_collection (void)
 	as_metadata_parse (metad, METAINFO_XML, AS_FORMAT_KIND_XML, &error);
 	g_assert_no_error (error);
 
-	as_metadata_set_format_style (metad, AS_FORMAT_STYLE_COLLECTION);
+	as_metadata_set_format_style (metad, AS_FORMAT_STYLE_CATALOG);
 
-	tmp = as_metadata_components_to_collection (metad, AS_FORMAT_KIND_XML, NULL);
+	tmp = as_metadata_components_to_catalog (metad, AS_FORMAT_KIND_XML, NULL);
 	g_assert_true (as_xml_test_compare_xml (tmp, EXPECTED_XML_COLL));
 	g_free (tmp);
 }
@@ -1400,40 +1431,57 @@ test_xml_write_screenshots (void)
 }
 
 
-static const gchar *xmldata_recommends_requires = "<component>\n"
-						  "  <id>org.example.RelationsTest</id>\n"
-						  "  <requires>\n"
-						  "    <kernel version=\"4.15\" compare=\"ge\">Linux</kernel>\n"
-						  "    <id version=\"1.2\" compare=\"eq\">org.example.TestDependency</id>\n"
-						  "    <display_length>small</display_length>\n"
-						  "  </requires>\n"
-						  "  <recommends>\n"
-						  "    <memory>2500</memory>\n"
-						  "    <modalias>usb:v1130p0202d*</modalias>\n"
-						  "    <display_length side=\"longest\" compare=\"le\">4200</display_length>\n"
-						  "  </recommends>\n"
-						  "</component>\n";
+static const gchar *xmldata_relations = "<component>\n"
+					"  <id>org.example.RelationsTest</id>\n"
+					"  <replaces>\n"
+					"    <id>org.example.old_test</id>\n"
+					"  </replaces>\n"
+					"  <requires>\n"
+					"    <kernel version=\"4.15\" compare=\"ge\">Linux</kernel>\n"
+					"    <id version=\"1.2\" compare=\"eq\">org.example.TestDependency</id>\n"
+					"    <display_length>small</display_length>\n"
+					"    <internet bandwidth_mbitps=\"2\">always</internet>\n"
+					"  </requires>\n"
+					"  <recommends>\n"
+					"    <memory>2500</memory>\n"
+					"    <modalias>usb:v1130p0202d*</modalias>\n"
+					"    <display_length side=\"longest\" compare=\"le\">4200</display_length>\n"
+					"    <internet>first-run</internet>\n"
+					"  </recommends>\n"
+					"  <supports>\n"
+					"    <control>gamepad</control>\n"
+					"    <control>keyboard</control>\n"
+					"    <internet>offline-only</internet>\n"
+					"  </supports>\n"
+					"</component>\n";
 /**
- * test_xml_read_recommends_requires:
+ * test_xml_read_relations:
  *
- * Test reading the recommends/requires tags.
+ * Test reading the recommends/requires/supports tags.
  */
 static void
-test_xml_read_recommends_requires (void)
+test_xml_read_relations (void)
 {
 	g_autoptr(AsComponent) cpt = NULL;
 	GPtrArray *recommends;
 	GPtrArray *requires;
+	GPtrArray *supports;
 	AsRelation *relation;
 
-	cpt = as_xml_test_read_data (xmldata_recommends_requires, AS_FORMAT_STYLE_METAINFO);
+	cpt = as_xml_test_read_data (xmldata_relations, AS_FORMAT_STYLE_METAINFO);
 	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.RelationsTest");
 
 	recommends = as_component_get_recommends (cpt);
 	requires = as_component_get_requires (cpt);
+	supports = as_component_get_supports (cpt);
 
-	g_assert_cmpint (recommends->len, ==, 3);
-	g_assert_cmpint (requires->len, ==, 3);
+	g_assert_cmpint (requires->len, ==, 4);
+	g_assert_cmpint (recommends->len, ==, 4);
+	g_assert_cmpint (supports->len, ==, 3);
+
+	/* component replacement */
+	g_assert_cmpint (as_component_get_replaces (cpt)->len, ==, 1);
+	g_assert_cmpstr (g_ptr_array_index (as_component_get_replaces (cpt), 0), ==, "org.example.old_test");
 
 	/* memory relation */
 	relation = AS_RELATION (g_ptr_array_index (recommends, 0));
@@ -1453,6 +1501,13 @@ test_xml_read_recommends_requires (void)
 	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_DISPLAY_LENGTH);
 	g_assert_cmpint (as_relation_get_value_px (relation), ==, 4200);
 	g_assert_cmpint (as_relation_get_compare (relation), ==, AS_RELATION_COMPARE_LE);
+
+	/* internet relation (REC) */
+	relation = AS_RELATION (g_ptr_array_index (recommends, 3));
+	g_assert_cmpint (as_relation_get_kind (relation), ==, AS_RELATION_KIND_RECOMMENDS);
+	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_INTERNET);
+	g_assert_cmpint (as_relation_get_value_internet_kind (relation), ==, AS_INTERNET_KIND_FIRST_RUN);
+	g_assert_cmpint (as_relation_get_value_internet_bandwidth (relation), ==, 0);
 
 	/* kernel relation */
 	relation = AS_RELATION (g_ptr_array_index (requires, 0));
@@ -1476,15 +1531,39 @@ test_xml_read_recommends_requires (void)
 	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_DISPLAY_LENGTH);
 	g_assert_cmpint (as_relation_get_value_display_length_kind (relation), ==, AS_DISPLAY_LENGTH_KIND_SMALL);
 	g_assert_cmpint (as_relation_get_compare (relation), ==, AS_RELATION_COMPARE_GE);
+
+	/* internet relation (REQ) */
+	relation = AS_RELATION (g_ptr_array_index (requires, 3));
+	g_assert_cmpint (as_relation_get_kind (relation), ==, AS_RELATION_KIND_REQUIRES);
+	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_INTERNET);
+	g_assert_cmpint (as_relation_get_value_internet_kind (relation), ==, AS_INTERNET_KIND_ALWAYS);
+	g_assert_cmpint (as_relation_get_value_internet_bandwidth (relation), ==, 2);
+
+	/* control relation */
+	relation = AS_RELATION (g_ptr_array_index (supports, 0));
+	g_assert_cmpint (as_relation_get_kind (relation), ==, AS_RELATION_KIND_SUPPORTS);
+	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_CONTROL);
+	g_assert_cmpint (as_relation_get_value_control_kind (relation), ==, AS_CONTROL_KIND_GAMEPAD);
+	relation = AS_RELATION (g_ptr_array_index (supports, 1));
+	g_assert_cmpint (as_relation_get_kind (relation), ==, AS_RELATION_KIND_SUPPORTS);
+	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_CONTROL);
+	g_assert_cmpint (as_relation_get_value_control_kind (relation), ==, AS_CONTROL_KIND_KEYBOARD);
+
+	/* internet relation (supports) */
+	relation = AS_RELATION (g_ptr_array_index (supports, 2));
+	g_assert_cmpint (as_relation_get_kind (relation), ==, AS_RELATION_KIND_SUPPORTS);
+	g_assert_cmpint (as_relation_get_item_kind (relation), ==, AS_RELATION_ITEM_KIND_INTERNET);
+	g_assert_cmpint (as_relation_get_value_internet_kind (relation), ==, AS_INTERNET_KIND_OFFLINE_ONLY);
+	g_assert_cmpint (as_relation_get_value_internet_bandwidth (relation), ==, 0);
 }
 
 /**
- * test_xml_write_recommends_requires:
+ * test_xml_write_relations:
  *
- * Test writing the recommends/requires tags.
+ * Test writing the recommends/requires/supports tags.
  */
 static void
-test_xml_write_recommends_requires (void)
+test_xml_write_relations (void)
 {
 	g_autoptr(AsComponent) cpt = NULL;
 	g_autofree gchar *res = NULL;
@@ -1494,6 +1573,11 @@ test_xml_write_recommends_requires (void)
 	g_autoptr(AsRelation) id_relation = NULL;
 	g_autoptr(AsRelation) dl_relation1 = NULL;
 	g_autoptr(AsRelation) dl_relation2 = NULL;
+	g_autoptr(AsRelation) ctl_relation1 = NULL;
+	g_autoptr(AsRelation) ctl_relation2 = NULL;
+	g_autoptr(AsRelation) internet_relation1 = NULL;
+	g_autoptr(AsRelation) internet_relation2 = NULL;
+	g_autoptr(AsRelation) internet_relation3 = NULL;
 
 	cpt = as_component_new ();
 	as_component_set_id (cpt, "org.example.RelationsTest");
@@ -1504,6 +1588,11 @@ test_xml_write_recommends_requires (void)
 	id_relation = as_relation_new ();
 	dl_relation1 = as_relation_new ();
 	dl_relation2 = as_relation_new ();
+	ctl_relation1 = as_relation_new ();
+	ctl_relation2 = as_relation_new ();
+	internet_relation1 = as_relation_new ();
+	internet_relation2 = as_relation_new ();
+	internet_relation3 = as_relation_new ();
 
 	as_relation_set_kind (mem_relation, AS_RELATION_KIND_RECOMMENDS);
 	as_relation_set_kind (moda_relation, AS_RELATION_KIND_RECOMMENDS);
@@ -1511,6 +1600,11 @@ test_xml_write_recommends_requires (void)
 	as_relation_set_kind (id_relation, AS_RELATION_KIND_REQUIRES);
 	as_relation_set_kind (dl_relation1, AS_RELATION_KIND_RECOMMENDS);
 	as_relation_set_kind (dl_relation2, AS_RELATION_KIND_REQUIRES);
+	as_relation_set_kind (ctl_relation1, AS_RELATION_KIND_SUPPORTS);
+	as_relation_set_kind (ctl_relation2, AS_RELATION_KIND_SUPPORTS);
+	as_relation_set_kind (internet_relation1, AS_RELATION_KIND_REQUIRES);
+	as_relation_set_kind (internet_relation2, AS_RELATION_KIND_RECOMMENDS);
+	as_relation_set_kind (internet_relation3, AS_RELATION_KIND_SUPPORTS);
 
 	as_relation_set_item_kind (mem_relation, AS_RELATION_ITEM_KIND_MEMORY);
 	as_relation_set_value_int (mem_relation, 2500);
@@ -1536,15 +1630,37 @@ test_xml_write_recommends_requires (void)
 	as_relation_set_value_display_length_kind (dl_relation2, AS_DISPLAY_LENGTH_KIND_SMALL);
 	as_relation_set_compare (dl_relation2, AS_RELATION_COMPARE_GE);
 
+	as_relation_set_item_kind (internet_relation1, AS_RELATION_ITEM_KIND_INTERNET);
+	as_relation_set_value_internet_kind (internet_relation1, AS_INTERNET_KIND_ALWAYS);
+	as_relation_set_value_internet_bandwidth (internet_relation1, 2);
+
+	as_relation_set_item_kind (internet_relation2, AS_RELATION_ITEM_KIND_INTERNET);
+	as_relation_set_value_internet_kind (internet_relation2, AS_INTERNET_KIND_FIRST_RUN);
+
+	as_relation_set_item_kind (internet_relation3, AS_RELATION_ITEM_KIND_INTERNET);
+	as_relation_set_value_internet_kind (internet_relation3, AS_INTERNET_KIND_OFFLINE_ONLY);
+
+	as_relation_set_item_kind (ctl_relation1, AS_RELATION_ITEM_KIND_CONTROL);
+	as_relation_set_item_kind (ctl_relation2, AS_RELATION_ITEM_KIND_CONTROL);
+	as_relation_set_value_control_kind (ctl_relation1, AS_CONTROL_KIND_GAMEPAD);
+	as_relation_set_value_control_kind (ctl_relation2, AS_CONTROL_KIND_KEYBOARD);
+
 	as_component_add_relation (cpt, mem_relation);
 	as_component_add_relation (cpt, moda_relation);
 	as_component_add_relation (cpt, kernel_relation);
 	as_component_add_relation (cpt, id_relation);
 	as_component_add_relation (cpt, dl_relation1);
 	as_component_add_relation (cpt, dl_relation2);
+	as_component_add_relation (cpt, ctl_relation1);
+	as_component_add_relation (cpt, ctl_relation2);
+	as_component_add_relation (cpt, internet_relation1);
+	as_component_add_relation (cpt, internet_relation2);
+	as_component_add_relation (cpt, internet_relation3);
+
+	as_component_add_replaces (cpt, "org.example.old_test");
 
 	res = as_xml_test_serialize (cpt, AS_FORMAT_STYLE_METAINFO);
-	g_assert_true (as_xml_test_compare_xml (res, xmldata_recommends_requires));
+	g_assert_true (as_xml_test_compare_xml (res, xmldata_relations));
 }
 
 
@@ -1674,6 +1790,7 @@ test_xml_read_releases (void)
 	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.ReleaseTest");
 
 	g_assert_cmpint (as_component_get_releases (cpt)->len, ==, 1);
+	g_assert_cmpint (as_component_get_releases_kind (cpt), ==, AS_RELEASES_KIND_EMBEDDED);
 
 	rel = AS_RELEASE (g_ptr_array_index (as_component_get_releases (cpt), 0));
 	g_assert_cmpint (as_release_get_kind (rel), ==, AS_RELEASE_KIND_STABLE);
@@ -1918,6 +2035,131 @@ test_xml_rw_reviews (void)
 }
 
 /**
+ * test_xml_rw_tags:
+ */
+static void
+test_xml_rw_tags (void)
+{
+	static const gchar *xmldata_tags =
+			"<component>\n"
+			"  <id>org.example.TagsTest</id>\n"
+			"  <tags>\n"
+			"    <tag namespace=\"lvfs\">vendor-2021q1</tag>\n"
+			"    <tag namespace=\"plasma\">featured</tag>\n"
+			"  </tags>\n"
+			"</component>\n";
+	g_autoptr(AsComponent) cpt = NULL;
+	g_autofree gchar *res = NULL;
+
+	/* read */
+	cpt = as_xml_test_read_data (xmldata_tags, AS_FORMAT_STYLE_METAINFO);
+	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.TagsTest");
+
+	/* validate */
+	g_assert_true (as_component_has_tag (cpt, "lvfs", "vendor-2021q1"));
+	g_assert_true (as_component_has_tag (cpt, "plasma", "featured"));
+
+	/* write */
+	res = as_xml_test_serialize (cpt, AS_FORMAT_STYLE_METAINFO);
+	g_assert_true (as_xml_test_compare_xml (res, xmldata_tags));
+}
+
+/**
+ * test_xml_rw_branding:
+ */
+static void
+test_xml_rw_branding (void)
+{
+	static const gchar *xmldata_tags =
+			"<component>\n"
+			"  <id>org.example.BrandingTest</id>\n"
+			"  <branding>\n"
+			"    <color type=\"primary\" scheme_preference=\"light\">#ff00ff</color>\n"
+			"    <color type=\"primary\" scheme_preference=\"dark\">#993d3d</color>\n"
+			"  </branding>\n"
+			"</component>\n";
+	g_autoptr(AsComponent) cpt = NULL;
+	g_autofree gchar *res = NULL;
+	AsBranding *branding;
+
+	/* read */
+	cpt = as_xml_test_read_data (xmldata_tags, AS_FORMAT_STYLE_METAINFO);
+	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.BrandingTest");
+
+	/* validate */
+	branding = as_component_get_branding (cpt);
+	g_assert_nonnull (branding);
+
+	g_assert_cmpstr (as_branding_get_color (branding, AS_COLOR_KIND_PRIMARY, AS_COLOR_SCHEME_KIND_LIGHT),
+			 ==, "#ff00ff");
+	g_assert_cmpstr (as_branding_get_color (branding, AS_COLOR_KIND_PRIMARY, AS_COLOR_SCHEME_KIND_DARK),
+			 ==, "#993d3d");
+
+	/* write */
+	res = as_xml_test_serialize (cpt, AS_FORMAT_STYLE_METAINFO);
+	g_assert_true (as_xml_test_compare_xml (res, xmldata_tags));
+}
+
+/**
+ * test_xml_rw_external_releases:
+ */
+static void
+test_xml_rw_external_releases (void)
+{
+	static const gchar *xmldata_tags =
+			"<component>\n"
+			"  <id>org.example.ExternalReleaseTest</id>\n"
+			"  <releases type=\"external\" url=\"https://example.com/releases/test.releases.xml\"/>\n"
+			"</component>\n";
+	g_autoptr(AsComponent) cpt = NULL;
+	g_autoptr(AsMetadata) metad = NULL;
+	g_autoptr(GFile) file = NULL;
+	g_autofree gchar *path = NULL;
+	g_autofree gchar *res = NULL;
+	GPtrArray *releases;
+	g_autoptr(GError) error = NULL;
+
+	/* read */
+	cpt = as_xml_test_read_data (xmldata_tags, AS_FORMAT_STYLE_METAINFO);
+	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.ExternalReleaseTest");
+
+	/* validate */
+
+	/* we ignore warnings, as this will throw one since we can not find the external release info file */
+	g_test_log_set_fatal_handler (test_log_allow_warnings, NULL);
+	releases = as_component_get_releases (cpt);
+	g_test_log_set_fatal_handler (NULL, NULL);
+
+	g_assert_nonnull (releases);
+	g_assert_cmpint (releases->len, ==, 0);
+
+	g_assert_cmpstr (as_component_get_releases_url (cpt), ==, "https://example.com/releases/test.releases.xml");
+	g_assert_cmpint (as_component_get_releases_kind (cpt), ==, AS_RELEASES_KIND_EXTERNAL);
+
+	/* write */
+	res = as_xml_test_serialize (cpt, AS_FORMAT_STYLE_METAINFO);
+	g_assert_true (as_xml_test_compare_xml (res, xmldata_tags));
+
+	/* test reading from file */
+	metad = as_metadata_new ();
+
+	path = g_build_filename (datadir, "org.example.pomidaq.metainfo.xml", NULL);
+	file = g_file_new_for_path (path);
+
+	as_metadata_parse_file (metad, file, AS_FORMAT_KIND_XML, &error);
+	g_assert_no_error (error);
+	g_object_unref (g_steal_pointer (&cpt));
+	cpt = g_object_ref (as_metadata_get_component (metad));
+
+	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.pomidaq");
+	releases = as_component_get_releases (cpt);
+	g_assert_nonnull (releases);
+	g_assert_cmpint (releases->len, ==, 4);
+	g_assert_cmpstr (as_component_get_releases_url (cpt), ==, "https://raw.githubusercontent.com/ximion/appstream/master/tests/samples/releases/org.example.pomidaq.releases.xml");
+	g_assert_cmpint (as_component_get_releases_kind (cpt), ==, AS_RELEASES_KIND_EXTERNAL);
+}
+
+/**
  * main:
  */
 int
@@ -1949,7 +2191,7 @@ main (int argc, char **argv)
 	g_test_add_func ("/XML/Write/Description", test_appstream_write_description);
 	g_test_add_func ("/XML/DescriptionL10NCleanup", test_appstream_description_l10n_cleanup);
 
-	g_test_add_func ("/XML/Write/MetainfoToCollection", test_appstream_write_metainfo_to_collection);
+	g_test_add_func ("/XML/Write/MetainfoToCatalog", test_appstream_write_metainfo_to_catalog);
 
 	g_test_add_func ("/XML/Read/Simple", test_xml_read_simple);
 	g_test_add_func ("/XML/Write/Simple", test_xml_write_simple);
@@ -1975,8 +2217,8 @@ main (int argc, char **argv)
 	g_test_add_func ("/XML/Read/Screenshots", test_xml_read_screenshots);
 	g_test_add_func ("/XML/Write/Screenshots", test_xml_write_screenshots);
 
-	g_test_add_func ("/XML/Read/RecommendsRequires", test_xml_read_recommends_requires);
-	g_test_add_func ("/XML/Write/RecommendsRequires", test_xml_write_recommends_requires);
+	g_test_add_func ("/XML/Read/Relations", test_xml_read_relations);
+	g_test_add_func ("/XML/Write/Relations", test_xml_write_relations);
 
 	g_test_add_func ("/XML/Read/Agreements", test_xml_read_agreements);
 	g_test_add_func ("/XML/Write/Agreements", test_xml_write_agreements);
@@ -1986,6 +2228,9 @@ main (int argc, char **argv)
 	g_test_add_func ("/XML/Read/ReleasesLegacy", test_xml_read_releases_legacy);
 
 	g_test_add_func ("/XML/ReadWrite/Reviews", test_xml_rw_reviews);
+	g_test_add_func ("/XML/ReadWrite/Tags", test_xml_rw_tags);
+	g_test_add_func ("/XML/ReadWrite/Branding", test_xml_rw_branding);
+	g_test_add_func ("/XML/ReadWrite/ExternalReleases", test_xml_rw_external_releases);
 
 	ret = g_test_run ();
 	g_free (datadir);

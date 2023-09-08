@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -42,6 +42,9 @@
  *
  * See also: #AsPool
  */
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 typedef struct
 {
@@ -344,18 +347,4 @@ as_distro_details_new (void)
 	return AS_DISTRO_DETAILS (distro);
 }
 
-
-/**
- * as_get_current_distro_component_id:
- *
- * Returns the component-ID of the current distribution based on contents
- * of the `/etc/os-release` file.
- * This function is a shorthand for %as_distro_details_get_cid
- */
-gchar*
-as_get_current_distro_component_id (void)
-{
-	g_autoptr(AsDistroDetails) distro = as_distro_details_new ();
-	return g_strdup (as_distro_details_get_cid (distro));
-
-}
+#pragma GCC diagnostic pop

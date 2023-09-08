@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -223,7 +223,7 @@ as_get_desktop_entry_value (GKeyFile *df, GPtrArray *issues, const gchar *key)
 /**
  * as_check_desktop_string:
  */
-void
+static void
 as_check_desktop_string (GPtrArray *issues, const gchar *field, const gchar *str)
 {
 	if (issues == NULL)
@@ -467,6 +467,11 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 		} else if (g_str_has_prefix (key, "Keywords")) {
 			g_auto(GStrv) kws = NULL;
 			g_autoptr(GPtrArray) l10n_data = NULL;
+
+			/* skip adding keywords if the metainfo file or previous component has
+			 * already had some for this locale */
+			if (g_hash_table_contains (as_component_get_keywords_table (cpt), locale))
+				continue;
 
 			kws = g_strsplit (val, ";", -1);
 			as_component_set_keywords (cpt, kws, locale);

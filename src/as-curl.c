@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2020-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2020-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -122,11 +122,11 @@ as_curl_perform_download (AsCurl *acurl, gboolean abort_is_error, GError **error
 	res = curl_easy_perform (priv->curl);
 	curl_easy_getinfo (priv->curl, CURLINFO_RESPONSE_CODE, &status_code);
 	if (res != CURLE_OK) {
-		g_debug ("cURL status-code was %ld", status_code);
-
+		/* check if this issue was an intentional abort */
 		if (!abort_is_error && res == CURLE_ABORTED_BY_CALLBACK)
-			return TRUE;
+			goto verify_and_return;
 
+		g_debug ("cURL status-code was %ld", status_code);
 		if (status_code == 429) {
 			g_set_error (error,
 				     AS_CURL_ERROR,
@@ -150,6 +150,8 @@ as_curl_perform_download (AsCurl *acurl, gboolean abort_is_error, GError **error
 			     curl_easy_strerror (res));
 		return FALSE;
 	}
+
+verify_and_return:
 	if (status_code == 404) {
 		g_set_error (error,
 			     AS_CURL_ERROR,
@@ -157,6 +159,9 @@ as_curl_perform_download (AsCurl *acurl, gboolean abort_is_error, GError **error
 			     /* TRANSLATORS: We tried to download an URL, but received a 404 error code */
 			     _("URL was not found on the server."));
 		return FALSE;
+	} else if (status_code == 302) {
+		/* redirects are fine, we ignore them until we reach a different code */
+		return TRUE;
 	} else if (status_code != 200) {
 		g_set_error (error,
 			     AS_CURL_ERROR,
@@ -168,6 +173,20 @@ as_curl_perform_download (AsCurl *acurl, gboolean abort_is_error, GError **error
 	}
 
 	return TRUE;
+}
+
+/**
+ * as_curl_set_cainfo:
+ * @acurl: an #AsCurl instance.
+ * @cainfo: Path to a CA file.
+ *
+ * Set a CA file holding one or more certificates to verify the peer with.
+ **/
+void
+as_curl_set_cainfo (AsCurl *acurl, const gchar *cainfo)
+{
+	AsCurlPrivate *priv = GET_PRIVATE (acurl);
+	curl_easy_setopt (priv->curl, CURLOPT_CAINFO, cainfo);
 }
 
 /**

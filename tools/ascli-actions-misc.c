@@ -1,20 +1,20 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
  *
- * Licensed under the GNU General Public License Version 2
+ * Licensed under the GNU Lesser General Public License Version 2.1
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the license, or
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 2.1 of the license, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -25,9 +25,11 @@
 
 #include "as-utils-private.h"
 #include "as-settings-private.h"
+#include "as-pool-private.h"
 #include "ascli-utils.h"
 #include "as-component.h"
 #include "as-news-convert.h"
+
 
 /**
  * ascli_show_status:
@@ -37,126 +39,54 @@
 gint
 ascli_show_status (void)
 {
-	guint i;
-	g_autoptr(AsPool) dpool = NULL;
+	g_autoptr(AsPool) pool = NULL;
 	g_autoptr(GError) error = NULL;
-	const gchar *metainfo_path = "/usr/share/metainfo";
-	const gchar *appdata_path = "/usr/share/appdata";
+	gboolean os_metadata_found = FALSE;
+	gboolean other_metadata_found = FALSE;
 
 	/* TRANSLATORS: In the status report of ascli: Header */
 	ascli_print_highlight (_("AppStream Status:"));
 	ascli_print_stdout (_("Version: %s"), PACKAGE_VERSION);
 	g_print ("\n");
 
+	pool = as_pool_new ();
+	as_pool_remove_flags (pool, AS_POOL_FLAG_MONITOR);
+
 	/* TRANSLATORS: In the status report of ascli: Refers to the metadata shipped by distributions */
-	ascli_print_highlight (_("Distribution metadata:"));
-	for (i = 0; AS_SYSTEM_COLLECTION_METADATA_PATHS[i] != NULL; i++) {
-		g_autofree gchar *xml_path = NULL;
-		g_autofree gchar *yaml_path = NULL;
-		g_autofree gchar *icons_path = NULL;
-		gboolean found = FALSE;
+	ascli_print_highlight (_("OS metadata sources:"));
+	os_metadata_found = as_pool_print_std_data_locations_info_private (pool, TRUE, FALSE);
+	if (!os_metadata_found)
+		/* TRANSLATORS: In ascli status, the OS had no metadata (which may be a bug) */
+		g_print ("%s %s\n", ASCLI_CHAR_FAIL, _("No OS metadata found. This is unusual."));
 
-		xml_path = g_build_filename (AS_SYSTEM_COLLECTION_METADATA_PATHS[i], "xmls", NULL);
-		yaml_path = g_build_filename (AS_SYSTEM_COLLECTION_METADATA_PATHS[i], "yaml", NULL);
-		icons_path = g_build_filename (AS_SYSTEM_COLLECTION_METADATA_PATHS[i], "icons", NULL);
-
-		g_print (" %s\n", AS_SYSTEM_COLLECTION_METADATA_PATHS[i]);
-
-		/* display XML data count */
-		if (g_file_test (xml_path, G_FILE_TEST_IS_DIR)) {
-			g_autoptr(GPtrArray) xmls = NULL;
-
-			xmls = as_utils_find_files_matching (xml_path, "*.xml*", FALSE, NULL);
-			if (xmls != NULL) {
-				ascli_print_stdout ("  - XML:  %i", xmls->len);
-				found = TRUE;
-			}
-		}
-
-		/* display YAML data count */
-		if (g_file_test (yaml_path, G_FILE_TEST_IS_DIR)) {
-			g_autoptr(GPtrArray) yaml = NULL;
-
-			yaml = as_utils_find_files_matching (yaml_path, "*.yml*", FALSE, NULL);
-			if (yaml != NULL) {
-				ascli_print_stdout ("  - YAML: %i", yaml->len);
-				found = TRUE;
-			}
-		}
-
-		/* display icon information data count */
-		if (g_file_test (icons_path, G_FILE_TEST_IS_DIR)) {
-			guint j;
-			g_autoptr(GPtrArray) icon_dirs = NULL;
-			icon_dirs = as_utils_find_files_matching (icons_path, "*", FALSE, NULL);
-			if (icon_dirs != NULL) {
-				found = TRUE;
-				ascli_print_stdout ("  - %s:", _("Iconsets"));
-				for (j = 0; j < icon_dirs->len; j++) {
-					const gchar *ipath;
-					g_autofree gchar *dname = NULL;
-					ipath = (const gchar *) g_ptr_array_index (icon_dirs, j);
-
-					dname = g_path_get_basename (ipath);
-					g_print ("     %s\n", dname);
-				}
-			}
-		} else if (found) {
-			ascli_print_stdout ("  - %s", _("No icons."));
-		}
-
-		if (!found) {
-			ascli_print_stdout ("  - %s", _("Empty."));
-		}
-
-		g_print ("\n");
-	}
-
-	/* TRANSLATORS: Info about upstream metadata / metainfo files in the ascli status report */
-	ascli_print_highlight (_("Metainfo files:"));
-	if (g_file_test (metainfo_path, G_FILE_TEST_IS_DIR)) {
-		g_autoptr(GPtrArray) xmls = NULL;
-		g_autofree gchar *msg = NULL;
-
-		xmls = as_utils_find_files_matching (metainfo_path, "*.xml", FALSE, NULL);
-		if (xmls != NULL) {
-			msg = g_strdup_printf (_("Found %i components."), xmls->len);
-			ascli_print_stdout ("  - %s", msg);
-		}
-	} else {
-		if (!g_file_test (appdata_path, G_FILE_TEST_IS_DIR))
-			/* TRANSLATORS: No metainfo files have been found */
-			ascli_print_stdout ("  - %s", _("Empty."));
-	}
-	if (g_file_test (appdata_path, G_FILE_TEST_IS_DIR)) {
-		g_autoptr(GPtrArray) xmls = NULL;
-		g_autofree gchar *msg = NULL;
-
-		xmls = as_utils_find_files_matching (appdata_path, "*.xml", FALSE, NULL);
-		if (xmls != NULL) {
-			/* TRANSLATORS: Found metainfo files in legacy directories */
-			msg = g_strdup_printf (_("Found %i components in legacy paths."), xmls->len);
-			ascli_print_stdout ("  - %s", msg);
-		}
-	}
-	g_print ("\n");
+	/* TRANSLATORS: In the status report of ascli: Refers to the metadata that isn't shipped by the OS (e.g. Flatpak) */
+	ascli_print_highlight (_("Other metadata sources:"));
+	other_metadata_found = os_metadata_found = as_pool_print_std_data_locations_info_private (pool, FALSE, TRUE);
+	if (!other_metadata_found)
+		/* TRANSLATORS: In ascli status, no additional metadata sources have been found */
+		g_print ("• %s\n", _("No metadata."));
 
 	/* TRANSLATORS: Status summary in ascli */
 	ascli_print_highlight (_("Summary:"));
 
-	dpool = as_pool_new ();
-	as_pool_load (dpool, NULL, &error);
+	as_pool_load (pool, NULL, &error);
 	if (error == NULL) {
 		g_autoptr(GPtrArray) cpts = NULL;
-		cpts = as_pool_get_components (dpool);
+		g_autofree gchar *tmp = NULL;
+		const gchar *marker;
 
-		ascli_print_stdout (_("We have information on %i software components."), cpts->len);
-		/* TODO: Request the on-disk cache status from #AsPool and display it here.
-		 * ascli_print_stdout (_("The system metadata cache exists."));
-		 * ascli_print_stdout (_("The system metadata cache does not exist."));
-		 */
+		cpts = as_pool_get_components (pool);
+		if (cpts->len > 0)
+			marker = ASCLI_CHAR_SUCCESS;
+		else
+			marker = ASCLI_CHAR_FAIL;
+
+		tmp = g_strdup_printf (_("We have information on %i software components."), cpts->len);
+		ascli_print_stdout ("%s %s", marker, tmp);
 	} else {
-		ascli_print_stderr (_("Error while loading the metadata pool: %s"), error->message);
+		g_autofree gchar *tmp = NULL;
+		tmp = g_strdup_printf (_("Error while loading the metadata pool: %s"), error->message);
+		ascli_print_stderr ("%s %s", ASCLI_CHAR_FAIL, tmp);
 	}
 
 	return 0;
@@ -567,4 +497,113 @@ ascli_metainfo_to_news (const gchar *mi_fname, const gchar *news_fname, const gc
 
 		return 0;
 	}
+}
+
+/**
+ * ascli_show_sysinfo:
+ *
+ * Display information about the current operating system from the AppStream
+ * metadata cache, as well as system information that we know about and that
+ * is relevant for AppStream components.
+ */
+int
+ascli_show_sysinfo (const gchar *cachepath, gboolean no_cache, gboolean detailed)
+{
+	g_autoptr(AsPool) pool = NULL;
+	g_autoptr(GPtrArray) result = NULL;
+	g_autoptr(AsSystemInfo) sysinfo = NULL;
+	g_autoptr(GError) error = NULL;
+	gulong total_memory;
+	GPtrArray *modaliases;
+
+	sysinfo = as_system_info_new ();
+	pool = ascli_data_pool_new_and_open (cachepath, no_cache, &error);
+	if (error != NULL) {
+		g_printerr ("%s\n", error->message);
+		return 1;
+	}
+
+	ascli_print_highlight ("%s:", _("Operating System Details"));
+	result = as_pool_get_components_by_id (pool, as_system_info_get_os_cid (sysinfo));
+	if (result->len == 0) {
+		g_printerr ("• ");
+		ascli_print_stderr (_("Unable to find operating system component '%s'!"), as_system_info_get_os_cid (sysinfo));
+	}
+
+	for (guint i = 0; i < result->len; i++) {
+		AsComponent *cpt = AS_COMPONENT(g_ptr_array_index (result, i));
+
+		ascli_print_stdout ("%s: %s", _("ID"), as_component_get_id (cpt));
+		ascli_print_stdout ("%s: %s", _("Name"), as_component_get_name (cpt));
+		ascli_print_stdout ("%s: %s", _("Summary"), as_component_get_summary (cpt));
+		if (as_system_info_get_os_version (sysinfo) != NULL)
+			ascli_print_stdout (_("Version: %s"), as_system_info_get_os_version (sysinfo));
+		ascli_print_stdout ("%s: %s", _("Homepage"), as_component_get_url (cpt, AS_URL_KIND_HOMEPAGE));
+		ascli_print_stdout ("%s: %s", _("Developer"), as_component_get_developer_name (cpt));
+		if (detailed) {
+			g_autofree gchar *tmp2 = NULL;
+			g_autofree gchar *tmp1 = as_markup_convert_simple (as_component_get_description (cpt), NULL);
+			tmp2 = ascli_format_long_output (tmp1, 100, 2);
+			ascli_print_stdout ("%s:\n%s", _("Description"), tmp2);
+		}
+
+		if (i < result->len-1)
+			ascli_print_separator ();
+	}
+
+	g_print ("\n");
+	ascli_print_highlight ("%s:", _("Kernel"));
+	ascli_print_stdout ("%s: %s", _("Name"), as_system_info_get_kernel_name (sysinfo));
+	ascli_print_stdout ("%s: %s", _("Version"), as_system_info_get_kernel_version (sysinfo));
+
+	g_print ("\n");
+	ascli_print_highlight ("%s:", _("Hardware"));
+	total_memory = as_system_info_get_memory_total (sysinfo);
+	ascli_print_stdout ("%s: %lu MiB (%.2f GiB)", _("Physical Memory"), total_memory, total_memory / 1024.0);
+
+	modaliases = as_system_info_get_modaliases (sysinfo);
+	if (modaliases->len > 0) {
+		ascli_print_stdout ("%s:", _("Devices with Modaliases"));
+		for (guint i = 0; i < modaliases->len; i++) {
+			g_autoptr(GError) tmp_error = NULL;
+			g_autofree gchar *dev_name = NULL;
+			const gchar *modalias = (const gchar*) g_ptr_array_index (modaliases, i);
+
+			dev_name = as_system_info_get_device_name_for_modalias (sysinfo, modalias, FALSE, &tmp_error);
+			if (dev_name == NULL && !g_error_matches (tmp_error, AS_SYSTEM_INFO_ERROR, AS_SYSTEM_INFO_ERROR_NOT_FOUND)) {
+				g_warning ("Unable to read device info: %s", tmp_error->message);
+				continue;
+			}
+
+			if (detailed) {
+				ascli_print_stdout (" • %s", dev_name? dev_name : modalias);
+				if (dev_name != NULL)
+					ascli_print_stdout ("     %s", modalias);
+			} else {
+				if (dev_name != NULL)
+					ascli_print_stdout (" • %s", dev_name);
+			}
+		}
+	}
+
+	g_print ("\n");
+	ascli_print_highlight ("%s:", _("User Input Controls"));
+	for (guint i = 1; i < AS_CONTROL_KIND_LAST; i++) {
+		g_autoptr(GError) tmp_error = NULL;
+		const gchar *found_str = _("unknown");
+		AsCheckResult res = as_system_info_has_input_control (sysinfo, i, &tmp_error);
+		if (res == AS_CHECK_RESULT_ERROR) {
+			g_warning ("Unable to read input info: %s", tmp_error->message);
+			continue;
+		}
+		if (res == AS_CHECK_RESULT_TRUE)
+			found_str = _("yes");
+		else if (res == AS_CHECK_RESULT_FALSE)
+			found_str = _("no");
+		else if (!detailed)
+			continue;
+		ascli_print_stdout (" • %s: %s", as_control_kind_to_string (i), found_str);
+	}
+
+	return 0;
 }

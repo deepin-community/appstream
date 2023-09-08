@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2021 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -32,7 +32,7 @@ G_BEGIN_DECLS
 
 /**
  * AsUtilsError:
- * @AS_UTILS_ERROR_FAILED:			Generic failure
+ * @AS_UTILS_ERROR_FAILED:		Generic failure
  *
  * The error type.
  **/
@@ -131,6 +131,8 @@ gboolean		as_utils_install_metadata_file (AsMetadataLocation location,
 							const gchar *origin,
 							const gchar *destdir,
 							GError **error);
+
+AsComponentScope	as_utils_guess_scope_from_path (const gchar *path);
 
 
 /* DEPRECATED */

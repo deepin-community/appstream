@@ -3,6 +3,11 @@ option('stemming',
        value : true,
        description : 'Use stemming while searching. Requires Snowball (libstemmer)'
 )
+option('systemd',
+       type : 'boolean',
+       value : true,
+       description : 'Build with systemd support'
+)
 option('vapi',
        type : 'boolean',
        value : false,
@@ -13,6 +18,27 @@ option('qt',
        value : false,
        description : 'Build libappstream-qt'
 )
+option('compose',
+       type : 'boolean',
+       value : false,
+       description : 'Build libappstream-compose library and `appstreamcli compose` tool'
+)
+option('apt-support',
+       type : 'boolean',
+       value : false,
+       description : 'Enable integration with APT on Debian'
+)
+option('gir',
+       type : 'boolean',
+       value : true,
+       description : 'Build introspection data'
+)
+option('svg-support',
+       type : 'boolean',
+       value : true,
+       description : 'SVG graphics support for compose (only disable this for bootstrapping purposes)'
+)
+
 option('docs',
        type : 'boolean',
        value : false,
@@ -28,16 +54,6 @@ option('install-docs',
        value : true,
        description : 'Install documentation for API and specification'
 )
-option('apt-support',
-       type : 'boolean',
-       value : false,
-       description : 'Enable integration with APT on Debian'
-)
-option('gir',
-       type : 'boolean',
-       value : true,
-       description : 'Build introspection data'
-)
 
 #
 # For development
@@ -47,8 +63,8 @@ option('maintainer',
        value : false,
        description : 'Enable maintainer mode (use strict compiler flags, e.g. -Werror)'
 )
-option('compose',
+option('static-analysis',
        type : 'boolean',
        value : false,
-       description : 'Build experimental libappstream-compose library'
+       description : 'Enable GCC static analysis support'
 )
