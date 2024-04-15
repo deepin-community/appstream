@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -41,7 +41,7 @@
  * Its primary usecase is to identify a media directory on the filesystem which is
  * associated with this component.
  **/
-gchar*
+gchar *
 asc_build_component_global_id (const gchar *component_id, const gchar *checksum)
 {
 	gboolean rdns_split;

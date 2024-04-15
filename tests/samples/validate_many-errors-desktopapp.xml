@@ -4,7 +4,7 @@
 to contain a lot of issues for the validator to catch -->
 
 <component type="desktop-application">
-  <id>7-bad-ID</id>
+  <id>invalid.7-bad-ID.app</id>
   <metadata_license>GPL-2.0+</metadata_license>
   <project_license>weird</project_license>
 
@@ -39,7 +39,7 @@ to contain a lot of issues for the validator to catch -->
         <artifact type="binary" platform="x86_64-lunix-gn">
           <location>https://example.com/mytarball.bin.tar.xz</location>
           <checksum type="sha256">....</checksum>
-          <checksum type="blake2b">....</checksum>
+          <checksum type="blake3">....</checksum>
           <size type="download">12345678</size>
           <size type="installed">42424242</size>
           <filename>/root/file.dat</filename>

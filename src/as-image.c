@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2024 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2014 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -36,13 +36,15 @@
 
 #include "as-utils-private.h"
 
-typedef struct
-{
-	AsImageKind	kind;
-	gchar		*url;
-	guint		width;
-	guint		height;
-	GRefString	*locale;
+typedef struct {
+	AsImageKind kind;
+	gchar *url;
+
+	guint width;
+	guint height;
+	guint scale;
+
+	GRefString *locale;
 } AsImagePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AsImage, as_image, G_TYPE_OBJECT)
@@ -69,6 +71,9 @@ as_image_finalize (GObject *object)
 static void
 as_image_init (AsImage *image)
 {
+	AsImagePrivate *priv = GET_PRIVATE (image);
+
+	priv->scale = 1;
 }
 
 /**
@@ -111,7 +116,7 @@ as_image_kind_to_string (AsImageKind kind)
 
 /**
  * as_image_set_kind:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  * @kind: the #AsImageKind, e.g. %AS_IMAGE_KIND_THUMBNAIL.
  *
  * Sets the image kind.
@@ -126,7 +131,7 @@ as_image_set_kind (AsImage *image, AsImageKind kind)
 
 /**
  * as_image_get_kind:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  *
  * Gets the image kind.
  *
@@ -142,14 +147,14 @@ as_image_get_kind (AsImage *image)
 
 /**
  * as_image_get_url:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  *
  * Gets the full qualified URL for the image, usually pointing at some mirror.
  *
  * Returns: URL
  *
  **/
-const gchar*
+const gchar *
 as_image_get_url (AsImage *image)
 {
 	AsImagePrivate *priv = GET_PRIVATE (image);
@@ -158,7 +163,7 @@ as_image_get_url (AsImage *image)
 
 /**
  * as_image_set_url:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  * @url: the URL.
  *
  * Sets the fully-qualified mirror URL to use for the image.
@@ -173,7 +178,7 @@ as_image_set_url (AsImage *image, const gchar *url)
 
 /**
  * as_image_get_width:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  *
  * Gets the image width.
  *
@@ -189,7 +194,7 @@ as_image_get_width (AsImage *image)
 
 /**
  * as_image_set_width:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  * @width: the width in pixels.
  *
  * Sets the image width.
@@ -204,7 +209,7 @@ as_image_set_width (AsImage *image, guint width)
 
 /**
  * as_image_get_height:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  *
  * Gets the image height.
  *
@@ -220,7 +225,7 @@ as_image_get_height (AsImage *image)
 
 /**
  * as_image_set_height:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  * @height: the height in pixels.
  *
  * Sets the image height.
@@ -234,8 +239,40 @@ as_image_set_height (AsImage *image, guint height)
 }
 
 /**
+ * as_image_get_scale:
+ * @image: an #AsImage instance.
+ *
+ * Gets the image integer scale factor.
+ *
+ * Returns: the scale factor.
+ *
+ **/
+guint
+as_image_get_scale (AsImage *image)
+{
+	AsImagePrivate *priv = GET_PRIVATE (image);
+	return priv->scale;
+}
+
+/**
+ * as_image_set_scale:
+ * @image: an #AsImage instance.
+ * @scale: the integer scale factor, e.g. 2
+ *
+ * Sets the image scale factor.
+ *
+ **/
+void
+as_image_set_scale (AsImage *image, guint scale)
+{
+	AsImagePrivate *priv = GET_PRIVATE (image);
+	g_return_if_fail (scale >= 1);
+	priv->scale = scale;
+}
+
+/**
  * as_image_get_locale:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  *
  * Get locale for this image.
  *
@@ -243,7 +280,7 @@ as_image_set_height (AsImage *image, guint height)
  *
  * Since: 0.9.5
  **/
-const gchar*
+const gchar *
 as_image_get_locale (AsImage *image)
 {
 	AsImagePrivate *priv = GET_PRIVATE (image);
@@ -252,8 +289,8 @@ as_image_get_locale (AsImage *image)
 
 /**
  * as_image_set_locale:
- * @image: a #AsImage instance.
- * @locale: the locale string.
+ * @image: an #AsImage instance.
+ * @locale: the BCP47 locale string.
  *
  * Sets the locale for this image.
  *
@@ -268,7 +305,7 @@ as_image_set_locale (AsImage *image, const gchar *locale)
 
 /**
  * as_image_load_from_xml:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  * @ctx: the AppStream document context.
  * @node: the XML node.
  * @error: a #GError.
@@ -311,6 +348,15 @@ as_image_load_from_xml (AsImage *image, AsContext *ctx, xmlNode *node, GError **
 		g_free (str);
 	}
 
+	priv->scale = 1;
+	str = as_xml_get_prop_value (node, "scale");
+	if (str != NULL) {
+		priv->scale = g_ascii_strtoll (str, NULL, 10);
+		g_free (str);
+		if (priv->scale < 1)
+			priv->scale = 1;
+	}
+
 	stype = as_xml_get_prop_value (node, "type");
 	if (g_strcmp0 (stype, "thumbnail") == 0)
 		priv->kind = AS_IMAGE_KIND_THUMBNAIL;
@@ -323,10 +369,11 @@ as_image_load_from_xml (AsImage *image, AsContext *ctx, xmlNode *node, GError **
 		if ((priv->width == 0) || (priv->height == 0)) {
 			if (priv->kind != AS_IMAGE_KIND_SOURCE) {
 				/* thumbnails w/o size information must never happen */
-				g_set_error_literal (error,
-						     AS_METADATA_ERROR,
-						     AS_METADATA_ERROR_VALUE_MISSING,
-						     "Ignored screenshot thumbnail image without size information.");
+				g_set_error_literal (
+				    error,
+				    AS_METADATA_ERROR,
+				    AS_METADATA_ERROR_VALUE_MISSING,
+				    "Ignored screenshot thumbnail image without size information.");
 				return FALSE;
 			}
 		}
@@ -347,7 +394,7 @@ as_image_load_from_xml (AsImage *image, AsContext *ctx, xmlNode *node, GError **
 
 /**
  * as_image_to_xml_node:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  * @ctx: the AppStream document context.
  * @root: XML node to attach the new nodes to.
  *
@@ -357,7 +404,7 @@ void
 as_image_to_xml_node (AsImage *image, AsContext *ctx, xmlNode *root)
 {
 	AsImagePrivate *priv = GET_PRIVATE (image);
-	xmlNode* n_image = NULL;
+	xmlNode *n_image = NULL;
 
 	n_image = as_xml_add_text_node (root, "image", priv->url);
 
@@ -367,16 +414,12 @@ as_image_to_xml_node (AsImage *image, AsContext *ctx, xmlNode *root)
 		as_xml_add_text_prop (n_image, "type", "source");
 
 	if ((priv->width > 0) && (priv->height > 0)) {
-		gchar *size;
-
-		size = g_strdup_printf("%i", priv->width);
-		as_xml_add_text_prop (n_image, "width", size);
-		g_free (size);
-
-		size = g_strdup_printf("%i", priv->height);
-		as_xml_add_text_prop (n_image, "height", size);
-		g_free (size);
+		as_xml_add_uint_prop (n_image, "width", priv->width);
+		as_xml_add_uint_prop (n_image, "height", priv->height);
 	}
+
+	if (priv->scale > 1)
+		as_xml_add_uint_prop (n_image, "scale", priv->scale);
 
 	if ((priv->locale != NULL) && (g_strcmp0 (priv->locale, "C") != 0))
 		as_xml_add_text_prop (n_image, "xml:lang", priv->locale);
@@ -386,7 +429,7 @@ as_image_to_xml_node (AsImage *image, AsContext *ctx, xmlNode *root)
 
 /**
  * as_image_load_from_yaml:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  * @ctx: the AppStream document context.
  * @node: the YAML node.
  * @error: a #GError.
@@ -394,7 +437,11 @@ as_image_to_xml_node (AsImage *image, AsContext *ctx, xmlNode *root)
  * Loads data from a YAML field.
  **/
 gboolean
-as_image_load_from_yaml (AsImage *image, AsContext *ctx, GNode *node, AsImageKind kind, GError **error)
+as_image_load_from_yaml (AsImage *image,
+			 AsContext *ctx,
+			 GNode *node,
+			 AsImageKind kind,
+			 GError **error)
 {
 	AsImagePrivate *priv = GET_PRIVATE (image);
 
@@ -411,11 +458,17 @@ as_image_load_from_yaml (AsImage *image, AsContext *ctx, GNode *node, AsImageKin
 			priv->width = g_ascii_strtoll (value, NULL, 10);
 		} else if (g_strcmp0 (key, "height") == 0) {
 			priv->height = g_ascii_strtoll (value, NULL, 10);
+		} else if (g_strcmp0 (key, "scale") == 0) {
+			priv->scale = g_ascii_strtoll (value, NULL, 10);
+			if (priv->scale < 1)
+				priv->scale = 1;
 		} else if (g_strcmp0 (key, "url") == 0) {
 			if (as_context_has_media_baseurl (ctx)) {
 				/* handle the media baseurl */
 				g_free (priv->url);
-				priv->url = g_build_filename (as_context_get_media_baseurl (ctx), value, NULL);
+				priv->url = g_build_filename (as_context_get_media_baseurl (ctx),
+							      value,
+							      NULL);
 			} else {
 				/* no baseurl, we can just set the value as URL */
 				as_image_set_url (image, value);
@@ -432,7 +485,7 @@ as_image_load_from_yaml (AsImage *image, AsContext *ctx, GNode *node, AsImageKin
 
 /**
  * as_image_emit_yaml:
- * @image: a #AsImage instance.
+ * @image: an #AsImage instance.
  * @ctx: the AppStream document context.
  * @emitter: The YAML emitter to emit data on.
  *
@@ -457,14 +510,14 @@ as_image_emit_yaml (AsImage *image, AsContext *ctx, yaml_emitter_t *emitter)
 
 	as_yaml_emit_entry (emitter, "url", url);
 	if ((priv->width > 0) && (priv->height > 0)) {
-		as_yaml_emit_entry_uint64 (emitter,
-					 "width",
-					 priv->width);
+		as_yaml_emit_entry_uint64 (emitter, "width", priv->width);
 
-		as_yaml_emit_entry_uint64 (emitter,
-					 "height",
-					 priv->height);
+		as_yaml_emit_entry_uint64 (emitter, "height", priv->height);
 	}
+
+	if (priv->scale > 1)
+		as_yaml_emit_entry_uint64 (emitter, "scale", priv->scale);
+
 	if ((priv->locale != NULL) && (g_strcmp0 (priv->locale, "C") != 0))
 		as_yaml_emit_entry (emitter, "lang", priv->locale);
 
@@ -489,7 +542,7 @@ as_image_class_init (AsImageClass *klass)
  * Returns: (transfer full): a #AsImage
  *
  **/
-AsImage*
+AsImage *
 as_image_new (void)
 {
 	AsImage *image;

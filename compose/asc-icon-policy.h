@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -18,7 +18,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined (__APPSTREAM_COMPOSE_H) && !defined (ASC_COMPILATION)
+#if !defined(__APPSTREAM_COMPOSE_H) && !defined(ASC_COMPILATION)
 #error "Only <appstream-compose.h> can be included directly."
 #endif
 #pragma once
@@ -31,8 +31,7 @@ G_BEGIN_DECLS
 #define ASC_TYPE_ICON_POLICY (asc_icon_policy_get_type ())
 G_DECLARE_DERIVABLE_TYPE (AscIconPolicy, asc_icon_policy, ASC, ICON_POLICY, GObject)
 
-struct _AscIconPolicyClass
-{
+struct _AscIconPolicyClass {
 	GObjectClass parent_class;
 	/*< private >*/
 	void (*_as_reserved1) (void);
@@ -41,15 +40,14 @@ struct _AscIconPolicyClass
 	void (*_as_reserved4) (void);
 };
 
-typedef struct
-{
-  /*< private >*/
-  gpointer	dummy1;
-  guint		dummy2;
-  gpointer	dummy3;
-  gpointer	dummy4;
-  gpointer	dummy5;
-  gpointer	dummy6;
+typedef struct {
+	/*< private >*/
+	gpointer dummy1;
+	guint	 dummy2;
+	gpointer dummy3;
+	gpointer dummy4;
+	gpointer dummy5;
+	gpointer dummy6;
 } AscIconPolicyIter;
 
 /**
@@ -68,18 +66,25 @@ typedef enum {
 	ASC_ICON_STATE_REMOTE_ONLY
 } AscIconState;
 
-AscIconPolicy			*asc_icon_policy_new (void);
+const gchar   *asc_icon_state_to_string (AscIconState istate);
+AscIconState   asc_icon_state_from_string (const gchar *state_str);
 
-void				asc_icon_policy_set_policy (AscIconPolicy *ipolicy,
-							    guint icon_size,
-							    guint icon_scale,
-							    AscIconState state);
+AscIconPolicy *asc_icon_policy_new (void);
 
-void				asc_icon_policy_iter_init (AscIconPolicyIter *iter,
-							   AscIconPolicy *ipolicy);
-gboolean			asc_icon_policy_iter_next (AscIconPolicyIter *iter,
-							   guint *size,
-							   guint *scale,
-							   AscIconState *state);
+void	       asc_icon_policy_set_policy (AscIconPolicy *ipolicy,
+					   guint	  icon_size,
+					   guint	  icon_scale,
+					   AscIconState	  state);
+
+void	       asc_icon_policy_iter_init (AscIconPolicyIter *iter, AscIconPolicy *ipolicy);
+gboolean       asc_icon_policy_iter_next (AscIconPolicyIter *iter,
+					  guint		    *size,
+					  guint		    *scale,
+					  AscIconState	    *state);
+
+gchar	      *asc_icon_policy_to_string (AscIconPolicy *ipolicy);
+gboolean       asc_icon_policy_from_string (AscIconPolicy *ipolicy,
+					    const gchar	  *serialized_policy,
+					    GError	 **error);
 
 G_END_DECLS

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2015-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2015-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -28,10 +28,10 @@ G_BEGIN_DECLS
 
 int ascli_install_component (const gchar *identifier,
 			     AsBundleKind bundle_kind,
-			     gboolean choose_first);
+			     gboolean	  choose_first);
 int ascli_remove_component (const gchar *identifier,
 			    AsBundleKind bundle_kind,
-			    gboolean choose_first);
+			    gboolean	 choose_first);
 
 G_END_DECLS
 

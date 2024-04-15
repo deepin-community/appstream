@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 Aleix Pol Gonzalez <aleixpol@kde.org>
- * Copyright (C) 2018-2019 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2018-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -28,9 +28,11 @@
 
 using namespace AppStream;
 
-class AppStream::ReleaseData : public QSharedData {
+class AppStream::ReleaseData : public QSharedData
+{
 public:
-    ReleaseData(AsRelease* rel) : m_release(rel)
+    ReleaseData(AsRelease *rel)
+        : m_release(rel)
     {
         g_object_ref(m_release);
     }
@@ -40,7 +42,7 @@ public:
         g_object_unref(m_release);
     }
 
-    bool operator==(const ReleaseData& rd) const
+    bool operator==(const ReleaseData &rd) const
     {
         return rd.m_release == m_release;
     }
@@ -50,31 +52,32 @@ public:
         return m_release;
     }
 
-    AsRelease* m_release;
+    AsRelease *m_release;
 };
 
-Release::Release(_AsRelease* release)
+Release::Release(_AsRelease *release)
     : d(new ReleaseData(release))
-{}
+{
+}
 
 Release::Release(const Release &release) = default;
 
 Release::~Release() = default;
 
-Release& Release::operator=(const Release &release) = default;
+Release &Release::operator=(const Release &release) = default;
 
 bool Release::operator==(const Release &other) const
 {
-    if(this->d == other.d) {
+    if (this->d == other.d) {
         return true;
     }
-    if(this->d && other.d) {
+    if (this->d && other.d) {
         return *(this->d) == *other.d;
     }
     return false;
 }
 
-_AsRelease * AppStream::Release::asRelease() const
+_AsRelease *AppStream::Release::cPtr() const
 {
     return d->release();
 }
@@ -106,62 +109,14 @@ QString Release::description() const
     return QString::fromUtf8(as_release_get_description(d->m_release));
 }
 
-QString Release::activeLocale() const
-{
-    return QString::fromUtf8(as_release_get_active_locale(d->m_release));
-}
-
 Release::UrgencyKind Release::urgency() const
 {
     return Release::UrgencyKind(as_release_get_urgency(d->m_release));
 }
 
-QDebug operator<<(QDebug s, const AppStream::Release& release)
+QDebug operator<<(QDebug s, const AppStream::Release &release)
 {
-    s.nospace() << "AppStream::Release(" << release.version() << ": " << release.description() << ")";
+    s.nospace() << "AppStream::Release(" << release.version() << ": " << release.description()
+                << ")";
     return s.space();
-}
-
-QList<QUrl> Release::locations() const
-{
-    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    auto urls = as_release_get_locations(d->m_release);
-    QList<QUrl> ret;
-    ret.reserve(urls->len);
-    for(uint i = 0; i<urls->len; ++i) {
-        auto strval = (const gchar*) g_ptr_array_index (urls, i);
-        ret << QUrl(QString::fromUtf8(strval));
-    }
-
-    #pragma GCC diagnostic pop
-    return ret;
-}
-
-Checksum Release::checksum() const
-{
-    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    {
-        auto cs = as_release_get_checksum(d->m_release, AS_CHECKSUM_KIND_SHA256);
-        if (cs)
-            return Checksum { Checksum::KindSha256, QByteArray(as_checksum_get_value (cs)) };
-    }
-
-    {
-        auto cs = as_release_get_checksum(d->m_release, AS_CHECKSUM_KIND_SHA1);
-        if (cs)
-            return Checksum { Checksum::KindSha1, QByteArray(as_checksum_get_value (cs)) };
-    }
-    #pragma GCC diagnostic pop
-
-    return Checksum { Checksum::KindNone, "" };
-}
-
-QHash<Release::SizeKind, quint64> Release::sizes() const
-{
-    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return {
-        { SizeInstalled, as_release_get_size(d->m_release, AS_SIZE_KIND_INSTALLED) },
-        { SizeDownload, as_release_get_size(d->m_release, AS_SIZE_KIND_DOWNLOAD) }
-    };
-    #pragma GCC diagnostic pop
 }

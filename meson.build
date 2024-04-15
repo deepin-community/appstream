@@ -1,21 +1,22 @@
 project('AppStream', 'c',
   meson_version: '>=0.62',
-  default_options: ['c_std=c11', 'cpp_std=gnu++14'],
+  default_options: ['c_std=c11', 'cpp_std=gnu++17'],
 
-  license: 'LGPL-2.1+',
-  version: '0.16.1',
+  license: 'LGPL-2.1-or-later',
+  version: '1.0.2',
 )
 
 cc = meson.get_compiler('c')
 source_root = meson.project_source_root()
 
 as_version = meson.project_version()
-as_api_level = '4'
+as_api_level = '5'
 
 varr = as_version.split('.')
 as_major_version = varr[0]
 as_minor_version = varr[1]
 as_micro_version = varr[2]
+as_data_installdir = get_option('prefix') / get_option('datadir') / 'appstream'
 
 #
 # Configure files
@@ -27,31 +28,25 @@ conf.set('AS_MICRO_VERSION_CONF', as_micro_version)
 conf.set_quoted('PACKAGE_VERSION', as_version)
 conf.set_quoted('GETTEXT_PACKAGE', 'appstream')
 conf.set_quoted('LOCALEDIR',
-                join_paths(get_option('prefix'),
-                           get_option('localedir')))
+                get_option('prefix') / get_option('localedir'))
 conf.set_quoted('LOCALSTATEDIR',
-                join_paths(get_option('prefix'),
-                           get_option('localstatedir')))
+                get_option('prefix') / get_option('localstatedir'))
 conf.set_quoted('LIBEXECDIR',
-                join_paths(get_option('prefix'),
-                           get_option('libexecdir')))
-conf.set_quoted('DATADIR',
-                join_paths(get_option('prefix'),
-                           get_option('datadir')))
+                get_option('prefix') / get_option('libexecdir'))
 conf.set_quoted('LIBDIR',
-                join_paths(get_option('prefix'),
-                           get_option('libdir')))
+                get_option('prefix') / get_option('libdir'))
+conf.set_quoted('AS_DATADIR',
+                as_data_installdir)
 conf.set_quoted('BINDIR',
-                join_paths(get_option('prefix'),
-                           get_option('bindir')))
+                get_option('prefix') / get_option('bindir'))
 conf.set_quoted('SYSCONFDIR',
-                join_paths(get_option('prefix'),
-                           get_option('sysconfdir')))
+                get_option('prefix') / get_option('sysconfdir'))
 conf.set('_DEFAULT_SOURCE', true)
 conf.set('HAVE_APT_SUPPORT', get_option('apt-support'))
 conf.set('HAVE_STEMMING', get_option('stemming'))
 conf.set('HAVE_SYSTEMD', get_option('systemd'))
 conf.set('HAVE_SVG_SUPPORT', get_option('svg-support'))
+conf.set('HAVE_ZSTD', get_option('zstd-support'))
 
 configure_file(output: 'config.h', configuration: conf)
 root_inc_dir = include_directories ('.')
@@ -59,6 +54,11 @@ root_inc_dir = include_directories ('.')
 #
 # Custom C flags
 #
+
+if cc.get_id() == 'msvc'
+  error('MSVC is not supported as it does not support modern C11 features and __attribute__((cleanup))')
+endif
+
 sanitizer_libs = []
 if get_option('maintainer')
     maintainer_c_args = ['-Werror',
@@ -82,14 +82,8 @@ if get_option('static-analysis') and host_machine.system() != 'windows'
     error('You need to compile with GCC to run the static analyzer!')
   endif
 
-  # enable statuc analyzer
+  # enable static analyzer
   add_project_arguments(['-fanalyzer'], language : 'c')
-
-  # silence false-positives for NULL dereference.
-  # GCC does not appear to recognize that functions like as_is_empty()
-  # ensure that a pointer can not be NULL, and therefore is emitting it
-  # even in cases where it shouldn't.
-  add_project_arguments(['-Wno-analyzer-null-dereference'], language : 'c')
 
   # make false-positive non-fatal with GCC 12 for now
   if cc.version().version_compare('>11<13')
@@ -124,7 +118,6 @@ add_project_arguments(
 )
 add_project_arguments(
   '-Wno-unused-parameter',
-  '-Werror=shadow',
   '-Werror=empty-body',
   '-Werror=pointer-arith',
   '-Werror=init-self',
@@ -133,13 +126,20 @@ add_project_arguments(
   '-Werror=misleading-indentation',
   '-Werror=format-security',
 
-  # NOTE: Can be removed with AppStream 1.0
-  '-Wno-error=c++20-compat',
   language: 'cpp'
 )
 
 # Vendor extensions in system headers
-add_project_arguments('-D_POSIX_C_SOURCE=200809L', language: 'c')
+if host_machine.system() != 'netbsd'
+    # on NetBSD, defining POSIX_C_SOURCE *removes* non-POSIX symbols from namespace,
+    # while on all other systems it adds them. Hence we only define this when not on NetBSD.
+    add_project_arguments('-D_POSIX_C_SOURCE=201710L', language: 'c')
+endif
+
+if host_machine.system() == 'darwin'
+    # See https://github.com/ximion/appstream/issues/551
+    add_project_arguments('-D_DARWIN_C_SOURCE', language: 'c')
+endif
 
 if cc.get_id() == 'clang'
     # Clang doesn't understand autofree helpers on GMutexLocker and thinks
@@ -159,13 +159,22 @@ add_project_arguments('-DAS_COMPILATION', language: 'c')
 glib_dep = dependency('glib-2.0', version: '>= 2.62')
 gobject_dep = dependency('gobject-2.0', version: '>= 2.62')
 gio_dep = dependency('gio-2.0', version: '>= 2.62')
-gio_unix_dep = dependency('gio-unix-2.0', version: '>= 2.62')
 curl_dep = dependency('libcurl', version: '>= 7.62')
 xml2_dep = dependency('libxml-2.0')
 yaml_dep = dependency('yaml-0.1')
-xmlb_dep = dependency('xmlb', version: '>= 0.3.6',
-                      fallback: ['libxmlb', 'libxmlb_dep'], default_options: ['gtkdoc=false'])
-libsystemd_dep = dependency('libsystemd', required: get_option('systemd'))
+xmlb_dep = dependency('xmlb', version: '>= 0.3.14',
+                      fallback: ['libxmlb', 'libxmlb_dep'],
+                      default_options: ['gtkdoc=false', 'introspection=false'])
+if get_option('zstd-support')
+    zstd_dep = dependency('libzstd', required: get_option('zstd-support'))
+else
+    zstd_dep = dependency('', required: false)
+endif
+if get_option('systemd')
+    libsystemd_dep = dependency('libsystemd', required: get_option('systemd'))
+else
+    libsystemd_dep = dependency('', required: false)
+endif
 
 if get_option ('gir')
     # ensure we have a version of GIR that isn't broken with Meson
@@ -173,9 +182,10 @@ if get_option ('gir')
     dependency('gobject-introspection-1.0', version: '>=1.56')
 endif
 
-stemmer_inc_dirs = include_directories(['/usr/include'])
+stemmer_inc_dirs = include_directories()
 if get_option('stemming')
     stemmer_lib = cc.find_library('stemmer', required: true)
+    stemmer_inc_dirs = include_directories(['/usr/include'])
     if not cc.has_header('libstemmer.h')
         if cc.has_header('libstemmer/libstemmer.h')
             stemmer_inc_dirs = include_directories('/usr/include/libstemmer')

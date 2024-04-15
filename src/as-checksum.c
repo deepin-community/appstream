@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -31,10 +31,11 @@
 #include "config.h"
 #include "as-checksum-private.h"
 
-typedef struct
-{
-	AsChecksumKind		 kind;
-	gchar			*value;
+#include "as-utils-private.h"
+
+typedef struct {
+	AsChecksumKind kind;
+	gchar *value;
 } AsChecksumPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AsChecksum, as_checksum, G_TYPE_OBJECT)
@@ -49,7 +50,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (AsChecksum, as_checksum, G_TYPE_OBJECT)
  *
  * Returns: string version of @kind
  **/
-const gchar*
+const gchar *
 as_checksum_kind_to_string (AsChecksumKind kind)
 {
 	if (kind == AS_CHECKSUM_KIND_NONE)
@@ -58,10 +59,12 @@ as_checksum_kind_to_string (AsChecksumKind kind)
 		return "sha1";
 	if (kind == AS_CHECKSUM_KIND_SHA256)
 		return "sha256";
+	if (kind == AS_CHECKSUM_KIND_SHA512)
+		return "sha512";
 	if (kind == AS_CHECKSUM_KIND_BLAKE2B)
 		return "blake2b";
-	if (kind == AS_CHECKSUM_KIND_BLAKE2S)
-		return "blake2s";
+	if (kind == AS_CHECKSUM_KIND_BLAKE3)
+		return "blake3";
 	return "unknown";
 }
 
@@ -76,16 +79,18 @@ as_checksum_kind_to_string (AsChecksumKind kind)
 AsChecksumKind
 as_checksum_kind_from_string (const gchar *kind_str)
 {
-	if (g_strcmp0 (kind_str, "none") == 0)
+	if (as_str_equal0 (kind_str, "none"))
 		return AS_CHECKSUM_KIND_NONE;
-	if (g_strcmp0 (kind_str, "sha1") == 0)
+	if (as_str_equal0 (kind_str, "sha1"))
 		return AS_CHECKSUM_KIND_SHA1;
-	if (g_strcmp0 (kind_str, "sha256") == 0)
+	if (as_str_equal0 (kind_str, "sha256"))
 		return AS_CHECKSUM_KIND_SHA256;
-	if (g_strcmp0 (kind_str, "blake2b") == 0)
+	if (as_str_equal0 (kind_str, "sha512"))
+		return AS_CHECKSUM_KIND_SHA512;
+	if (as_str_equal0 (kind_str, "blake2b"))
 		return AS_CHECKSUM_KIND_BLAKE2B;
-	if (g_strcmp0 (kind_str, "blake2s") == 0)
-		return AS_CHECKSUM_KIND_BLAKE2S;
+	if (as_str_equal0 (kind_str, "blake3"))
+		return AS_CHECKSUM_KIND_BLAKE3;
 	return AS_CHECKSUM_KIND_NONE;
 }
 
@@ -151,7 +156,7 @@ as_checksum_set_kind (AsChecksum *cs, AsChecksumKind kind)
  *
  * Returns: the checksum.
  **/
-const gchar*
+const gchar *
 as_checksum_get_value (AsChecksum *cs)
 {
 	AsChecksumPrivate *priv = GET_PRIVATE (cs);
@@ -264,7 +269,7 @@ as_checksum_emit_yaml (AsChecksum *cs, AsContext *ctx, yaml_emitter_t *emitter)
 }
 
 /**
- * as_checksum_new_for_kind_value:
+ * as_checksum_new_with_value:
  *
  * Creates a new #AsChecksum with the given hash
  * function and hash value.
@@ -273,8 +278,8 @@ as_checksum_emit_yaml (AsChecksum *cs, AsContext *ctx, yaml_emitter_t *emitter)
  *
  * Since: 0.12.11
  **/
-AsChecksum*
-as_checksum_new_for_kind_value (AsChecksumKind kind, const gchar *value)
+AsChecksum *
+as_checksum_new_with_value (AsChecksumKind kind, const gchar *value)
 {
 	AsChecksum *cs = as_checksum_new ();
 	as_checksum_set_kind (cs, kind);
@@ -289,7 +294,7 @@ as_checksum_new_for_kind_value (AsChecksumKind kind, const gchar *value)
  *
  * Returns: (transfer full): an #AsChecksum
  **/
-AsChecksum*
+AsChecksum *
 as_checksum_new (void)
 {
 	AsChecksum *cs;

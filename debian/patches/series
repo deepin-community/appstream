@@ -1,5 +1,0 @@
-01_add-missing-is-hidden-attribute.patch
-02_spdx-accept-brackets-in-expression-check.patch
-03_compose-lowercase-cids.patch
-04_fix-crash-on-invalid-yaml-input.patch
-05_compose-fix-qt-l10n-search-crash.patch

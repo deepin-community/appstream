@@ -96,9 +96,9 @@
 		<important>
 		<title>Escaping characters in the component ID</title>
 		<para>
-			To ensures the greatest possible compatibility of an AppStream ID, it is recommended to replace any hyphens in the ID with underscores, and prefix every leading digit of
-			a section with an underscore as well. Since the underscore is not a valid character in domain names, the uniqueness of the ID is kept.
-			For example, the ID <code>org.7-zip.7zip</code> could become <code>org._7_zip._7zip</code>.
+			To ensures the greatest possible compatibility of an AppStream ID, it is recommended to replace any hyphens in the ID in all but the last segment of it with underscores,
+			and prefix every leading digit of a segment with an underscore as well. Since the underscore is not a valid character in domain names, the uniqueness of the ID is kept.
+			For example, the ID <code>org.7-zip.7-zip</code> could become <code>org._7_zip._7-zip</code>.
 		</para>
 		</important>
 
@@ -194,6 +194,7 @@
 		<listitem>
 			<para>
 			A short summary of what this component does. If the component is "PackageKit", the summary could be "Provides a package-management abstraction layer".
+			This element is translatable.
 			</para>
 		</listitem>
 		</varlistentry>
@@ -258,7 +259,7 @@
 		</itemizedlist>
 		<para>
 			In metainfo files, this tag should be translated by-paragraph, meaning that in a translated file, each translated <literal>&lt;p/&gt;</literal> child
-			has a language property.
+			has an <literal>xml:lang</literal> property.
 		</para>
 		</listitem>
 		</varlistentry>
@@ -306,7 +307,7 @@
 		<term>&lt;url/&gt;</term>
 		<listitem>
 			<para>
-				Defines web URLs for this component.There are several different URL types allowed:
+				Defines web URLs for this component. There are several different URL types allowed:
 			</para>
 
 			<variablelist>
@@ -380,15 +381,6 @@
 				<para>
 					This could for example be an HTTPS URL to an online form or a page describing how to contact the developer.
 				</para>
-				<note>
-					<title>Deprecation</title>
-					<para>
-						In the past, <code>mailto:</code> URL schemas to link to email addresses were also supported for this URL type.
-						It is recommended to not use them in new metadata, as they provide poor usability on most systems when users click
-						on such a link and no local email client is configured.
-					</para>
-				</note>
-
 				</listitem>
 			</varlistentry>
 
@@ -418,12 +410,12 @@
 		<term>&lt;launchable/&gt;</term>
 		<listitem>
 		<para>
-		         This optional tag indicates possible methods to launch the software described in this component.
-                         It is allowed to appear multiple times in the metainfo data.
+		         This tag indicates possible methods to launch the software described in this component.
+                         It is allowed to appear multiple times in MetaInfo data.
 		</para>
 
 		<para>
-		  The <code>&lt;launchable/&gt;</code> tag has an essential <literal>type</literal> property indicating the system that is used to launch the component.  The following types are allowed:
+		  The <code>&lt;launchable/&gt;</code> tag has a required <literal>type</literal> property indicating the system that is used to launch the component.  The following types are allowed:
                 </para>
                 <variablelist>
                   <varlistentry>
@@ -630,15 +622,6 @@
 				<para>
 					This provided element is described in detail for the <literal>firmware</literal> component type, where it is mandatory.
 					Please see <xref linkend="tag-firmware-provides"/> for more information.
-				</para>
-				</listitem>
-			</varlistentry>
-
-			<varlistentry>
-				<term>&lt;python2/&gt;</term>
-				<listitem>
-				<para>
-					Name of a Python 2 module this component provides.
 				</para>
 				</listitem>
 			</varlistentry>
@@ -913,25 +896,7 @@
 					Relations for the display length can be defined using a <literal>compare</literal> property as described in <xref linkend="tag-relations"/>.
 					If this property is not present, a value of <code>ge</code> (greater-or-equal) is implicitly assumed.
 				</para>
-				<para>
-					The <literal>display_length</literal> tag also accepts one of the following text values. While their exact meaning in terms of pixel-based size
-					is implementation-defined, the text term will roughly match the screen size of the device class listed next to it in the listing below:
-				</para>
-				<itemizedlist>
-					<listitem><para><code>xsmall</code> - Very small screens, as used in watches, wearables and other small-display devices (about &lt;= 360px).</para></listitem>
-					<listitem><para><code>small</code> - Small screens often used in handheld devices, such as phone screens, small phablets (about &lt; 768px).</para></listitem>
-					<listitem><para><code>medium</code> - Screens in laptops, tablets (about &gt;= 768px)</para></listitem>
-					<listitem><para><code>large</code> - Bigger computer monitors (about &gt;= 1024px)</para></listitem>
-					<listitem><para><code>xlarge</code> - Television screens, large projected images (about &gt;= 3840px)</para></listitem>
-				</itemizedlist>
-				<para>
-					If a text value is used, the <literal>side</literal> property must not be present. For <literal>side</literal>, <code>shortest</code>
-					is assumed in this case.
-					A <literal>compare</literal> property is permitted and will compare the text placeholder values from smallest (<code>xsmall</code>) to largest (<code>xlarge</code>).
-					The text values are intended for adaptive applications which only need or want to give a very rough hint as to which display lengths they support, and do
-					not need fine control over their visibility (as these types of applications will adjust well to most screen sizes at runtime).
-					If finer control is needed, absolute sizes should be used instead.
-				</para>
+
 				<note>
 					<title>Determining Device Types</title>
 					<para>
@@ -941,6 +906,21 @@
 						input controls as defined via <xref linkend="tag-relations-control"/>.
 					</para>
 				</note>
+				<note>
+					<title>Sizes for Reference</title>
+					<para>
+						The sizes below are for reference if you do not know the exact dimensions your application will fit into,
+						and just need a rough guideline as to what device type you can expect at a given size:
+					</para>
+					<itemizedlist>
+						<listitem><para>Very small screens, as used in watches, wearables and other small-display devices: about &lt;= 360px</para></listitem>
+						<listitem><para>Small screens often used in handheld devices, such as phone screens, small phablets: about &lt; 768px</para></listitem>
+						<listitem><para>Screens in laptops, tablets: about &gt;= 768px</para></listitem>
+						<listitem><para>Bigger computer monitors: about &gt;= 1024px</para></listitem>
+						<listitem><para>Television screens, large projected images: about &gt;= 3840px</para></listitem>
+					</itemizedlist>
+				</note>
+
 				<para>
 					This tag may appear up to four times to set a minimum and maximum dimension required.
 					If multiple displays are connected to a device, it is acceptable to test against either the largest screen attached to the device, or the combined
@@ -955,7 +935,7 @@
 				</para>
 				<para>
 					If no <literal>display_length</literal> relation is present, a minimum required display (<code>ge</code>) relation
-					of <code>medium</code> is implicitly assumed to preserve backwards compatibility (so applications capable of running on smaller screens
+					of <code>768px</code> is implicitly assumed to preserve backwards compatibility (so applications capable of running on smaller screens
 					need to make their support for that configuration explicit).
 				</para>
 				<para>
@@ -969,8 +949,8 @@
 <!-- ensure this application is not run on a very large screen, or
      very small screen (no tiny handhelds or television screens) -->
 <requires>
-  <display_length compare="lt">xlarge</display_length>
-  <display_length compare="gt">xsmall</display_length>
+  <display_length compare="lt">3840</display_length>
+  <display_length compare="gt">360</display_length>
 </requires>]]></programlisting>
 				<para>Valid for: <literal>requires</literal>, <literal>recommends</literal></para>
 				</listitem>
@@ -1181,19 +1161,39 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry id="tag-developer">
+		<term>&lt;developer/&gt;</term>
+		<listitem>
+		<para>
+			The <code>&lt;developer/&gt;</code> element is designed to represent the developers or project responsible for development of the project described in the metadata.
+		</para>
+		<para>
+			The element should have a <literal>id</literal> property, containing a unique ID to identify the respective developer. It is recommended to use a reverse-DNS
+			name, like <code>org.gnome</code> or <code>io.github.ximion</code>, or a Fediverse handle (like <code>@user@example.org</code>) as ID to achieve a higher chance
+			of uniqueness.
+		</para>
+		<para>
+			Every <literal>developer</literal> element must have a <literal>name</literal> tag as child, which contains a translatable name for the
+			respective developer. Values might be for example "The GNOME Foundation" or "The KDE Community".
+			Hyperlinks or emails must not be used in the name; if you want to link to the developer's homepage, use the <xref linkend="tag-url"/>-tag instead.
+			The <literal>name</literal> tag is translatable.
+		</para>
+		</listitem>
+		</varlistentry>
+
 		<varlistentry id="tag-developer_name">
 		<term>&lt;developer_name/&gt;</term>
 		<listitem>
 		<para>
-			The <code>&lt;developer_name/&gt;</code> tag is designed to represent the developers or project responsible for development of the project described in the metadata.
+			The <code>&lt;developer_name/&gt;</code> tag is designed to represent the developers or project responsible for development
+			of the project described in the metadata.
 		</para>
-		<para>
-			Values might be for example "The GNOME Foundation" or "The KDE Community".
-			You must not include hyperlinks or emails in this field; if you want to link to the developer's homepage, use the <xref linkend="tag-url"/>-tag instead.
-		</para>
-		<para>
-			This tag is translatable.
-		</para>
+		<important>
+			<title>Deprecation</title>
+			<para>
+				This tag is deprecated and should not be used for new metadata. Please use <xref linkend="tag-developer"/> instead.
+			</para>
+		</important>
 		</listitem>
 		</varlistentry>
 
@@ -1206,12 +1206,31 @@
 		</para>
 		<para>
 			The <code>&lt;screenshots/&gt;</code> tag contains multiple <code>&lt;screenshot/&gt;</code> children, where at least one of them must have the property
-			<code>type="default"</code> to indicate the primary screenshot of the software. Every <code>&lt;screenshot/&gt;</code> tag must have at least
-			one <code>&lt;image/&gt;</code> or <code>&lt;video/&gt;</code> child, but never an <literal>image</literal> <emphasis>and</emphasis> <literal>video</literal>
-			at the same time.
+			<code>type="default"</code> to indicate the primary and most representative screenshot of the software.
 		</para>
 		<para>
-			Screenshots containing a video must not be the default screenshot.
+			Optionally, a <literal>screenshot</literal> may also have an <code>environment</code> property.
+			This string property denotes the GUI environment the screenshot was recorded in, in the form of <code>{env}:{style}</code>,
+			where <literal>{env}</literal> is a desktop-environment name in lowercase and <literal>{style}</literal> is a specific style
+			that the desktop environment recognizes, e.g. <code>light</code> and <code>dark</code> for light and dark themes.
+			See <ulink url="https://github.com/ximion/appstream/blob/main/data/desktop-style-ids.txt">desktop-style-ids.txt</ulink> for a list
+			of currently recognized environment and style combinations.
+		</para>
+		<para>
+			Software centers displaying the component will usually prefer screenshots of the current environment and style, and display them first,
+			even before the screenshot marked as <literal>default</literal>.
+		</para>
+		<para>
+			In general, screenshots should be displayed in the order the are defined in in their <literal>screenshots</literal> block
+			for the respective component on a per-environment basis (all screenshots of the same environment/style will be displayed in the order
+			they are listed in the XML, but may be moved to the front of the list as a whole depending on the current environment).
+		</para>
+		<para>
+			Every <code>&lt;screenshot/&gt;</code> element must have at least one <code>&lt;image/&gt;</code> <emphasis>or</emphasis> <code>&lt;video/&gt;</code> child,
+			but never an <literal>image</literal> <emphasis>and</emphasis> <literal>video</literal> at the same time.
+		</para>
+		<para>
+			Screenshots containing videos must not be the default screenshot.
 		</para>
 		<para>
 			The value of the <code>&lt;image/&gt;</code> tag is a direct HTTP/HTTPS URL to a screenshot uploaded to a public location on the web.
@@ -1237,6 +1256,14 @@
 					<para><code>height</code></para>
 					<para>
 						The height of the image in pixels.
+					</para>
+				</listitem>
+				<listitem>
+					<para><code>scale</code></para>
+					<para>
+						A scaling factor for the image, if it is intended for a HiDPI display.
+						If a scaling factor > 1 is set, the <literal>width</literal>/<literal>height</literal> values
+						are not adjusted to scale. They always represent the exact image dimensions in pixels.
 					</para>
 				</listitem>
 				<listitem>
@@ -1316,6 +1343,16 @@
   </screenshot>
   <screenshot>
     <video codec="av1" width="1600" height="900">https://example.com/foobar/screencast.mkv</video>
+  </screenshot>
+
+  <screenshot environment="plasma-mobile">
+    <caption>The FooBar main window, but on Plasma Mobile</caption>
+    <image type="source" width="1600" height="900">https://example.com/foobar/screenshot-1_plasma-mobile.png</image>
+  </screenshot>
+
+  <screenshot environment="gnome:dark">
+    <caption>The FooBar main window, on GNOME in dark mode</caption>
+    <image type="source" width="1600" height="900">https://example.com/foobar/screenshot-1_gnome_dark.png</image>
   </screenshot>
  </screenshots>]]></programlisting>
 
@@ -1457,7 +1494,7 @@
 			Example:
 		</para>
 		<programlisting language="XML"><![CDATA[<agreement type="privacy" version_id="1.0">
-    <agreement_section type="introduction">
+    <agreement_section id="introduction">
       <name>Introduction</name>
       <description>
         <p>
@@ -1468,7 +1505,7 @@
       </description>
     </agreement_section>
 
-    <agreement_section type="scope">
+    <agreement_section id="scope">
       <name>Scope</name>
       <description>
         <p>
@@ -1577,6 +1614,36 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry id="tag-references">
+		<term>&lt;references/&gt;</term>
+		<listitem>
+		<para>
+			The <code>&lt;references/&gt;</code> element is an optional tag to indicate references to this component in other registries.
+			This is primarily used for scientific registries, citation information and DOI
+			(<ulink url="https://en.wikipedia.org/wiki/Digital_object_identifier">Digital Object Identifier</ulink>) associations.
+		</para>
+		<para>
+			This information is primarily consumed by specialized tools, but may also be shown by software centers or read by the
+			applications themselves to compose references.
+		</para>
+		<para>
+			The <literal>references</literal> element may have <literal>doi</literal> children containing DOI identifier strings as value,
+			<literal>citation_cff</literal> children containing a link to a citation file in CFF (<ulink url="https://citation-file-format.github.io/">Citation File Format</ulink>)
+			format or <literal>registry</literal> children.
+			A <literal>registry</literal> child must have a <literal>name</literal> property containing the name of a registry referencing this component,
+			while the value of it must be the identification string in the respective registry.
+		</para>
+		<para>
+			Example:
+		</para>
+		<programlisting language="XML"><![CDATA[<references>
+  <doi>10.1000/182</doi>
+  <registry name="SciCrunch">SCR_000000</registry>
+  <citation_cff>https://example.org/CITATION.cff</citation_cff>
+</references>]]></programlisting>
+		</listitem>
+		</varlistentry>
+
 		<varlistentry id="tag-custom">
 		<term>&lt;custom/&gt;</term>
 		<listitem>
@@ -1635,7 +1702,9 @@
   <releases>
     <release version="1.2" date="2015-02-16" />
   </releases>
-  <developer_name>FooBar Team</developer_name>
+  <developer id="example.org">
+    <name>FooBar Team</name>
+  </developer>
 </component>]]></programlisting>
 
 	<para>

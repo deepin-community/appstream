@@ -17,11 +17,15 @@ dnf --assumeyes --quiet --setopt=install_weak_deps=False install \
     meson \
     gettext \
     gperf \
-    gtk-doc \
+    gi-docgen \
     itstool \
     libasan \
     libstemmer-devel \
     libubsan \
+    diffutils \
+    gcovr \
+    xz-devel \
+    libuuid-devel \
     'pkgconfig(gio-2.0)' \
     'pkgconfig(gobject-introspection-1.0)' \
     'pkgconfig(xmlb)' \
@@ -36,8 +40,8 @@ dnf --assumeyes --quiet --setopt=install_weak_deps=False install \
     'pkgconfig(fontconfig)' \
     'pkgconfig(gdk-pixbuf-2.0)' \
     'pkgconfig(pango)' \
-    'pkgconfig(Qt5Core)' \
-    qt5-linguist \
+    'pkgconfig(Qt6Core)' \
+    qt6-linguist \
     sed \
     vala \
     xmlto

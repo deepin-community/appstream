@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -23,45 +23,43 @@
 #include <glib-object.h>
 #include <appstream.h>
 
-#include "as-settings-private.h"
+#include "as-macros-private.h"
 #include "as-curl.h"
 #include "asc-result.h"
 #include "asc-compose.h"
 
-G_BEGIN_DECLS
-#pragma GCC visibility push(hidden)
+AS_BEGIN_PRIVATE_DECLS
 
-AsComponent		*asc_parse_metainfo_data (AscResult *cres,
-						  AsMetadata *mdata,
-						  GBytes *bytes,
-						  const gchar *mi_basename);
-AsComponent		*asc_parse_metainfo_data_simple (AscResult *cres,
-							 GBytes *bytes,
-							 const gchar *mi_basename);
-void			asc_process_metainfo_releases (AscResult *cres,
-						       AscUnit *unit,
+AsComponent *asc_parse_metainfo_data (AscResult	  *cres,
+				      AsMetadata  *mdata,
+				      GBytes	  *bytes,
+				      const gchar *mi_basename);
+AsComponent *asc_parse_metainfo_data_simple (AscResult	 *cres,
+					     GBytes	 *bytes,
+					     const gchar *mi_basename);
+void	     asc_process_metainfo_releases (AscResult	*cres,
+					    AscUnit	*unit,
+					    AsComponent *cpt,
+					    const gchar *mi_filename,
+					    gboolean	 allow_net,
+					    AsCurl	*acurl,
+					    GBytes     **used_reldata);
+
+void	     asc_validate_metainfo_data_for_component (AscResult   *cres,
+						       AsValidator *validator,
 						       AsComponent *cpt,
-						       const gchar *mi_filename,
-						       gboolean allow_net,
-						       AsCurl *acurl,
-						       GBytes **used_reldata);
-
-void			asc_validate_metainfo_data_for_component (AscResult *cres,
-								  AsValidator *validator,
-								  AsComponent *cpt,
-								  GBytes *bytes,
-								  const gchar *mi_basename,
-								  GBytes *relmd_bytes);
+						       GBytes	   *bytes,
+						       const gchar *mi_basename,
+						       GBytes	   *relmd_bytes);
 
 AS_INTERNAL_VISIBLE
-AsComponent		*asc_parse_desktop_entry_data (AscResult *cres,
-							AsComponent *cpt,
-							GBytes *bytes,
-							const gchar *de_basename,
-							gboolean ignore_nodisplay,
-							AsFormatVersion fversion,
-							AscTranslateDesktopTextFn de_l10n_fn,
-							gpointer user_data);
+AsComponent *asc_parse_desktop_entry_data (AscResult		    *cres,
+					   AsComponent		    *cpt,
+					   GBytes		    *bytes,
+					   const gchar		    *de_basename,
+					   gboolean		     ignore_nodisplay,
+					   AsFormatVersion	     fversion,
+					   AscTranslateDesktopTextFn de_l10n_fn,
+					   gpointer		     user_data);
 
-#pragma GCC visibility pop
-G_END_DECLS
+AS_END_PRIVATE_DECLS

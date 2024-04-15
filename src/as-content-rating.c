@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2016-2020 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -40,11 +40,10 @@
 
 typedef struct {
 	gchar *id;
-	AsContentRatingValue	 value;
+	AsContentRatingValue value;
 } AsContentRatingKey;
 
-typedef struct
-{
+typedef struct {
 	gchar *kind;
 	GPtrArray *keys; /* of AsContentRatingKey */
 } AsContentRatingPrivate;
@@ -52,14 +51,6 @@ typedef struct
 G_DEFINE_TYPE_WITH_PRIVATE (AsContentRating, as_content_rating, G_TYPE_OBJECT)
 
 #define GET_PRIVATE(o) (as_content_rating_get_instance_private (o))
-
-typedef enum
-{
-	OARS_1_0,
-	OARS_1_1,
-} OarsVersion;
-
-static gboolean is_oars_key (const gchar *id, OarsVersion version);
 
 static void
 as_content_rating_finalize (GObject *object)
@@ -134,7 +125,7 @@ as_content_rating_get_rating_ids (AsContentRating *content_rating)
 	}
 
 	g_ptr_array_sort (ids, ids_sort_cb);
-	g_ptr_array_add (ids, NULL);  /* NULL terminator */
+	g_ptr_array_add (ids, NULL); /* NULL terminator */
 
 	return (const gchar **) g_ptr_array_free (g_steal_pointer (&ids), FALSE);
 }
@@ -150,7 +141,9 @@ as_content_rating_get_rating_ids (AsContentRating *content_rating)
  * Since: 0.11.0
  **/
 void
-as_content_rating_set_value (AsContentRating *content_rating, const gchar *id, AsContentRatingValue value)
+as_content_rating_set_value (AsContentRating *content_rating,
+			     const gchar *id,
+			     AsContentRatingValue value)
 {
 	AsContentRatingPrivate *priv = GET_PRIVATE (content_rating);
 	AsContentRatingKey *key;
@@ -179,7 +172,8 @@ AsContentRatingValue
 as_content_rating_get_value (AsContentRating *content_rating, const gchar *id)
 {
 	AsContentRatingPrivate *priv = GET_PRIVATE (content_rating);
-	g_return_val_if_fail (AS_IS_CONTENT_RATING (content_rating), AS_CONTENT_RATING_VALUE_UNKNOWN);
+	g_return_val_if_fail (AS_IS_CONTENT_RATING (content_rating),
+			      AS_CONTENT_RATING_VALUE_UNKNOWN);
 
 	for (guint i = 0; i < priv->keys->len; i++) {
 		AsContentRatingKey *key = g_ptr_array_index (priv->keys, i);
@@ -193,8 +187,8 @@ as_content_rating_get_value (AsContentRating *content_rating, const gchar *id)
 	 * overall. Only return %AS_CONTENT_RATING_VALUE_UNKNOWN if the
 	 * #AsContentRating doesn’t exist at all (or for other types of content
 	 * rating). */
-	if ((g_strcmp0 (priv->kind, "oars-1.0") == 0 && is_oars_key (id, OARS_1_0)) ||
-	    (g_strcmp0 (priv->kind, "oars-1.1") == 0 && is_oars_key (id, OARS_1_1)))
+	if ((g_strcmp0 (priv->kind, "oars-1.0") == 0 && as_is_oars_key (id, AS_OARS_VERSION_1_0)) ||
+	    (g_strcmp0 (priv->kind, "oars-1.1") == 0 && as_is_oars_key (id, AS_OARS_VERSION_1_1)))
 		return AS_CONTENT_RATING_VALUE_NONE;
 	else
 		return AS_CONTENT_RATING_VALUE_UNKNOWN;
@@ -249,22 +243,14 @@ as_content_rating_value_from_string (const gchar *value)
 }
 
 static const gchar *rating_system_names[] = {
-	[AS_CONTENT_RATING_SYSTEM_UNKNOWN] = NULL,
-	[AS_CONTENT_RATING_SYSTEM_INCAA] = "INCAA",
-	[AS_CONTENT_RATING_SYSTEM_ACB] = "ACB",
-	[AS_CONTENT_RATING_SYSTEM_DJCTQ] = "DJCTQ",
-	[AS_CONTENT_RATING_SYSTEM_GSRR] = "GSRR",
-	[AS_CONTENT_RATING_SYSTEM_PEGI] = "PEGI",
-	[AS_CONTENT_RATING_SYSTEM_KAVI] = "KAVI",
-	[AS_CONTENT_RATING_SYSTEM_USK] = "USK",
-	[AS_CONTENT_RATING_SYSTEM_ESRA] = "ESRA",
-	[AS_CONTENT_RATING_SYSTEM_CERO] = "CERO",
-	[AS_CONTENT_RATING_SYSTEM_OFLCNZ] = "OFLCNZ",
-	[AS_CONTENT_RATING_SYSTEM_RUSSIA] = "RUSSIA",
-	[AS_CONTENT_RATING_SYSTEM_MDA] = "MDA",
-	[AS_CONTENT_RATING_SYSTEM_GRAC] = "GRAC",
-	[AS_CONTENT_RATING_SYSTEM_ESRB] = "ESRB",
-	[AS_CONTENT_RATING_SYSTEM_IARC] = "IARC",
+	[AS_CONTENT_RATING_SYSTEM_UNKNOWN] = NULL,    [AS_CONTENT_RATING_SYSTEM_INCAA] = "INCAA",
+	[AS_CONTENT_RATING_SYSTEM_ACB] = "ACB",	      [AS_CONTENT_RATING_SYSTEM_DJCTQ] = "DJCTQ",
+	[AS_CONTENT_RATING_SYSTEM_GSRR] = "GSRR",     [AS_CONTENT_RATING_SYSTEM_PEGI] = "PEGI",
+	[AS_CONTENT_RATING_SYSTEM_KAVI] = "KAVI",     [AS_CONTENT_RATING_SYSTEM_USK] = "USK",
+	[AS_CONTENT_RATING_SYSTEM_ESRA] = "ESRA",     [AS_CONTENT_RATING_SYSTEM_CERO] = "CERO",
+	[AS_CONTENT_RATING_SYSTEM_OFLCNZ] = "OFLCNZ", [AS_CONTENT_RATING_SYSTEM_RUSSIA] = "RUSSIA",
+	[AS_CONTENT_RATING_SYSTEM_MDA] = "MDA",	      [AS_CONTENT_RATING_SYSTEM_GRAC] = "GRAC",
+	[AS_CONTENT_RATING_SYSTEM_ESRB] = "ESRB",     [AS_CONTENT_RATING_SYSTEM_IARC] = "IARC",
 };
 G_STATIC_ASSERT (G_N_ELEMENTS (rating_system_names) == AS_CONTENT_RATING_SYSTEM_LAST);
 
@@ -495,9 +481,12 @@ static const gchar *content_rating_strings[AS_CONTENT_RATING_SYSTEM_LAST][7] = {
 	[AS_CONTENT_RATING_SYSTEM_RUSSIA] = { "0+", "6+", "12+", "16+", "18+", NULL },
 	[AS_CONTENT_RATING_SYSTEM_MDA] = { "General", "ADV", "M18", NULL },
 	[AS_CONTENT_RATING_SYSTEM_GRAC] = { "ALL", "12", "15", "18", NULL },
-	/* Note: ESRB has locale-specific suffixes, so needs special further
+ /* Note: ESRB has locale-specific suffixes, so needs special further
 	 * handling in code. These strings are just the locale-independent parts. */
-	[AS_CONTENT_RATING_SYSTEM_ESRB] = { "Early Childhood", "Everyone", "Everyone 10+", "Teen", "Mature", "Adults Only", NULL },
+	[AS_CONTENT_RATING_SYSTEM_ESRB] = { "Early Childhood",
+					    "Everyone", "Everyone 10+",
+					    "Teen", "Mature",
+					    "Adults Only", NULL },
 	[AS_CONTENT_RATING_SYSTEM_IARC] = { "3+", "7+", "12+", "16+", "18+", NULL },
 };
 
@@ -552,12 +541,15 @@ as_content_rating_system_get_formatted_ages (AsContentRatingSystem system)
 	if (system == AS_CONTENT_RATING_SYSTEM_ESRB) {
 		g_auto(GStrv) esrb_ages = g_new0 (gchar *, 7);
 
-		esrb_ages[0] = get_esrb_string (content_rating_strings[system][0], _("Early Childhood"));
+		esrb_ages[0] = get_esrb_string (content_rating_strings[system][0],
+						_("Early Childhood"));
 		esrb_ages[1] = get_esrb_string (content_rating_strings[system][1], _("Everyone"));
-		esrb_ages[2] = get_esrb_string (content_rating_strings[system][2], _("Everyone 10+"));
+		esrb_ages[2] = get_esrb_string (content_rating_strings[system][2],
+						_("Everyone 10+"));
 		esrb_ages[3] = get_esrb_string (content_rating_strings[system][3], _("Teen"));
 		esrb_ages[4] = get_esrb_string (content_rating_strings[system][4], _("Mature"));
-		esrb_ages[5] = get_esrb_string (content_rating_strings[system][5], _("Adults Only"));
+		esrb_ages[5] = get_esrb_string (content_rating_strings[system][5],
+						_("Adults Only"));
 		esrb_ages[6] = NULL;
 
 		return g_steal_pointer (&esrb_ages);
@@ -613,7 +605,7 @@ as_content_rating_system_get_csm_ages (AsContentRatingSystem system, gsize *leng
 
 /*
  * parse_locale:
- * @locale: (transfer full): a locale to parse
+ * @locale: (transfer full): a POSIX locale to parse
  * @language_out: (out) (optional) (nullable): return location for the parsed
  *    language, or %NULL to ignore
  * @territory_out: (out) (optional) (nullable): return location for the parsed
@@ -638,7 +630,7 @@ as_content_rating_system_get_csm_ages (AsContentRatingSystem system, gsize *leng
  * Returns: %TRUE on success, %FALSE otherwise
  */
 static gboolean
-parse_locale (gchar *locale  /* (transfer full) */,
+parse_locale (gchar *locale /* (transfer full) */,
 	      const gchar **language_out,
 	      const gchar **territory_out,
 	      const gchar **codeset_out,
@@ -646,6 +638,7 @@ parse_locale (gchar *locale  /* (transfer full) */,
 {
 	gchar *separator;
 	const gchar *language = NULL, *territory = NULL, *codeset = NULL, *modifier = NULL;
+	g_return_val_if_fail (locale, FALSE);
 
 	separator = strrchr (locale, '@');
 	if (separator != NULL) {
@@ -725,6 +718,7 @@ as_content_rating_system_from_locale (const gchar *locale)
 	if (g_strcmp0 (territory, "TW") == 0)
 		return AS_CONTENT_RATING_SYSTEM_GSRR;
 
+	/* clang-format off */
 	/* Europe (but not Finland or Germany), India, Israel,
 	 * Pakistan, Quebec, South Africa */
 	if ((g_strcmp0 (territory, "GB") == 0) ||
@@ -817,11 +811,13 @@ as_content_rating_system_from_locale (const gchar *locale)
 	    g_strcmp0 (territory, "CA") == 0 ||
 	    g_strcmp0 (territory, "MX") == 0)
 		return AS_CONTENT_RATING_SYSTEM_ESRB;
+	/* clang-format on */
 
 	/* everything else is IARC */
 	return AS_CONTENT_RATING_SYSTEM_IARC;
 }
 
+/* clang-format off */
 /* Table of the human-readable descriptions for each #AsContentRatingValue for
  * each content rating category. @desc_none must be non-%NULL, but the other
  * values may be %NULL if no description is appropriate. In that case, the next
@@ -881,10 +877,10 @@ static const struct {
 		"violence-sexual",
 		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
 		N_("No sexual violence"),
+		NULL,
+		NULL,
 		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
 		N_("Rape or other violent sexual behavior"),
-		NULL,
-		NULL,
 	},
 	{
 		"drugs-alcohol",
@@ -924,7 +920,8 @@ static const struct {
 		N_("Brief artistic nudity"),
 		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
 		N_("Prolonged nudity"),
-		NULL,
+		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
+		N_("Explicit nudity involving visible sexual organs"),
 	},
 	{
 		"sex-themes",
@@ -1017,19 +1014,20 @@ static const struct {
 		"social-audio",
 		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
 		N_("No way to talk with other users"),
+		NULL,
+		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
+		N_("Moderated audio or video chat functionality between users"),
 		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
 		N_("Uncontrolled audio or video chat functionality between users"),
-		NULL,
-		NULL,
 	},
 	{
 		"social-contacts",
 		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
 		N_("No sharing of social network usernames or email addresses"),
+		NULL,
+		NULL,
 		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
 		N_("Sharing social network usernames or email addresses"),
-		NULL,
-		NULL,
 	},
 	{
 		"social-info",
@@ -1046,10 +1044,10 @@ static const struct {
 		"social-location",
 		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
 		N_("No sharing of physical location with other users"),
+		NULL,
+		NULL,
 		/* TRANSLATORS: content rating description, see https://hughsie.github.io/oars/ */
 		N_("Sharing physical location with other users"),
-		NULL,
-		NULL,
 	},
 
 	/* v1.1 */
@@ -1144,6 +1142,7 @@ static const struct {
 		N_("Graphic depictions of modern-day slavery"),
 	},
 };
+/* clang-format on */
 
 /**
  * as_content_rating_attribute_get_description:
@@ -1170,9 +1169,11 @@ as_content_rating_attribute_get_description (const gchar *id, AsContentRatingVal
 			continue;
 
 		/* Return the most-intense non-NULL string. */
-		if (oars_descriptions[i].desc_intense != NULL && value >= AS_CONTENT_RATING_VALUE_INTENSE)
+		if (oars_descriptions[i].desc_intense != NULL &&
+		    value >= AS_CONTENT_RATING_VALUE_INTENSE)
 			return _(oars_descriptions[i].desc_intense);
-		if (oars_descriptions[i].desc_moderate != NULL && value >= AS_CONTENT_RATING_VALUE_MODERATE)
+		if (oars_descriptions[i].desc_moderate != NULL &&
+		    value >= AS_CONTENT_RATING_VALUE_MODERATE)
 			return _(oars_descriptions[i].desc_moderate);
 		if (oars_descriptions[i].desc_mild != NULL && value >= AS_CONTENT_RATING_VALUE_MILD)
 			return _(oars_descriptions[i].desc_mild);
@@ -1193,49 +1194,58 @@ as_content_rating_attribute_get_description (const gchar *id, AsContentRatingVal
 G_STATIC_ASSERT (AS_CONTENT_RATING_VALUE_LAST == AS_CONTENT_RATING_VALUE_INTENSE + 1);
 
 static const struct {
-	const gchar	*id;
-	OarsVersion	 oars_version;  /* when the key was first added */
-	guint		 csm_age_none;  /* for %AS_CONTENT_RATING_VALUE_NONE */
-	guint		 csm_age_mild;  /* for %AS_CONTENT_RATING_VALUE_MILD */
-	guint		 csm_age_moderate;  /* for %AS_CONTENT_RATING_VALUE_MODERATE */
-	guint		 csm_age_intense;  /* for %AS_CONTENT_RATING_VALUE_INTENSE */
-} oars_to_csm_mappings[] =  {
+	const gchar *id;
+	AsOarsVersion oars_version; /* when the key was first added */
+	guint csm_age_none;	    /* for %AS_CONTENT_RATING_VALUE_NONE */
+	guint csm_age_mild;	    /* for %AS_CONTENT_RATING_VALUE_MILD */
+	guint csm_age_moderate;	    /* for %AS_CONTENT_RATING_VALUE_MODERATE */
+	guint csm_age_intense;	    /* for %AS_CONTENT_RATING_VALUE_INTENSE */
+} oars_to_csm_mappings[] = {
 	/* Each @id must only appear once. The set of @csm_age_* values for a
 	 * given @id must be complete and non-decreasing. */
 	/* v1.0 */
-	{ "violence-cartoon",	OARS_1_0, 0, 3, 4, 6 },
-	{ "violence-fantasy",	OARS_1_0, 0, 3, 7, 8 },
-	{ "violence-realistic",	OARS_1_0, 0, 4, 9, 14 },
-	{ "violence-bloodshed",	OARS_1_0, 0, 9, 11, 18 },
-	{ "violence-sexual",	OARS_1_0, 0, 18, 18, 18 },
-	{ "drugs-alcohol",	OARS_1_0, 0, 11, 13, 16 },
-	{ "drugs-narcotics",	OARS_1_0, 0, 12, 14, 17 },
-	{ "drugs-tobacco",	OARS_1_0, 0, 10, 13, 13 },
-	{ "sex-nudity",		OARS_1_0, 0, 12, 14, 14 },
-	{ "sex-themes",		OARS_1_0, 0, 13, 14, 15 },
-	{ "language-profanity",	OARS_1_0, 0, 8, 11, 14 },
-	{ "language-humor",	OARS_1_0, 0, 3, 8, 14 },
-	{ "language-discrimination", OARS_1_0, 0, 9, 10, 11 },
-	{ "money-advertising",	OARS_1_0, 0, 7, 8, 10 },
-	{ "money-gambling",	OARS_1_0, 0, 7, 10, 18 },
-	{ "money-purchasing",	OARS_1_0, 0, 12, 14, 15 },
-	{ "social-chat",	OARS_1_0, 0, 4, 10, 13 },
-	{ "social-audio",	OARS_1_0, 0, 15, 15, 15 },
-	{ "social-contacts",	OARS_1_0, 0, 12, 12, 12 },
-	{ "social-info",	OARS_1_0, 0, 0, 13, 13 },
-	{ "social-location",	OARS_1_0, 0, 13, 13, 13 },
-	/* v1.1 additions */
-	{ "sex-homosexuality",	OARS_1_1, 0, 13, 14, 15 },
-	{ "sex-prostitution",	OARS_1_1, 0, 12, 14, 18 },
-	{ "sex-adultery",	OARS_1_1, 0, 8, 10, 18 },
-	{ "sex-appearance",	OARS_1_1, 0, 10, 10, 15 },
-	{ "violence-worship",	OARS_1_1, 0, 13, 15, 18 },
-	{ "violence-desecration", OARS_1_1, 0, 13, 15, 18 },
-	{ "violence-slavery",	OARS_1_1, 0, 13, 15, 18 },
+	{"violence-cartoon",	      AS_OARS_VERSION_1_0, 0, 3,	 4,  6 },
+	{ "violence-fantasy",	      AS_OARS_VERSION_1_0, 0, 3,	 7,  8 },
+	{ "violence-realistic",	AS_OARS_VERSION_1_0, 0, 4,  9,  14},
+	{ "violence-bloodshed",	AS_OARS_VERSION_1_0, 0, 9,  11, 18},
+	{ "violence-sexual",	     AS_OARS_VERSION_1_0, 0, 18, 18, 18},
+	{ "drugs-alcohol",	   AS_OARS_VERSION_1_0, 0, 11, 13, 16},
+	{ "drugs-narcotics",	     AS_OARS_VERSION_1_0, 0, 12, 14, 17},
+	{ "drugs-tobacco",	   AS_OARS_VERSION_1_0, 0, 10, 13, 13},
+	{ "sex-nudity",		AS_OARS_VERSION_1_0, 0, 12, 14, 14},
+	{ "sex-themes",		AS_OARS_VERSION_1_0, 0, 13, 14, 15},
+	{ "language-profanity",	AS_OARS_VERSION_1_0, 0, 8,  11, 14},
+	{ "language-humor",	    AS_OARS_VERSION_1_0, 0, 3,  8,  14},
+	{ "language-discrimination", AS_OARS_VERSION_1_0, 0, 9,	10, 11},
+	{ "money-advertising",       AS_OARS_VERSION_1_0, 0, 7,  8,  10},
+	{ "money-gambling",	    AS_OARS_VERSION_1_0, 0, 7,  10, 18},
+	{ "money-purchasing",	      AS_OARS_VERSION_1_0, 0, 12, 14, 15},
+	{ "social-chat",		 AS_OARS_VERSION_1_0, 0, 4,  10, 13},
+	{ "social-audio",		  AS_OARS_VERSION_1_0, 0, 15, 15, 15},
+	{ "social-contacts",	     AS_OARS_VERSION_1_0, 0, 12, 12, 12},
+	{ "social-info",		 AS_OARS_VERSION_1_0, 0, 0,  13, 13},
+	{ "social-location",	     AS_OARS_VERSION_1_0, 0, 13, 13, 13},
+ /* v1.1 additions */
+	{ "sex-homosexuality",       AS_OARS_VERSION_1_1, 0, 13, 14, 15},
+	{ "sex-prostitution",	      AS_OARS_VERSION_1_1, 0, 12, 14, 18},
+	{ "sex-adultery",		  AS_OARS_VERSION_1_1, 0, 8,  10, 18},
+	{ "sex-appearance",	    AS_OARS_VERSION_1_1, 0, 10, 10, 15},
+	{ "violence-worship",	      AS_OARS_VERSION_1_1, 0, 13, 15, 18},
+	{ "violence-desecration",	  AS_OARS_VERSION_1_1, 0, 13, 15, 18},
+	{ "violence-slavery",	      AS_OARS_VERSION_1_1, 0, 13, 15, 18},
 };
 
-static gboolean
-is_oars_key (const gchar *id, OarsVersion version)
+/**
+ * as_is_oars_key:
+ * @id: the subsection ID e.g. `violence-cartoon`
+ * @version: the #AsOarsVersion, e.g. %AS_OARS_VERSION_1_1
+ *
+ * Checks if a OARS ID exists in the given version.
+ *
+ * Returns: %TRUE if the ID exists.
+ **/
+gboolean
+as_is_oars_key (const gchar *id, AsOarsVersion version)
 {
 	for (gsize i = 0; i < G_N_ELEMENTS (oars_to_csm_mappings); i++) {
 		if (g_str_equal (id, oars_to_csm_mappings[i].id))
@@ -1258,8 +1268,7 @@ is_oars_key (const gchar *id, OarsVersion version)
 guint
 as_content_rating_attribute_to_csm_age (const gchar *id, AsContentRatingValue value)
 {
-	if (value == AS_CONTENT_RATING_VALUE_UNKNOWN ||
-	    value == AS_CONTENT_RATING_VALUE_LAST)
+	if (value == AS_CONTENT_RATING_VALUE_UNKNOWN || value == AS_CONTENT_RATING_VALUE_LAST)
 		return 0;
 
 	for (gsize i = 0; i < G_N_ELEMENTS (oars_to_csm_mappings); i++) {
@@ -1378,8 +1387,7 @@ as_content_rating_get_minimum_age (AsContentRating *content_rating)
 	g_return_val_if_fail (AS_IS_CONTENT_RATING (content_rating), 0);
 
 	/* check kind */
-	if (g_strcmp0 (priv->kind, "oars-1.0") != 0 &&
-	    g_strcmp0 (priv->kind, "oars-1.1") != 0)
+	if (g_strcmp0 (priv->kind, "oars-1.0") != 0 && g_strcmp0 (priv->kind, "oars-1.1") != 0)
 		return G_MAXUINT;
 
 	for (guint i = 0; i < priv->keys->len; i++) {
@@ -1439,14 +1447,17 @@ as_content_rating_set_kind (AsContentRating *content_rating, const gchar *kind)
  * Loads data from an XML node.
  **/
 gboolean
-as_content_rating_load_from_xml (AsContentRating *content_rating, AsContext *ctx, xmlNode *node, GError **error)
+as_content_rating_load_from_xml (AsContentRating *content_rating,
+				 AsContext *ctx,
+				 xmlNode *node,
+				 GError **error)
 {
 	xmlNode *iter;
 	g_autofree gchar *type_str = NULL;
 
 	/* set selected content-rating type (usually oars-1.0) */
 	type_str = as_xml_get_prop_value (node, "type");
-	as_content_rating_set_kind (content_rating, (gchar*) type_str);
+	as_content_rating_set_kind (content_rating, (gchar *) type_str);
 
 	/* read attributes */
 	for (iter = node->children; iter != NULL; iter = iter->next) {
@@ -1456,7 +1467,7 @@ as_content_rating_load_from_xml (AsContentRating *content_rating, AsContext *ctx
 
 		if (iter->type != XML_ELEMENT_NODE)
 			continue;
-		if (g_strcmp0 ((gchar*) iter->name, "content_attribute") != 0)
+		if (g_strcmp0 ((gchar *) iter->name, "content_attribute") != 0)
 			continue;
 
 		attr_id = as_xml_get_prop_value (iter, "id");
@@ -1491,7 +1502,7 @@ as_content_rating_to_xml_node (AsContentRating *content_rating, AsContext *ctx, 
 
 	for (i = 0; i < priv->keys->len; i++) {
 		xmlNode *anode;
-		AsContentRatingKey *key = (AsContentRatingKey*) g_ptr_array_index (priv->keys, i);
+		AsContentRatingKey *key = (AsContentRatingKey *) g_ptr_array_index (priv->keys, i);
 
 		anode = as_xml_add_text_node (rnode,
 					      "content_attribute",
@@ -1510,12 +1521,14 @@ as_content_rating_to_xml_node (AsContentRating *content_rating, AsContext *ctx, 
  * Loads data from a YAML field.
  **/
 gboolean
-as_content_rating_load_from_yaml (AsContentRating *content_rating, AsContext *ctx, GNode *node, GError **error)
+as_content_rating_load_from_yaml (AsContentRating *content_rating,
+				  AsContext *ctx,
+				  GNode *node,
+				  GError **error)
 {
 	GNode *n;
 
-	as_content_rating_set_kind (content_rating,
-				    as_yaml_node_get_key (node));
+	as_content_rating_set_kind (content_rating, as_yaml_node_get_key (node));
 	for (n = node->children; n != NULL; n = n->next) {
 		AsContentRatingValue attr_value;
 
@@ -1523,9 +1536,7 @@ as_content_rating_load_from_yaml (AsContentRating *content_rating, AsContext *ct
 		if (attr_value == AS_CONTENT_RATING_VALUE_UNKNOWN)
 			continue;
 
-		as_content_rating_set_value (content_rating,
-					     as_yaml_node_get_key (n),
-					     attr_value);
+		as_content_rating_set_value (content_rating, as_yaml_node_get_key (n), attr_value);
 	}
 
 	return TRUE;
@@ -1540,7 +1551,9 @@ as_content_rating_load_from_yaml (AsContentRating *content_rating, AsContext *ct
  * Emit YAML data for this object.
  **/
 void
-as_content_rating_emit_yaml (AsContentRating *content_rating, AsContext *ctx, yaml_emitter_t *emitter)
+as_content_rating_emit_yaml (AsContentRating *content_rating,
+			     AsContext *ctx,
+			     yaml_emitter_t *emitter)
 {
 	AsContentRatingPrivate *priv = GET_PRIVATE (content_rating);
 	guint j;
@@ -1551,7 +1564,7 @@ as_content_rating_emit_yaml (AsContentRating *content_rating, AsContext *ctx, ya
 
 	as_yaml_mapping_start (emitter);
 	for (j = 0; j < priv->keys->len; j++) {
-		AsContentRatingKey *key = (AsContentRatingKey*) g_ptr_array_index (priv->keys, j);
+		AsContentRatingKey *key = (AsContentRatingKey *) g_ptr_array_index (priv->keys, j);
 
 		as_yaml_emit_entry (emitter,
 				    key->id,
@@ -1569,10 +1582,61 @@ as_content_rating_emit_yaml (AsContentRating *content_rating, AsContext *ctx, ya
  *
  * Since: 0.11.0
  **/
-AsContentRating*
+AsContentRating *
 as_content_rating_new (void)
 {
 	AsContentRating *content_rating;
 	content_rating = g_object_new (AS_TYPE_CONTENT_RATING, NULL);
 	return AS_CONTENT_RATING (content_rating);
+}
+
+/**
+ * as_oars_version_from_string:
+ * @value: the string.
+ *
+ * Converts the text representation to an enumerated value.
+ *
+ * Returns: a #AsOarsVersion or %AS_OARS_VERSION_UNKNOWN for unknown
+ **/
+AsOarsVersion
+as_oars_version_from_string (const gchar *value)
+{
+	if (as_str_equal0 (value, "oars-1.0"))
+		return AS_OARS_VERSION_1_0;
+	if (as_str_equal0 (value, "oars-1.1"))
+		return AS_OARS_VERSION_1_1;
+	return AS_OARS_VERSION_UNKNOWN;
+}
+
+/**
+ * as_content_rating_id_is_valid:
+ * @id: the subsection ID e.g. `violence-cartoon`
+ * @value: the #AsContentRatingValue, e.g. %AS_CONTENT_RATING_VALUE_INTENSE
+ *
+ * Checks if the ID is valid for the given rating value.
+ *
+ * Returns: %TRUE if the ID is valid
+ */
+gboolean
+as_content_rating_id_is_valid (const gchar *id, AsContentRatingValue value)
+{
+	for (gsize i = 0; i < G_N_ELEMENTS (oars_descriptions); i++) {
+		if (!g_str_equal (oars_descriptions[i].id, id))
+			continue;
+
+		switch (value) {
+		case AS_CONTENT_RATING_VALUE_NONE:
+			return oars_descriptions[i].desc_none != NULL;
+		case AS_CONTENT_RATING_VALUE_MILD:
+			return oars_descriptions[i].desc_mild != NULL;
+		case AS_CONTENT_RATING_VALUE_MODERATE:
+			return oars_descriptions[i].desc_moderate != NULL;
+		case AS_CONTENT_RATING_VALUE_INTENSE:
+			return oars_descriptions[i].desc_intense != NULL;
+		default:
+			return FALSE;
+		}
+	}
+
+	return FALSE;
 }

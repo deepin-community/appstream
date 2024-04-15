@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2018-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2018-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -21,20 +21,21 @@
 #ifndef __AS_VALIDATOR_ISSUE_TAG_H
 #define __AS_VALIDATOR_ISSUE_TAG_H
 
-#include <glib.h>
-#include <glib/gi18n.h>
+#include "config.h"
+#include <glib/gi18n-lib.h>
 
 #include "as-validator-issue.h"
+#include "as-macros-private.h"
 
-G_BEGIN_DECLS
-#pragma GCC visibility push(hidden)
+AS_BEGIN_PRIVATE_DECLS
 
 typedef struct {
-	const gchar	*tag;
-	AsIssueSeverity	severity;
-	const gchar	*explanation;
+	const gchar    *tag;
+	AsIssueSeverity severity;
+	const gchar    *explanation;
 } AsValidatorIssueTag;
 
+/* clang-format off */
 AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "type-property-required",
 	  AS_ISSUE_SEVERITY_ERROR,
@@ -139,10 +140,10 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("The component ID starts with punctuation. This is not allowed.")
 	},
 
-	{ "cid-contains-hyphen",
-	  AS_ISSUE_SEVERITY_INFO,
-	  N_("The component ID contains a hyphen/minus. Using a hyphen is strongly discouraged, to improve interoperability with other tools such as D-Bus. "
-	     "A good option is to replace any hyphens with underscores (`_`).")
+	{ "cid-rdns-contains-hyphen",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The component ID contains a hyphen/minus in its domain part. Using a hyphen is strongly discouraged to improve interoperability with other tools such as D-Bus. "
+	     "A good option is to replace any hyphens with underscores (`_`). Hyphens are only allowed in the last segment of a component ID.")
 	},
 
 	{ "cid-has-number-prefix",
@@ -168,12 +169,12 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 
 	{ "cid-missing-affiliation-kde",
 	  AS_ISSUE_SEVERITY_WARNING,
-	  N_("The component is part of the KDE project, but its ID does not start with KDEs reverse-DNS name (\"org.kde\").")
+	  N_("The component is part of the KDE project, but its ID does not start with KDE's reverse-DNS name (\"org.kde\").")
 	},
 
 	{ "cid-missing-affiliation-gnome",
 	  AS_ISSUE_SEVERITY_INFO,
-	  N_("The component is part of the GNOME project, but its ID does not start with GNOMEs reverse-DNS name (\"org.gnome\").")
+	  N_("The component is part of the GNOME project, but its ID does not start with GNOME's reverse-DNS name (\"org.gnome\").")
 	},
 
 	{ "spdx-expression-invalid",
@@ -204,6 +205,12 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("The update-contact does not appear to be a valid email address (escaping of `@` is only allowed as `_at_` or `_AT_`).")
 	},
 
+	{ "screenshot-invalid-env-style",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("The `environment` property is set to an unrecognized graphical environment/style combination.")
+	},
+
 	{ "screenshot-invalid-width",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
@@ -214,6 +221,12 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  AS_ISSUE_SEVERITY_WARNING,
 	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
 	  N_("The `height` property must be a positive integer.")
+	},
+
+	{ "screenshot-invalid-scale",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("The `scale` property must be a positive integer.")
 	},
 
 	{ "screenshot-image-invalid-type",
@@ -240,10 +253,18 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("There can only be one `source` image per screenshot and language.")
 	},
 
-	{ "screenshot-image-source-missing",
+	{ "screenshot-image-no-source",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
-	  N_("A screenshot must have at least one image of type `source`.")
+	  N_("A screenshot must have at least one untranslated image of type `source`.")
+	},
+
+	{ "screenshot-image-no-source-but-en-locale",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag/property names (in backticks). */
+	  N_("A screenshot must have at least one untranslated image of type `source`, which could not be found. "
+	     "Instead, a tag with an `en` locale (`xml:lang=en`) was found, which is likely intended to be the "
+	     "translatable image. Please remove the XML localization attribute in this case.")
 	},
 
 	{ "screenshot-image-not-found",
@@ -259,6 +280,11 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "screenshot-media-url-not-secure",
 	  AS_ISSUE_SEVERITY_INFO,
 	  N_("Consider using a secure (HTTPS) URL to reference this screenshot image or video.")
+	},
+
+	{ "screenshot-no-unscaled-image",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("A screenshot must have at least one image that has a scaling factor of 1.")
 	},
 
 	{ "screenshot-no-media",
@@ -382,7 +408,7 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "relation-display-length-value-invalid",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
-	  N_("This `display_length` item contains an invalid display length. Its value must either be a shorthand string, or positive integer value denoting logical pixels. "
+	  N_("This `display_length` item contains an invalid display length. Its value must be a positive integer value denoting logical pixels. "
 	     "Please refer to the AppStream specification for more information on this tag.")
 	},
 
@@ -447,6 +473,11 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("The component is missing a name (<name/> tag).")
 	},
 
+	{ "component-name-too-long",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The name of this component is excessively long and can likely not be displayed properly in most layouts.")
+	},
+
 	{ "component-summary-missing",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  N_("The component is missing a summary (<summary/> tag).")
@@ -485,6 +516,11 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "summary-first-word-not-capitalized",
 	  AS_ISSUE_SEVERITY_INFO,
 	  N_("The summary text does not start with a capitalized word, project name or number.")
+	},
+
+	{ "summary-too-long",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The summary text is very long, and will likely not be displayed properly everywhere.")
 	},
 
 	{ "icon-stock-cached-has-url",
@@ -547,9 +583,48 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("An URL of this type has already been defined."),
 	},
 
+	{ "url-homepage-missing",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("This component is missing an `url` element of type `homepage` to link to the project's homepage."),
+	},
+
+	{ "developer-name-tag-deprecated",
+	  AS_ISSUE_SEVERITY_INFO,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The toplevel `developer_name` element is deprecated. Please use the `name` element in a "
+	     "`developer` block instead."),
+	},
+
+	{ "developer-info-missing",
+	  AS_ISSUE_SEVERITY_INFO,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("This component contains no `developer` element with information about its author."),
+	},
+
+	{ "developer-id-missing",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `developer` element is missing an `id` property, containing a unique string ID for the developer. "
+	     "Consider adding a unique ID."),
+	},
+
+	{ "developer-id-invalid",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The developer-ID is invalid. It should be an rDNS string identifying the developer, or a Fediverse handle. "
+	     "It must also only contain lowercase ASCII letters, numbers and punctuation."),
+	},
+
+	{ "developer-name-missing",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `developer` block does not have a `name` element with a human-readable project author name."),
+	},
+
 	{ "developer-name-has-url",
 	  AS_ISSUE_SEVERITY_WARNING,
-	  N_("The <developer_name/> can not contain a hyperlink."),
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `name` child of a `developer` block must not contain a hyperlink."),
 	},
 
 	{ "unknown-desktop-id",
@@ -710,13 +785,19 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("The category name is not valid. Refer to the XDG Menu Specification for a list of valid category names."),
 	},
 
+	{ "all-categories-ignored",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("All categories for this component have been ignored, either because they were invalid or because they are of low quality "
+	     "(e.g. custom 'X-' prefixed or toolkit ones like 'GTK' or 'Qt'). Please fix your category names, or add more categories."),
+	},
+
 	{ "app-categories-missing",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  N_("This component is in no valid categories, even though it should be. Please check its metainfo file and desktop-entry file."),
 	},
 
 	{ "screenshot-caption-too-long",
-	  AS_ISSUE_SEVERITY_PEDANTIC,
+	  AS_ISSUE_SEVERITY_INFO,
 	  N_("The screenshot caption is too long (should be <= 100 characters)"),
 	},
 
@@ -739,7 +820,8 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "metainfo-ancient",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
-	  N_("The metainfo file uses an ancient version of the AppStream specification, which can not be validated. Please migrate it to version 0.6 (or higher)."),
+	  N_("The metainfo file uses an ancient version of the AppStream specification, which can not be validated. Please migrate it to version 0.6 (or higher). "
+	     "Modern files use the `component` root tag and include many other differences, so check for changes carefully when modernizing the data."),
 	},
 
 	{ "root-tag-unknown",
@@ -870,6 +952,12 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("The release timestamp is invalid."),
 	},
 
+	{ "release-description-outside-tag",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The release description must be put inside a `description` tag"),
+	},
+
 	{ "artifact-type-invalid",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
@@ -963,13 +1051,67 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	     "You can generate the tag data online by answering a few questions at https://hughsie.github.io/oars/"),
 	},
 
-	{ "component-tag-missing-namespace",
+	{ "content-rating-type-missing",
 	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `type` attribute of this `content_rating` element is missing or empty."),
+	},
+
+	{ "content-rating-type-invalid",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `type` attribute of the `content_rating` element has an invalid value."),
+	},
+
+	{ "content-rating-invalid-tag",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `content_rating` tag can only contain `content_attribute` children."),
+	},
+
+	{ "content-attribute-id-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `id` attribute of the `content_attribute` element is missing or empty."),
+	},
+
+	{ "content-attribute-id-invalid",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `id` attribute of the `content_attribute` element has an invalid value."),
+	},
+
+	{ "content-attribute-value-empty",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `content_attribute` tag needs a value."),
+	},
+
+	{ "content-attribute-value-unknown",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `content_attribute` tag value is unknown."),
+	},
+
+	{ "content-attribute-value-invalid",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The `content_attribute` tag value is invalid for the given id."),
+	},
+
+	{ "content-attribute-id-duplicated",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("A `content_attribute` tag with this ID has already been defined."),
+	},
+
+	{ "usertag-missing-namespace",
+	  AS_ISSUE_SEVERITY_INFO,
 	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
 	  N_("This `tag` is missing a `namespace` attribute."),
 	},
 
-	{ "component-tag-invalid",
+	{ "usertag-invalid",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
 	  N_("This tag or its namespace contains invalid characters. Only lower-cased ASCII letters, numbers, dots, hyphens and underscores are permitted."),
@@ -988,6 +1130,33 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "branding-color-invalid",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  N_("This color is not a valid HTML color code."),
+	},
+
+	{ "reference-doi-invalid",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The given DOI (Digital Object Identifier) for this reference item is not valid."),
+	},
+
+	{ "reference-citation-url-invalid",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The value for this citation reference item must be an URL to a CFF (Citation File Format) file."),
+	},
+
+	{ "reference-registry-name-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("This registry reference item is missing the `name` property to denote the name of the registry it is about."),
+	},
+
+	{ "reference-registry-name-unknown",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The registry for this reference item is unknown. This may be due to a typing error, or "
+	     "the registry needs to be registered with AppStream."),
+	},
+
+	{ "reference-value-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("The reference item is missing a value."),
 	},
 
 	{ "custom-invalid-tag",
@@ -1021,8 +1190,8 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 
 	{ NULL, AS_ISSUE_SEVERITY_UNKNOWN, NULL }
 };
+/* clang-format on */
 
-#pragma GCC visibility pop
-G_END_DECLS
+AS_END_PRIVATE_DECLS
 
 #endif /* __AS_VALIDATOR_ISSUE_TAG_H */

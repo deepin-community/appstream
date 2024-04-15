@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -21,25 +21,21 @@
 #pragma once
 
 #include "asc-font.h"
-#include "as-settings-private.h"
+#include "as-macros-private.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-G_BEGIN_DECLS
-#pragma GCC visibility push(hidden)
+AS_BEGIN_PRIVATE_DECLS
 
 extern GMutex fontconfig_mutex;
 
 AS_INTERNAL_VISIBLE
-FT_Encoding	asc_font_get_charset (AscFont *font);
+FT_Encoding asc_font_get_charset (AscFont *font);
 AS_INTERNAL_VISIBLE
-FT_Face		asc_font_get_ftface (AscFont *font);
+FT_Face asc_font_get_ftface (AscFont *font);
 
 AS_INTERNAL_VISIBLE
-const gchar	*asc_font_find_pangram (AscFont *font,
-					const gchar *lang,
-					const gchar *rand_id);
+const gchar *asc_font_find_pangram (AscFont *font, const gchar *lang, const gchar *rand_id);
 
-#pragma GCC visibility pop
-G_END_DECLS
+AS_END_PRIVATE_DECLS

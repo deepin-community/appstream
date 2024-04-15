@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2017-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2017-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -28,21 +28,17 @@
 G_BEGIN_DECLS
 #pragma GCC visibility push(hidden)
 
-gboolean		as_suggested_load_from_xml (AsSuggested *suggested,
-							AsContext *ctx,
-							xmlNode *node,
-							GError **error);
-void			as_suggested_to_xml_node (AsSuggested *suggested,
-							AsContext *ctx,
-							xmlNode *root);
+gboolean	       as_suggested_load_from_xml (AsSuggested *suggested,
+						   AsContext   *ctx,
+						   xmlNode     *node,
+						   GError     **error);
+void	 as_suggested_to_xml_node (AsSuggested *suggested, AsContext *ctx, xmlNode *root);
 
-gboolean		as_suggested_load_from_yaml (AsSuggested *suggested,
-							AsContext *ctx,
-							GNode *node,
-							GError **error);
-void			as_suggested_emit_yaml (AsSuggested *suggested,
-						AsContext *ctx,
-						yaml_emitter_t *emitter);
+gboolean as_suggested_load_from_yaml (AsSuggested *suggested,
+				      AsContext	  *ctx,
+				      GNode	  *node,
+				      GError	 **error);
+void	 as_suggested_emit_yaml (AsSuggested *suggested, AsContext *ctx, yaml_emitter_t *emitter);
 
 #pragma GCC visibility pop
 G_END_DECLS

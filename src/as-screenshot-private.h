@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2015-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2015-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -21,34 +21,31 @@
 #ifndef __AS_SCREENSHOT_PRIVATE_H
 #define __AS_SCREENSHOT_PRIVATE_H
 
+#include "as-macros-private.h"
 #include "as-screenshot.h"
 #include "as-xml.h"
 #include "as-yaml.h"
 
-G_BEGIN_DECLS
-#pragma GCC visibility push(hidden)
+AS_BEGIN_PRIVATE_DECLS
 
-AsContext		*as_screenshot_get_context (AsScreenshot *screenshot);
-void			as_screenshot_set_context (AsScreenshot *screenshot,
-						   AsContext *context);
+AS_INTERNAL_VISIBLE
+void	 as_screenshot_set_context_locale (AsScreenshot *screenshot, const gchar *locale);
 
-gboolean		as_screenshot_load_from_xml (AsScreenshot *screenshot,
-							AsContext *ctx,
-							xmlNode *node,
-							GError **error);
-void			as_screenshot_to_xml_node (AsScreenshot *screenshot,
-							AsContext *ctx,
-							xmlNode *root);
+gboolean as_screenshot_load_from_xml (AsScreenshot *screenshot,
+				      AsContext	   *ctx,
+				      xmlNode	   *node,
+				      GError	  **error);
+void	 as_screenshot_to_xml_node (AsScreenshot *screenshot, AsContext *ctx, xmlNode *root);
 
-gboolean		as_screenshot_load_from_yaml (AsScreenshot *screenshot,
-							AsContext *ctx,
-							GNode *node,
-							GError **error);
-void			as_screenshot_emit_yaml (AsScreenshot *screenshot,
-						 AsContext *ctx,
-						 yaml_emitter_t *emitter);
+gboolean as_screenshot_load_from_yaml (AsScreenshot *screenshot,
+				       AsContext    *ctx,
+				       GNode	    *node,
+				       GError	   **error);
+void as_screenshot_emit_yaml (AsScreenshot *screenshot, AsContext *ctx, yaml_emitter_t *emitter);
 
-#pragma GCC visibility pop
-G_END_DECLS
+gint as_screenshot_get_position (AsScreenshot *screenshot);
+void as_screenshot_set_position (AsScreenshot *screenshot, gint pos);
+
+AS_END_PRIVATE_DECLS
 
 #endif /* __AS_SCREENSHOT_PRIVATE_H */

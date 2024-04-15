@@ -29,6 +29,7 @@
 			There are two valid locations to store AppStream XML data. <filename>/usr/share/swcatalog/xml</filename> stores all AppStream data which
 			has been installed via software packages, while <filename>/var/lib/swcatalog/xml</filename> stores application data which was downloaded
 			by the package manager or placed there by other tools (for example, Limba).
+			The <filename>/var/cache/swcatalog/xml</filename> location however can be used for any data that was locally generated from other sources.
 			The XML files can either be plain files or be compressed with gzip. It is always a good idea to compress the files, because they tend to become
 			quite large.
 		</para>
@@ -483,11 +484,11 @@
 				</listitem>
 			</varlistentry>
 
-			<varlistentry id="tag-ct-developer_name">
-			<term>&lt;developer_name/&gt;</term>
+			<varlistentry id="tag-ct-developer">
+			<term>&lt;developer/&gt;</term>
 			<listitem>
 				<para>
-					The <code>&lt;developer_name/&gt;</code> tag as described in the specification for a generic component. See <xref linkend="tag-developer_name"/> for more information.
+					The <code>&lt;developer/&gt;</code> tag as described in the specification for a generic component. See <xref linkend="tag-developer"/> for more information.
 				</para>
 			</listitem>
 			</varlistentry>
@@ -496,7 +497,7 @@
 				<term>&lt;launchable/&gt;</term>
 				<listitem>
 					<para>
-						This optional tag follows the same schema as described for metainfo files in <xref linkend="tag-launchable"/>.
+						This tag follows the same schema as described for metainfo files in <xref linkend="tag-launchable"/>.
 					</para>
 				</listitem>
 			</varlistentry>
@@ -597,6 +598,7 @@
 							<listitem><para><code>snap</code> - For <ulink url="https://snapcraft.io/">Snappy</ulink> snap bundles.</para></listitem>
 							<listitem><para><code>tarball</code> - For plain and possibly compressed tarballs.</para></listitem>
 							<listitem><para><code>cabinet</code> - For cabinet firmware deployments.</para></listitem>
+							<listitem><para><code>linglong</code> - For <ulink url="https://linglong.dev/">Linglong</ulink> bundles.</para></listitem>
 						</itemizedlist>
 					</para>
 					<para>

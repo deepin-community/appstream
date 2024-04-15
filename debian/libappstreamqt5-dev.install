@@ -1,0 +1,3 @@
+usr/include/AppStreamQt5/*
+usr/lib/*/cmake/AppStreamQt5/*
+usr/lib/*/libAppStreamQt5.so

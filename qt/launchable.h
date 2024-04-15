@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2017 Jan Grulich <jgrulich@redhat.com>
- * Copyright (C) 2016 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -28,49 +28,51 @@
 
 struct _AsLaunchable;
 
-namespace AppStream {
+namespace AppStream
+{
 
 class LaunchableData;
 
-class APPSTREAMQT_EXPORT Launchable {
+class APPSTREAMQT_EXPORT Launchable
+{
     Q_GADGET
-    public:
-        enum Kind {
-            KindUnknown,
-            KindDesktopId,
-            KindService,
-            KindCockpitManifest
-        };
-        Q_ENUM(Kind)
 
-        Launchable();
-        Launchable(_AsLaunchable* launchable);
-        Launchable(const Launchable& launchable);
-        ~Launchable();
+public:
+    enum Kind {
+        KindUnknown,
+        KindDesktopId,
+        KindService,
+        KindCockpitManifest
+    };
+    Q_ENUM(Kind)
 
-        static Kind stringToKind(const QString& kindString);
-        static QString kindToString(Kind kind);
+    Launchable();
+    Launchable(_AsLaunchable *launchable);
+    Launchable(const Launchable &launchable);
+    ~Launchable();
 
-        Launchable& operator=(const Launchable& launchable);
-        bool operator==(const Launchable& r) const;
+    static Kind stringToKind(const QString &kindString);
+    static QString kindToString(Kind kind);
 
-        /**
-         * \returns the internally stored AsLaunchable
-         */
-        _AsLaunchable *asLaunchable() const;
+    Launchable &operator=(const Launchable &launchable);
+    bool operator==(const Launchable &r) const;
 
-        Kind kind() const;
-        void setKind(Kind kind);
+    /**
+     * \returns the internally stored AsLaunchable
+     */
+    _AsLaunchable *cPtr() const;
 
-        QStringList entries() const;
-        void addEntry(const QString& entry);
+    Kind kind() const;
+    void setKind(Kind kind);
 
-    private:
-        QSharedDataPointer<LaunchableData> d;
+    QStringList entries() const;
+    void addEntry(const QString &entry);
+
+private:
+    QSharedDataPointer<LaunchableData> d;
 };
 }
 
-APPSTREAMQT_EXPORT QDebug operator<<(QDebug s, const AppStream::Launchable& launchable);
+APPSTREAMQT_EXPORT QDebug operator<<(QDebug s, const AppStream::Launchable &launchable);
 
 #endif // APPSTREAMQT_LAUNCHABLE_H
-

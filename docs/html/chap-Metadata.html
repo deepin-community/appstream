@@ -1,0 +1,922 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Upstream Metadata | AppStream | AppStream 1.0</title><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" /><link rel="stylesheet" type="text/css" href="static/css/style.css" /><link rel="stylesheet" type="text/css" href="static/css/highlight.css" /><meta name="generator" content="DAPS 3.3.2" /><meta name="product-name" content="AppStream" /><meta name="product-number" content="1.0" /><meta name="book-title" content="AppStream" /><meta name="chapter-title" content="Chapter 2. Upstream Metadata" /><meta name="description" content="AppStream allows upstream projects to define metadata about the components they provide using small XML files, metainfo files, which get installed into locations on the client system and are used by distribuors to enhance their metadata. A component is a piece of software, like an application, a lib…" /><link rel="home" href="index.html" title="AppStream" /><link rel="up" href="index.html" title="AppStream" /><link rel="prev" href="chap-AppStream-About.html" title="Chapter 1. About AppStream" /><link rel="next" href="sect-Metadata-Releases.html" title="2.2. Release Information" />
+<script src="static/js/highlight.min.js" type="text/javascript"></script><script>
+
+document.addEventListener('DOMContentLoaded', (event) => {
+  document.querySelectorAll('.verbatim-wrap.highlight').forEach((block) => {
+    hljs.highlightBlock(block);
+  });
+});
+hljs.configure({
+  useBR: false
+});
+
+</script></head><body class="offline js-off"><div class="bypass-block"><a href="#_content">Jump to content</a><a href="#_bottom-navigation">Jump to page navigation: previous page [access key p]/next page [access key n]</a></div><div id="_outer-wrap"><div id="_white-bg"><div id="_header"><div id="_logo"><a href="https://www.freedesktop.org/software/appstream/docs/"><img src="static/images/logo.png" alt="Logo" /><span>AppStream</span></a></div><div class="crumbs"><a class="book-link" href="index.html" title="AppStream"><span class="book-icon">AppStream</span></a><span> › </span><a class="crumb" href="chap-Metadata.html">Upstream Metadata</a></div><div class="clearme"></div></div></div><div id="_toolbar-wrap"><div id="_toolbar"><div id="_toc-area" class="inactive"><a id="_toc-area-button" class="tool" title="Contents" accesskey="c" href="index.html"><span class="tool-spacer"><span class="toc-icon">Contents</span><span class="clearme"></span></span><span class="tool-label">Contents</span></a><div class="active-contents bubble-corner"></div><div class="active-contents bubble"><div class="bubble-container"><h6>AppStream</h6><div id="_bubble-toc"><ol><li class="inactive"><a href="chap-AppStream-About.html"><span class="number">1 </span><span class="name">About AppStream</span></a></li><li class="inactive"><a href="chap-Metadata.html"><span class="number">2 </span><span class="name">Upstream Metadata</span></a></li><li class="inactive"><a href="chap-CatalogData.html"><span class="number">3 </span><span class="name">Catalog Metadata</span></a></li><li class="inactive"><a href="chap-AppStream-Misc.html"><span class="number">4 </span><span class="name">Miscellaneous</span></a></li><li class="inactive"><a href="chap-Quickstart.html"><span class="number">5 </span><span class="name">Metadata Quickstart</span></a></li><li class="inactive"><a href="chap-Validation.html"><span class="number">6 </span><span class="name">Data Validation</span></a></li><li class="inactive"><a href="chap-AppStream-ManualPages.html"><span class="number">7 </span><span class="name">Manual pages</span></a></li><li class="inactive"><a href="chap-AppStream-API.html"><span class="number">8 </span><span class="name">AppStream API Reference</span></a></li><li class="inactive"><a href="ix01.html"><span class="number"> </span><span class="name">Index</span></a></li></ol></div><div class="clearme"></div></div></div></div><div id="_nav-area" class="inactive"><div class="tool"><span class="nav-inner"><span class="tool-label">Navigation</span><a accesskey="p" class="tool-spacer" title="Chapter 1. About AppStream" href="chap-AppStream-About.html"><span class="prev-icon">←</span></a><a accesskey="n" class="tool-spacer" title="2.2. Release Information" href="sect-Metadata-Releases.html"><span class="next-icon">→</span></a></span></div></div></div></div><div id="_fixed-header-wrap" class="inactive"><div id="_fixed-header"><div class="crumbs"><a class="book-link" href="index.html" title="AppStream"><span class="book-icon">AppStream</span></a><span> › </span><a class="crumb" href="chap-Metadata.html">Upstream Metadata</a></div><div class="buttons"><a class="top-button button" href="#">Top</a><div class="button"><a accesskey="p" class="tool-spacer" title="Chapter 1. About AppStream" href="chap-AppStream-About.html"><span class="prev-icon">←</span></a><a accesskey="n" class="tool-spacer" title="2.2. Release Information" href="sect-Metadata-Releases.html"><span class="next-icon">→</span></a></div><div class="clearme"></div></div><div class="clearme"></div></div></div><div id="_content" class=""><div class="documentation"><div class="chapter" id="chap-Metadata"><div class="titlepage"><div><div class="version-info">Applies to  <span class="productname">AppStream</span> <span class="productnumber">1.0</span></div><div><h1 class="title"><span class="number">2 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Upstream Metadata</span> <a title="Permalink" class="permalink" href="chap-Metadata.html">#</a></h1></div></div></div><div class="line"><div class="toc"><dl><dt><span class="section"><a href="chap-Metadata.html#sect-Metadata-GenericComponent"><span class="number">2.1 </span><span class="name">Generic Component</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Releases.html"><span class="number">2.2 </span><span class="name">Release Information</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Application.html"><span class="number">2.3 </span><span class="name">Desktop Applications</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-ConsoleApplication.html"><span class="number">2.4 </span><span class="name">Console Applications</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-WebApplication.html"><span class="number">2.5 </span><span class="name">Web Applications</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Service.html"><span class="number">2.6 </span><span class="name">Services</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Addon.html"><span class="number">2.7 </span><span class="name">Addons</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Fonts.html"><span class="number">2.8 </span><span class="name">Fonts</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-IconTheme.html"><span class="number">2.9 </span><span class="name">Icon Themes</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Codec.html"><span class="number">2.10 </span><span class="name">Codecs</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-InputMethod.html"><span class="number">2.11 </span><span class="name">Input Methods</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Firmware.html"><span class="number">2.12 </span><span class="name">Firmware</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Driver.html"><span class="number">2.13 </span><span class="name">Driver</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Localization.html"><span class="number">2.14 </span><span class="name">Localization</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Repository.html"><span class="number">2.15 </span><span class="name">Repositories</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-OS.html"><span class="number">2.16 </span><span class="name">Operating System</span></a></span></dt><dt><span class="section"><a href="sect-Metadata-Runtime.html"><span class="number">2.17 </span><span class="name">Runtime</span></a></span></dt></dl></div></div><p>
+		AppStream allows upstream projects to define metadata about the components they provide using small XML files,
+		metainfo files,	which get installed into locations on the client system and are used by distribuors to enhance their
+		metadata.
+	</p><p>
+		A "component" is a piece of software, like an application, a library, a font or a codec. For several components, especially
+		those which are shown in software-centers, we provide specialized metainfo files to define specific properties and data of these components.
+		For example, applications and fonts support screenshots, while codecs don't.
+	</p><p>
+		All metainfo files need to contain a minimal amount of information, defined in the "Generic Component" section, which also describes some optional
+		elements which can be used.
+		Specialized components might require more information to be complete and valid.
+	</p><p>
+		The XML in metainfo files does not need any XML namespace, and adding one should generally be avoided.
+		If you want to use a namespace though (maybe in case you want to embed the data in other contexts), the xmlns
+		should be <code class="code">https://specifications.freedesktop.org/metainfo/1.0</code>.
+	</p><div class="sect1" id="sect-Metadata-GenericComponent"><div class="titlepage"><div><div><h2 class="title" id="sect-Metadata-GenericComponent"><span class="number">2.1 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Generic Component</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#sect-Metadata-GenericComponent">#</a></h2></div></div></div><div class="sect2" id="spec-component-introduction"><div class="titlepage"><div><div><h3 class="title" id="spec-component-introduction"><span class="number">2.1.1 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Introduction</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#spec-component-introduction">#</a></h3></div></div></div><p>
+		For a distribution, it is good to know more about the content of a package. Which public interfaces (libraries? Python modules?) does it provide? Does it contain codecs? Does it
+		contain firmware? Fonts? An application?
+		All of this information can be used to automatically install missing software or to offer users a choice on what they want to install from a software center.
+	</p><p>
+		To provide this information, we created the <span class="italic">metainfo</span> files, which allow <span class="bold"><strong>upstream projects</strong></span> to describe the content of their software package.
+		If a metainfo file contains a <code class="literal">&lt;provides/&gt;</code> tag, distributors must also ensure that the package providing the file contains all items referenced
+		by that statement, or is installed by a metapackage depending on packages which provide these items. This gives upstream projects a (very light) way to influence distributor packaging.
+		More information about that can be found below.
+	</p><p>
+		Several specialized component-metainfo files exist, for example for applications or fonts. These are all based on this generic component XML specification, and are described in the
+		following chapters.
+	</p></div><div class="sect2" id="spec-component-location"><div class="titlepage"><div><div><h3 class="title" id="spec-component-location"><span class="number">2.1.2 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Filesystem locations</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#spec-component-location">#</a></h3></div></div></div><p>
+		Upstream projects can ship one or more metainfo files in <code class="filename">/usr/share/metainfo/%{id}.metainfo.xml</code>, where <code class="literal">id</code> is a unique
+		identifier of this specific component.
+	</p><div id="id-1.3.6.3.3" class="admonition note normal"><img class="symbol" alt="Note" title="Note" src="static/images/icon-note.png" /><h6>Note</h6><p>
+			Component metadata of type <code class="literal">desktop-application</code> as described in <a class="xref" href="sect-Metadata-Application.html" title="2.3. Desktop Applications">Section 2.3, “Desktop Applications”</a> can be installed
+			with an <code class="filename">.appdata.xml</code> extension as well for historical reasons.
+			AppStream implementations will read the XML files as long as they end up in the right location on the filesystem.
+		</p></div><div id="id-1.3.6.3.4" class="admonition important normal"><img class="symbol" alt="Important" title="Important" src="static/images/icon-important.png" /><h6>Important: Legacy Path</h6><p>
+			AppStream tools scan the <code class="filename">/usr/share/appdata/</code> path for legacy compatibility as well. It should not be used
+			anymore by new software though, even on older Linux distributions (like RHEL 7 and Ubuntu 16.04 LTS) the metainfo path is well
+			supported.
+			Support for the legacy path will likely be dropped completely with a future AppStream 1.0 release.
+		</p></div></div><div class="sect2" id="spec-component-filespec"><div class="titlepage"><div><div><h3 class="title" id="spec-component-filespec"><span class="number">2.1.3 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">XML Specification</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#spec-component-filespec">#</a></h3></div></div></div><p>
+		The XML for a generic component definition starts with a <code class="code">&lt;component&gt;</code> tag as the root element.
+		The <code class="code">&lt;component&gt;</code> element must at least have an <code class="literal">id</code>, <code class="literal">name</code> and <code class="literal">summary</code> tag;
+		a <code class="literal">provides</code> tag with appropriate children is highly recommended.
+	</p><p>
+		In addition to the <code class="literal">type</code> attribute denoting the component type in case the component is not a <code class="code">generic</code> component,
+		the <code class="literal">component</code> tag may also have a <code class="literal">date_eol</code> attribute that sets a date when the component stops to
+		be supported entirely (this may be the case for superseded legacy software like <code class="code">org.python.python2</code>). The attribute value can be any
+		complete date or time in <a class="ulink" href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank">ISO 8601<span class="ulink-url"> (https://en.wikipedia.org/wiki/ISO_8601)</span></a>.
+	</p><p>
+		All possible tags which can be used with components of all types are:
+	</p><div class="variablelist"><dl class="variablelist"><dt id="tag-id-generic"><span class="term">&lt;id/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-id-generic">#</a></dt><dd><p>
+			The <code class="literal">id</code> tag is a unique identifier for this component. It must contain only alphanumeric ASCII characters, dots, hyphens and underscores. Spaces are
+			not allowed. While hyphens are allowed for legacy compatibility, their usage is strongly discouraged to ensure interoperability of the AppStream ID with other tools such
+			as D-Bus (and thereby making the ID more generic and useful). For the same reason it is also strongly discouraged to start any segment of the ID with a digit.
+			Additionally, even though uppercase letters are permitted in a component-ID, it is strongly encouraged to only use lowercase letters for the ID.
+		</p><p>
+			The ID must follow a reverse-DNS scheme, consisting of <code class="literal">{tld}.{vendor}.{product}</code>, for example <code class="code">org.kde.gwenview</code>
+			or <code class="code">com.hugski.colorhug2</code>. Ownership of <code class="literal">{vendor}.{tld}</code> in the domain name system guarantees uniqueness of IDs.
+		</p><p>
+			To increase the uniqueness and to distinguish between different pieces of a software suite, it is suggested to append the type name to the component-id in these cases.
+			For example, one can use <code class="code">com.hugski.colorhug2</code> for the client tools to control hardware, and <code class="code">com.hugski.colorhug2.firmware</code> for the runtime firmware files.
+		</p><p>
+			Note that the value of this tag must be <span class="emphasis"><em>unique</em></span> across all distributions and software deployment platforms.
+			In case it is not unique, distributors are expected to reject the conflicting components from inclusion into their metadata and notify the upstream projects about this issue.
+		</p><div id="id-1.3.6.4.5.1.2.5" class="admonition important normal"><img class="symbol" alt="Important" title="Important" src="static/images/icon-important.png" /><h6>Important: Escaping characters in the component ID</h6><p>
+			To ensures the greatest possible compatibility of an AppStream ID, it is recommended to replace any hyphens in the ID in all but the last segment of it with underscores,
+			and prefix every leading digit of a segment with an underscore as well. Since the underscore is not a valid character in domain names, the uniqueness of the ID is kept.
+			For example, the ID <code class="code">org.7-zip.7-zip</code> could become <code class="code">org._7_zip._7-zip</code>.
+		</p></div></dd><dt id="tag-metadata_license"><span class="term">&lt;metadata_license/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-metadata_license">#</a></dt><dd><p>
+			The <code class="code">&lt;metadata_license/&gt;</code> tag indicates the content license that you are releasing the one
+			metainfo XML file under. This is typically not the same as the project license. Omitting the license value will
+			result in the metainfo data not being incorporated into metadata collections as used by Linux distributions.
+			This tag is required for all metainfo files.
+		</p><p>
+			The value of this tag has to be one of the recognized SPDX license IDs for <code class="code">&lt;metadata_license/&gt;</code> tags, or a simple SPDX expression
+			(only <code class="code">AND</code> and <code class="code">OR</code> operators allowed) allowing the use of the metadata file under one of the recognized licenses.
+		</p><p>
+			We do recognize a set of <a class="ulink" href="https://en.wikipedia.org/wiki/Permissive_software_licence" target="_blank">permissive<span class="ulink-url"> (https://en.wikipedia.org/wiki/Permissive_software_licence)</span></a> licenses that have been vetted
+			for mutual compatibility. This is important in order to allow the metainfo metadata to be combined with arbitrary other data in one file.
+			While copyleft licenses like the GPL are great for code, it is not feasible to test every copyleft license for mutual compatibility and compliance
+			when combining metainfo metadata with other data into one larger assembly fully automatically.
+		</p><p>
+			Currently, the following licenses have been reviewed and can be used as metadata licenses:
+		</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="literal">FSFAP</code></p></li><li class="listitem"><p><code class="literal">MIT</code></p></li><li class="listitem"><p><code class="literal">0BSD</code></p></li><li class="listitem"><p><code class="literal">CC0-1.0</code></p></li><li class="listitem"><p><code class="literal">CC-BY-3.0</code></p></li><li class="listitem"><p><code class="literal">CC-BY-4.0</code></p></li><li class="listitem"><p><code class="literal">CC-BY-SA-3.0</code></p></li><li class="listitem"><p><code class="literal">CC-BY-SA-4.0</code></p></li><li class="listitem"><p><code class="literal">GFDL-1.1</code></p></li><li class="listitem"><p><code class="literal">GFDL-1.2</code></p></li><li class="listitem"><p><code class="literal">GFDL-1.3</code></p></li><li class="listitem"><p><code class="literal">BSL-1.0</code></p></li><li class="listitem"><p><code class="literal">FTL</code></p></li><li class="listitem"><p><code class="literal">FSFUL</code></p></li></ul></div><p>
+			The license codes correspond to the identifiers found at the <a class="ulink" href="https://spdx.org/licenses/" target="_blank">SPDX OpenSource License Registry<span class="ulink-url"> (https://spdx.org/licenses/)</span></a>.
+			For instance, <code class="literal">CC-BY-SA-3.0</code> corresponds to the license at
+			<a class="ulink" href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">creativecommons.org/licenses/by-sa/3.0<span class="ulink-url"> (https://creativecommons.org/licenses/by-sa/3.0/)</span></a>.
+			If you are looking for the simplest license to use for your metadata, using the <code class="code">FSFAP</code> license is suggested.
+		</p></dd><dt id="tag-name"><span class="term">&lt;name/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-name">#</a></dt><dd><p>
+			A human-readable name for this software component. For example, if the component ID was "libc", its name might be "GNU Standard C Library".
+			</p></dd><dt id="tag-summary"><span class="term">&lt;summary/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-summary">#</a></dt><dd><p>
+			A short summary of what this component does. If the component is "PackageKit", the summary could be "Provides a package-management abstraction layer".
+			This element is translatable.
+			</p></dd><dt id="tag-icon"><span class="term">&lt;icon/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-icon">#</a></dt><dd><p>
+				The <code class="code">&lt;icon/&gt;</code> tag describes the component icon. It is mostly used for GUI applications (component-type <code class="literal">desktop-application</code>).
+				It can be of type <code class="literal">stock</code>, <code class="literal">local</code> or <code class="literal">remote</code>.
+			</p><p>
+				<code class="literal">stock</code> icons are loaded from the icon stock (the current or hicolor/locolor fallback themes).
+				The icon name must not include any file-extension or path.
+			</p><p>
+				<code class="literal">local</code> icons are loaded from a file in the filesystem.
+				They should specify a full file path.
+				This icon type may have <code class="literal">width</code> and <code class="literal">height</code>
+				properties. If targeting a hi-DPI screen, this icon type may have a <code class="literal">scale</code> property.
+			</p><p>
+				<code class="literal">remote</code> icons loaded from a remote URL. Currently, only HTTP/HTTPS urls are supported.
+				This icon type should have <code class="literal">width</code> and <code class="literal">height</code> properties.
+				If targeting a hi-DPI screen, this icon type may have a <code class="literal">scale</code> property.
+			</p><p>
+				The semantics of each property in the <code class="code">&lt;icon/&gt;</code> tag are the same as for the <code class="code">&lt;icon/&gt;</code> tag
+				for catalog metadata. See <a class="xref" href="chap-CatalogData.html#tag-ct-icon">&lt;icon/&gt;</a>.
+			</p></dd><dt id="tag-description"><span class="term">&lt;description/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-description">#</a></dt><dd><p>
+			A long description of this component. Some markup can be used.
+		</p><p>
+			Do not assume the format is HTML. This list contains all currently supported formatting options:
+		</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p>Paragraph (<code class="literal">p</code>)</p></li><li class="listitem"><p>Ordered list (<code class="literal">ol</code>), with list items (<code class="literal">li</code>)</p></li><li class="listitem"><p>Unordered list (<code class="literal">ul</code>), with list items (<code class="literal">li</code>)</p></li><li class="listitem"><p>
+				Within paragraphs and list items, emphasis (<code class="literal">em</code>) and inline code (<code class="literal">code</code>) text styles are supported.
+				The emphasis is commonly rendered in italic, while inline code is shown in a monospaced font.
+			</p></li><li class="listitem"><p>Nested lists are not supported</p></li></ul></div><p>
+			In metainfo files, this tag should be translated by-paragraph, meaning that in a translated file, each translated <code class="literal">&lt;p/&gt;</code> child
+			has an <code class="literal">xml:lang</code> property.
+		</p></dd><dt id="tag-categories"><span class="term">&lt;categories/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-categories">#</a></dt><dd><p>
+						This tag can contain one or more <code class="code">&lt;category&gt;</code> entries, describing the categories this software component
+						is associated with.
+						This tag is usually applied to components of type <code class="literal">desktop-application</code>, but can be used with any component.
+						A list of valid category names can be found in the
+						<a class="ulink" href="https://specifications.freedesktop.org/menu-spec/latest/apa.html" target="_blank">Freedesktop menu specification<span class="ulink-url"> (https://specifications.freedesktop.org/menu-spec/latest/apa.html)</span></a>.
+						Example:
+					</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;categories&gt;
+    &lt;category&gt;Game&lt;/category&gt;
+    &lt;category&gt;ArcadeGame&lt;/category&gt;
+&lt;/categories&gt;</pre></div></dd><dt id="tag-keywords"><span class="term">&lt;keywords/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-keywords">#</a></dt><dd><p>
+						This tag can contain one or more <code class="code">&lt;keyword&gt;</code> children, describing keywords for the component,
+						to make it easier to find in a software center.
+						For translated keywords in metainfo files, the individual <code class="literal">keyword</code> tags should be translated.
+					</p><p>
+						Example:
+					</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;keywords&gt;
+  &lt;keyword translate="no"&gt;IDE&lt;/keyword&gt;
+  &lt;keyword&gt;development&lt;/keyword&gt;
+  &lt;keyword&gt;programming&lt;/keyword&gt;
+  &lt;keyword xml:lang="de"&gt;entwicklung&lt;/keyword&gt;
+  &lt;keyword xml:lang="de"&gt;programmierung&lt;/keyword&gt;
+&lt;/keywords&gt;</pre></div></dd><dt id="tag-url"><span class="term">&lt;url/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-url">#</a></dt><dd><p>
+				Defines web URLs for this component. There are several different URL types allowed:
+			</p><div class="variablelist"><dl class="variablelist"><dt id="id-1.3.6.4.5.9.2.2.1"><span class="term">homepage</span></dt><dd><p>
+					Should be a link to the upstream homepage for the component.
+				</p></dd><dt id="id-1.3.6.4.5.9.2.2.2"><span class="term">bugtracker</span></dt><dd><p>
+					Should point to the software's bug tracking system, for users to report new bugs.
+				</p></dd><dt id="id-1.3.6.4.5.9.2.2.3"><span class="term">faq</span></dt><dd><p>
+					Should link a FAQ page for this software, to answer some of the most-asked questions in
+					detail, something which you cannot do in the component's description.
+				</p></dd><dt id="id-1.3.6.4.5.9.2.2.4"><span class="term">help</span></dt><dd><p>
+					Should provide a web link to an online user's reference, a software manual or help page.
+				</p></dd><dt id="id-1.3.6.4.5.9.2.2.5"><span class="term">donation</span></dt><dd><p>
+					URLs of this type should point to a webpage showing information on how to donate to
+					the described software project.
+				</p></dd><dt id="id-1.3.6.4.5.9.2.2.6"><span class="term">translate</span></dt><dd><p>
+					URLs of this type should point to a webpage where users can submit or
+					modify translations of the upstream project.
+				</p><p>
+					Typically this should be a link to the project page in Weblate, Transifex or Zanata, but could also be a
+					link to an upstream-hosted wiki page describing how to send translations upstream.
+				</p></dd><dt id="id-1.3.6.4.5.9.2.2.7"><span class="term">contact</span></dt><dd><p>
+					URLs of this type should allow the user to contact the developer.
+				</p><p>
+					This could for example be an HTTPS URL to an online form or a page describing how to contact the developer.
+				</p></dd><dt id="id-1.3.6.4.5.9.2.2.8"><span class="term">vcs-browser</span></dt><dd><p>
+					URLs of this type should point to a webpage on which the user can browse the sourcecode.
+				</p></dd><dt id="id-1.3.6.4.5.9.2.2.9"><span class="term">contribute</span></dt><dd><p>
+					URLs of this type should point to a webpage showing information on how to contribute to
+					the described software project.
+				</p></dd></dl></div></dd><dt id="tag-launchable"><span class="term">&lt;launchable/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-launchable">#</a></dt><dd><p>
+		         This tag indicates possible methods to launch the software described in this component.
+                         It is allowed to appear multiple times in MetaInfo data.
+		</p><p>
+		  The <code class="code">&lt;launchable/&gt;</code> tag has a required <code class="literal">type</code> property indicating the system that is used to launch the component.  The following types are allowed:
+                </p><div class="variablelist"><dl class="variablelist"><dt id="id-1.3.6.4.5.10.2.3.1"><span class="term">desktop-id</span></dt><dd><p>
+                        The application can be launched via a desktop file. The value of the tag is a
+			<a class="ulink" href="https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#desktop-file-id" target="_blank">desktop-file id<span class="ulink-url"> (https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#desktop-file-id)</span></a>.
+                      </p><p>
+                        In case a software component has multiple launchable entries,
+			the software center might display a dialog to choose which entry to launch.
+                        If possible though, it should be avoided to add multiple <code class="literal">launchable</code> tags of type <code class="literal">desktop-id</code>.
+                      </p></dd><dt id="id-1.3.6.4.5.10.2.3.2"><span class="term">service</span></dt><dd><p>
+                        The software can be started, stopped, and monitored by the OS "init"
+                        facility, such as systemd. The value of the tag is a name that can be
+                        used with that facility, such as a systemd unit name.
+                      </p><p>
+                        Multiple <code class="literal">launchable</code> tags of type <code class="literal">service</code> are not
+                        alternatives to start the same service, but the
+                        component does contain multiple services that might all need to be
+                        started.
+                      </p><p>
+                        Only those services should be listed as launchables that the user is
+                        actually expected to start and stop manually.  Services that are
+                        started/stopped indirectly via dependencies of other services should
+                        not be listed.
+                      </p><p>
+                        For systemd units, the services listed as launchables are expected to
+                        support enabling and disabling.
+                      </p></dd><dt id="id-1.3.6.4.5.10.2.3.3"><span class="term">cockpit-manifest</span></dt><dd><p>
+                        The software can be launched from the menus of
+                        the <a class="ulink" href="https://cockpit-project.org" target="_blank">Cockpit<span class="ulink-url"> (https://cockpit-project.org)</span></a> admin interface.
+                        The value of the tag is the name of a <a class="ulink" href="https://cockpit-project.org/guide/latest/packages.html" target="_blank">Cockpit
+                        package<span class="ulink-url"> (https://cockpit-project.org/guide/latest/packages.html)</span></a>.
+                      </p></dd><dt id="id-1.3.6.4.5.10.2.3.4"><span class="term">url</span></dt><dd><p>
+                        The application is a web site that is viewed through a browser.
+                        The value of the tag is a direct HTTP/HTTPS URL that the browser must navigate to.
+                      </p></dd></dl></div><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;launchable type="desktop-id"&gt;org.gnome.sysprof2.desktop&lt;/launchable&gt;</pre></div></dd><dt id="tag-releases"><span class="term">&lt;releases/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-releases">#</a></dt><dd><p>
+				The <code class="code">&lt;releases&gt;</code> tag contains multiple <code class="literal">release</code> children that
+				themselves contain metadata about releases made for this software component.
+				The release information XML is described in-depth in <a class="xref" href="sect-Metadata-Releases.html" title="2.2. Release Information">Section 2.2, “Release Information”</a>,
+				examples for a valid <code class="literal">releases</code> tag with artifacts are also provided there.
+			</p><p>
+				Release information can be embedded in the component's metainfo file, following the XML
+				description outlined in <a class="xref" href="sect-Metadata-Releases.html" title="2.2. Release Information">Section 2.2, “Release Information”</a>. Alternatively, it can also
+				be split into its own metadata file as described in that section. In case of external metadata,
+				a <code class="literal">releases</code> tag must still be present in the component's metainfo file, and
+				must have a <code class="literal">type</code> property set to value <code class="code">external</code> (if the <code class="literal">type</code>
+				property is missing, a value of <code class="code">embedded</code> is implicitly assumed for it).
+			</p><p>
+				In case of external metadata, the <code class="literal">releases</code> tag may also have an <code class="literal">url</code>
+				property linking to a web location where the release XML can be found and updated separately from the
+				main component metadata. An <code class="literal">url</code> property must not be present without <code class="literal">type</code>
+				set to <code class="code">external</code>.
+			</p><p>
+				Only HTTPS links are allowed for the web URL, and any <code class="literal">artifact</code> defined in a
+				release description from an external website should not be trusted without further verification, as external
+				release information can currently not be signed.
+			</p><p>
+				AppStream catalog metadata generators may choose to update the locally provided release information with the data from
+				the web location provided by the URL in <code class="literal">url</code>.
+				This allow projects to complete release localization after a release was made, or include further information that was
+				not yet available directly at release time.
+				The generated catalog XML data must be complete and must not contain references to external release information.
+			</p><p>
+				Example for a <code class="literal">releases</code> block that points to an external metadata file:
+			</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;releases type="external" url="https://example.org/releases/org.example.myapp.releases.xml" /&gt;</pre></div><div id="id-1.3.6.4.5.11.2.8" class="admonition important normal"><img class="symbol" alt="Important" title="Important" src="static/images/icon-important.png" /><h6>Important: Local Release Data</h6><p>
+					Please note that even if release data is external and also provided on a remote location, it also <span class="emphasis"><em>must</em></span> be
+					available locally, installed as a file into <code class="filename">/usr/share/metainfo/releases/%{cid}.releases.xml</code>.
+					The local file may not contain all information (for example it may not have a complete release description or all translations),
+					but basic data such as the released versions and their release dates should be present.
+				</p><p>
+					It is an error to reference an external release data file, but not provide a local copy of it.
+				</p></div></dd><dt id="tag-provides"><span class="term">&lt;provides/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-provides">#</a></dt><dd><p>
+			The <code class="literal">provides</code> tag and its children describe the public interfaces this application provides.
+			A public interface can be anything which other applications, which are not part of the upstream project, can access or reference.
+			This includes binaries and libraries. Private interfaces should never be added to a <code class="literal">provides</code> tag.
+			</p><p>
+			A <code class="literal">provides</code> tag contains a number of children describing the type and name of the provided public interface items.
+			It is suggested that the build system auto-generates this tag and its children.
+			Currently allowed item types are listed below. If you miss something,
+			<a class="ulink" href="https://github.com/ximion/appstream/issues/new" target="_blank">file a bug against AppStream<span class="ulink-url"> (https://github.com/ximion/appstream/issues/new)</span></a> so we can add the new type.
+			</p><div class="variablelist"><dl class="variablelist"><dt id="id-1.3.6.4.5.12.2.3.1"><span class="term">&lt;mediatype/&gt;</span></dt><dd><p>
+					Describes the media types (also known as MIME types) this software supports, meaning it can open, edit or otherwise handle them.
+					This tag is especially useful for generic components and addon-type components. For applications, the metadata may automatically
+					be fetched from their <code class="filename">.desktop</code> files by the distribution's metadata generator if a desktop-entry file is set
+					as <a class="xref" href="chap-Metadata.html#tag-launchable">&lt;launchable/&gt;</a>.
+				Example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">
+&lt;provides&gt;
+    &lt;mediatype&gt;text/html&lt;/mediatype&gt;
+    &lt;mediatype&gt;image/jpeg&lt;/mediatype&gt;
+    &lt;mediatype&gt;application/rss+xml&lt;/mediatype&gt;
+ &lt;/provides&gt;</pre></div></dd><dt id="id-1.3.6.4.5.12.2.3.2"><span class="term">&lt;library/&gt;</span></dt><dd><p>
+					Contains the name of a shared library placed in a publicly accessible library path, such as <code class="filename">/usr/lib</code>, <code class="filename">/usr/lib/&lt;triplet&gt;</code>
+					or <code class="filename">/lib</code>.
+					For example, for the <code class="literal">libappstream</code> library, the value for <code class="literal">library</code> would be <code class="code">libappstream.so.1</code>.
+				</p></dd><dt id="id-1.3.6.4.5.12.2.3.3"><span class="term">&lt;binary/&gt;</span></dt><dd><p>
+					Name of a binary installed into a location in <code class="envar">PATH</code>.
+				</p></dd><dt id="id-1.3.6.4.5.12.2.3.4"><span class="term">&lt;font/&gt;</span></dt><dd><p>
+					Full name of a font provided by this component. See <a class="xref" href="sect-Metadata-Fonts.html" title="2.8. Fonts">Section 2.8, “Fonts”</a> for more information.
+				</p></dd><dt id="id-1.3.6.4.5.12.2.3.5"><span class="term">&lt;modalias/&gt;</span></dt><dd><p>
+					A modalias glob representing the hardware types (for example USB, PCI, ACPI, DMI) this component handles.
+					Useful for installing printer drivers or other USB protocol drivers for smartphones, firmware, and
+					out of tree kernel drivers.
+				</p></dd><dt id="id-1.3.6.4.5.12.2.3.6"><span class="term">&lt;firmware/&gt;</span></dt><dd><p>
+					This provided element is described in detail for the <code class="literal">firmware</code> component type, where it is mandatory.
+					Please see <a class="xref" href="sect-Metadata-Firmware.html#tag-firmware-provides">&lt;provides/&gt; ↪ &lt;firmware/&gt;</a> for more information.
+				</p></dd><dt id="id-1.3.6.4.5.12.2.3.7"><span class="term">&lt;python3/&gt;</span></dt><dd><p>
+					Name of a Python 3 module this component provides.
+				</p></dd><dt id="id-1.3.6.4.5.12.2.3.8"><span class="term">&lt;dbus/&gt;</span></dt><dd><p>
+					Contains the well-known name of a D-Bus service as its value. The type of the service must be specified using the <code class="literal">type</code> property
+					of this tag. Allowed values are <code class="code">user</code> and <code class="code">system</code>.
+				</p><p>
+					Example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;provides&gt;
+  &lt;dbus type="system"&gt;org.freedesktop.packagekit&lt;/dbus&gt;
+&lt;/provides&gt;</pre></div></dd><dt id="id-1.3.6.4.5.12.2.3.9"><span class="term">&lt;id/&gt;</span></dt><dd><p>
+					Contains the component-ID of another software component. The presence of this tag indicates that the software component containing it is able to
+					provide all functionality of the one referenced in the <code class="code">&lt;provides/&gt; ↪ &lt;id/&gt;</code> tag.
+				</p><p>
+					This is useful in case a component-id had to be renamed in the past, e.g. because its domain-name changed.
+				</p></dd></dl></div></dd><dt id="tag-relations"><span class="term">&lt;requires/&gt;, &lt;recommends/&gt; &amp; &lt;supports/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-relations">#</a></dt><dd><p>
+				The <code class="literal">requires</code> tag denotes an <span class="emphasis"><em>absolute</em></span> requirement on a different entity.
+				For example, a component can require certain hardware to be present, require a specific minimum kernel version,
+				or another component to be installed first. If a requirement specified in a <code class="literal">requires</code> tag
+				is not met, AppStream clients should prevent the installation of the particular software component.
+			</p><p>
+				If it is not essential that a certain requirement is met by the system, but just recommended to be available, a
+				<code class="literal">recommends</code> tag should be used. In this case, AppStream clients should allow the installation of the software
+				component, but may display a warning before allowing the installation.
+				It is permissible, but not required, to prevent installation of software which does not have all items specified as
+				<code class="literal">recommends</code> met on the system that it is installed to.
+			</p><p>
+				Components may also set a <code class="literal">supports</code> tag. This is an even weaker relation than <code class="literal">recommends</code>,
+				and means the particular component can make use of certain hardware capabilities or other software if it is available, but will
+				also be usable if it is not.
+			</p><p>
+				A <code class="literal">requires</code>, <code class="literal">recommends</code> or <code class="literal">supports</code> tag contains children describing the type,
+				value and version relation of the required item.
+				Each child can have a <code class="literal">version</code> and a <code class="literal">compare</code> property, to allow depending on a certain minimal
+				version of the respective item.
+				The <code class="literal">version</code> property contains the version to be compared against, while the <code class="literal">compare</code> property contains
+				a two-letter code denoting how to compare the version of a present item with the version listed in the property.
+				If no <code class="literal">compare</code> property is given, but a <code class="literal">version</code> property is found, AppStream implementations should
+				implicitly assume a value of <code class="code">ge</code> for comparison of the versions. The installed version is on the left side of the required version
+				when comparing them. See <a class="xref" href="chap-AppStream-Misc.html#sect-AppStream-Misc-VerCmp" title="4.1. Version Comparison Algorithm">Section 4.1, “Version Comparison Algorithm”</a> for a description of the version comparison algorithm.
+			</p><p>
+				Possible two-letter codes for version comparisons are:
+			</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="code">eq</code> - Equal to</p></li><li class="listitem"><p><code class="code">ne</code> - Not equal to</p></li><li class="listitem"><p><code class="code">lt</code> - Less than</p></li><li class="listitem"><p><code class="code">gt</code> - Greater than</p></li><li class="listitem"><p><code class="code">le</code> - Less than or equal to</p></li><li class="listitem"><p><code class="code">ge</code> - Greater than or equal to</p></li></ul></div><p>
+				Please note that not all item types are valid for all relation types.
+				Generally valid item types are listed below, with information as for which relation kins they are valid.
+			</p><div class="variablelist"><dl class="variablelist"><dt id="tag-relations-id"><span class="term">&lt;id/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-relations-id">#</a></dt><dd><p>
+					A relation to another software component. The value should be another component-ID. Example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;requires&gt;
+  &lt;id version="1.0" compare="ge"&gt;org.example.my_software&lt;/id&gt;
+&lt;/requires&gt;</pre></div><p>Valid for: <code class="literal">requires</code>, <code class="literal">recommends</code>, <code class="literal">supports</code></p></dd><dt id="tag-relations-modalias"><span class="term">&lt;modalias/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-relations-modalias">#</a></dt><dd><p>
+					Check for specific hardware to be present via its modalias. The modalias may contain a wildcard expression.
+					Example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;recommends&gt;
+  &lt;modalias&gt;usb:v1130p0202d*&lt;/modalias&gt;
+&lt;/recommends&gt;</pre></div><p>Valid for: <code class="literal">requires</code>, <code class="literal">recommends</code>, <code class="literal">supports</code></p></dd><dt id="tag-relations-kernel"><span class="term">&lt;kernel/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-relations-kernel">#</a></dt><dd><p>
+					Check for a specific kernel to be running on the system. The kernel name is the output of <code class="command">uname -s</code>.
+					Example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;requires&gt;
+  &lt;kernel version="4.14" compare="ge"&gt;Linux&lt;/kernel&gt;
+&lt;/requires&gt;</pre></div><p>Valid for: <code class="literal">requires</code>, <code class="literal">recommends</code></p></dd><dt id="tag-relations-memory"><span class="term">&lt;memory/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-relations-memory">#</a></dt><dd><p>
+					Set a relation to the amount of physical memory (RAM) the system should have to run the software component.
+					The memory size is set in MiB. You usually only want to use this with the <code class="literal">recommends</code> tag,
+					because users might want to install the software on systems even if they have a lesser amount of memory
+					compared to what would be ideal.
+					Example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;recommends&gt;
+  &lt;memory&gt;2048&lt;/memory&gt; &lt;!-- recommend at least 2GiB of memory --&gt;
+&lt;/recommends&gt;</pre></div><p>Valid for: <code class="literal">requires</code>, <code class="literal">recommends</code></p></dd><dt id="tag-relations-firmware"><span class="term">&lt;firmware/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-relations-firmware">#</a></dt><dd><p>
+					Depend on a specific device firmware. The value of this tag should either be a name like <code class="literal">bootloader</code>, be
+					empty to reference the firmware itself described by the <code class="literal">firmware</code>-type component this tag is contained in,
+					or contain a GUID.
+					This tag is commonly used and interpreted by the <a class="ulink" href="https://fwupd.org/" target="_blank">LVFS<span class="ulink-url"> (https://fwupd.org/)</span></a>.
+					Example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;requires&gt;
+  &lt;firmware compare="ge" version="0.1.2"&gt;6de5d951-d755-576b-bd09-c5cf66b27234&lt;/firmware&gt;
+  &lt;firmware compare="ge" version="0.1.2"/&gt;
+  &lt;firmware compare="ge" version="0.3.4"&gt;bootloader&lt;/firmware&gt;
+&lt;/requires&gt;</pre></div><p>Valid for: <code class="literal">requires</code>, <code class="literal">recommends</code></p></dd><dt id="tag-relations-hardware"><span class="term">&lt;hardware/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-relations-hardware">#</a></dt><dd><p>
+					Require, recommend or support a specific system hardware configuration. The value of this item is a
+					<a class="ulink" href="https://docs.microsoft.com/en-us/windows-hardware/drivers/dashboard/using-chids" target="_blank">Computer Hardware ID (CHID)<span class="ulink-url"> (https://docs.microsoft.com/en-us/windows-hardware/drivers/dashboard/using-chids)</span></a>
+					without any surrounding braces.
+				</p><p>
+					On Linux systems, the CHIDs of the system can be queried using the <code class="command">sudo fwupdtool hwids</code> command.
+				</p><p>
+					This tag is commonly used and interpreted by the <a class="ulink" href="https://fwupd.org/" target="_blank">LVFS<span class="ulink-url"> (https://fwupd.org/)</span></a> and fwupd tool.
+					Example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;requires&gt;
+  &lt;hardware&gt;be6ab11f-af5f-572e-be18-84301d880764&lt;/hardware&gt;
+&lt;/requires&gt;</pre></div><p>Valid for: <code class="literal">requires</code>, <code class="literal">recommends</code>, <code class="literal">supports</code></p></dd><dt id="tag-relations-control"><span class="term">&lt;control/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-relations-control">#</a></dt><dd><p>
+					This item type can be used to indicate support for or require certain ways a user can control the software. This usually maps to certain methods
+					of input. If multiples <code class="literal">control</code> tags with different values are found within a requires/supports block, only one of them needs
+					to be satisfied on the system to mark an application as compatible. This means if <code class="literal">touch</code> and <code class="literal">pointing</code> are both
+					supported as controls for an application-type component, a system that only has a mouse and no touchscreen will still be considered able to run
+					the application. Valid values for this tag are:
+				</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="code">pointing</code> - Input via mouse/cursors/other pointing devices is possible</p></li><li class="listitem"><p><code class="code">keyboard</code> - Keyboard input is possible</p></li><li class="listitem"><p><code class="code">console</code> - Control via a console / command-line interface</p></li><li class="listitem"><p><code class="code">tablet</code> - Graphics tablet input</p></li><li class="listitem"><p><code class="code">touch</code> - Input by touching a surface with fingers is possible</p></li><li class="listitem"><p><code class="code">gamepad</code> - The component supports gamepads (any game controller with wheels/buttons/joysticks)</p></li><li class="listitem"><p><code class="code">tv-remote</code> - Input via a TV remote (with arrow keys, number pad, other basic inputs) is supported.</p></li><li class="listitem"><p><code class="code">voice</code> - The software can be controlled via voice recognition/activation</p></li><li class="listitem"><p><code class="code">vision</code> - The software can be controlled by computer vision / visual object and sign detection</p></li></ul></div><p>
+					If a control type is <span class="emphasis"><em>supported</em></span> (= in a <code class="literal">supports</code> block), it means the software supports the given method of user
+					input. As long as one of the input methods is available on the system, the software can be used. Installation on systems without the given control may
+					still be permitted, but the software may not be easily usable.
+				</p><p>
+					If a control type is <span class="emphasis"><em>recommended</em></span> (= in a <code class="literal">recommends</code> block), it means the software prefers the given method of
+					user input. The software may still be installed if the input control method is not available, but functionality may be severely degraded.
+				</p><p>
+					If a control type is <span class="emphasis"><em>required</em></span> (= in a <code class="literal">requires</code> block), the same applies, but the software installer should refuse
+					to install the software on devices which do not have at least one of the input methods. It is therefore advised to only use the <code class="code">control</code> tag
+					in <code class="code">supports</code> and possibly <code class="code">recommends</code> blocks, and avoid to use it in <code class="code">requires</code>.
+				</p><p>
+					For certain component types, some permitted controls are implicitly assumed: For <a class="link" href="sect-Metadata-Application.html" title="2.3. Desktop Applications">desktop-application</a>
+					and <a class="link" href="sect-Metadata-WebApplication.html" title="2.5. Web Applications">web-application</a> components, <code class="literal">pointing</code> and <code class="literal">keyboard</code> controls
+					are assumed supported, unless explicit support is defined by the metadata author.
+					For <a class="link" href="sect-Metadata-ConsoleApplication.html" title="2.4. Console Applications">console-application</a>, control via <code class="literal">console</code> is assumed.
+				</p><p>
+					For any other, non-application-like component types, the <code class="literal">control</code> relation item is currently considered unsupported.
+				</p><p>
+					Example control support block:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;supports&gt;
+  &lt;control&gt;pointing&lt;/control&gt;
+  &lt;control&gt;keyboard&lt;/control&gt;
+  &lt;control&gt;touch&lt;/control&gt;
+&lt;/supports&gt;</pre></div><p>Valid for: <code class="literal">requires</code>, <code class="literal">recommends</code>, <code class="literal">supports</code></p></dd><dt id="tag-relations-display_length"><span class="term">&lt;display_length/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-relations-display_length">#</a></dt><dd><p>
+					Set a relation to the display length defined as an integer value in <span class="emphasis"><em>logical pixels</em></span> (device pixels divided by scaling factor,
+					roughly equivalent to 0.26mm (1/96in), also known as device-independent pixels).
+					Setting the <code class="literal">side</code> property to either <code class="code">shortest</code> or <code class="code">longest</code> will apply the selected size constraint to
+					either the shortest or longest side of the display rectangle, with <code class="code">shortest</code> being implicitly assumed if no value is set.
+				</p><div id="id-1.3.6.4.5.13.2.8.8.2.2" class="admonition note normal"><img class="symbol" alt="Note" title="Note" src="static/images/icon-note.png" /><h6>Note: About Pixel Dimensions</h6><p>
+						One logical pixel (= device independent pixel) roughly corresponds to the visual angle of one pixel on a device with a pixel density of
+						96dpi and a distance from the observer of about 52cm, making the physical pixel about 0.26mm in size.
+						When using logical pixels as unit, they might not always map to exact physical lengths as their exact size is defined by the device providing
+						the display.
+						They do however accurately depict the maximum amount of pixels that can be drawn in the depicted direction on the device's display space.
+					</p></div><p>
+					Relations for the display length can be defined using a <code class="literal">compare</code> property as described in <a class="xref" href="chap-Metadata.html#tag-relations">&lt;requires/&gt;, &lt;recommends/&gt; &amp; &lt;supports/&gt;</a>.
+					If this property is not present, a value of <code class="code">ge</code> (greater-or-equal) is implicitly assumed.
+				</p><div id="id-1.3.6.4.5.13.2.8.8.2.4" class="admonition note normal"><img class="symbol" alt="Note" title="Note" src="static/images/icon-note.png" /><h6>Note: Determining Device Types</h6><p>
+						Please note that a display with a lot of vertical space may not be a television screen, but could also be a large gaming monitor.
+						Similar logic applies to the smaller screen sizes. Therefore, to indicate that an application runs well on a certain <span class="emphasis"><em>device</em></span>
+						and not just on a certain <span class="emphasis"><em>display</em></span>, additional metadata is needed, like the application's supported
+						input controls as defined via <a class="xref" href="chap-Metadata.html#tag-relations-control">&lt;control/&gt;</a>.
+					</p></div><div id="id-1.3.6.4.5.13.2.8.8.2.5" class="admonition note normal"><img class="symbol" alt="Note" title="Note" src="static/images/icon-note.png" /><h6>Note: Sizes for Reference</h6><p>
+						The sizes below are for reference if you do not know the exact dimensions your application will fit into,
+						and just need a rough guideline as to what device type you can expect at a given size:
+					</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p>Very small screens, as used in watches, wearables and other small-display devices: about &lt;= 360px</p></li><li class="listitem"><p>Small screens often used in handheld devices, such as phone screens, small phablets: about &lt; 768px</p></li><li class="listitem"><p>Screens in laptops, tablets: about &gt;= 768px</p></li><li class="listitem"><p>Bigger computer monitors: about &gt;= 1024px</p></li><li class="listitem"><p>Television screens, large projected images: about &gt;= 3840px</p></li></ul></div></div><p>
+					This tag may appear up to four times to set a minimum and maximum dimension required.
+					If multiple displays are connected to a device, it is acceptable to test against either the largest screen attached to the device, or the combined
+					amount of display space (depending on what makes the most sense for the respective device / setup).
+					A software center application may test for the maximum possible resolution of an attached display, and not the currently set display resolution in case
+					it wants to check against hardware capability and not be influenced by user configuration.
+				</p><p>
+					If used in a <code class="literal">requires</code> block, this relation can be used to restrict an application to only be installable on systems which have a minimum
+					usable display length available for it. If used in a <code class="literal">recommends</code> block, the application will still be
+					installable, but the user may be shown a warning.
+				</p><p>
+					If no <code class="literal">display_length</code> relation is present, a minimum required display (<code class="code">ge</code>) relation
+					of <code class="code">768px</code> is implicitly assumed to preserve backwards compatibility (so applications capable of running on smaller screens
+					need to make their support for that configuration explicit).
+				</p><p>
+					Examples:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;!-- recommend at least 600 logical pixels of space --&gt;
+&lt;recommends&gt;
+  &lt;display_length compare="ge"&gt;600&lt;/display_length&gt;
+&lt;/recommends&gt;
+
+&lt;!-- ensure this application is not run on a very large screen, or
+     very small screen (no tiny handhelds or television screens) --&gt;
+&lt;requires&gt;
+  &lt;display_length compare="lt"&gt;3840&lt;/display_length&gt;
+  &lt;display_length compare="gt"&gt;360&lt;/display_length&gt;
+&lt;/requires&gt;</pre></div><p>Valid for: <code class="literal">requires</code>, <code class="literal">recommends</code></p></dd><dt id="tag-relations-internet"><span class="term">&lt;internet/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-relations-internet">#</a></dt><dd><p>
+					Require, recommend or support connectivity to the internet. The value of this item one of the following:
+				</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p>
+							<code class="code">always</code> - Needs internet connectivity to work. If used in a <code class="literal">recommends</code> element,
+							then this indicates that the app can work without internet, but the experience will be degraded.
+					</p></li><li class="listitem"><p>
+							<code class="code">offline-only</code> - Never uses the internet, even if it’s available.
+					</p></li><li class="listitem"><p>
+							<code class="code">first-run</code> - Uses the internet the first time the application is run, but not normally afterwards.
+					</p></li></ul></div><p>
+					If the value of <code class="literal">&lt;internet/&gt;</code> is not <code class="literal">offline-only</code>, the <code class="literal">bandwidth_mbitps</code> attribute can be
+					set to a bandwidth (in Mbit/s) which is the minimum internet bandwidth needed for the application to be usable. If this attribute is not set, it’s
+					assumed that the application is usable with all internet connections.
+				</p><p>
+					Examples:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;!-- always needs the internet --&gt;
+&lt;requires&gt;
+  &lt;internet&gt;always&lt;/internet&gt;
+&lt;/requires&gt;
+
+&lt;!-- always needs the internet and has a degraded experience if it’s not at least 2Mbit/s --&gt;
+&lt;requires&gt;
+  &lt;internet bandwidth_mbitps="2"&gt;always&lt;/internet&gt;
+&lt;/requires&gt;
+
+&lt;!-- never uses the internet, even if available --&gt;
+&lt;requires&gt;
+  &lt;internet&gt;offline-only&lt;/internet&gt;
+&lt;/requires&gt;
+
+&lt;!-- the software explicitly supports running offline (but may also be able to use online features) --&gt;
+&lt;supports&gt;
+  &lt;internet&gt;offline-only&lt;/internet&gt;
+&lt;/supports&gt;
+
+&lt;!-- requires the internet on first run --&gt;
+&lt;requires&gt;
+  &lt;internet&gt;first-run&lt;/internet&gt;
+&lt;/requires&gt;
+
+&lt;!-- can work without the internet, but with a degraded experience --&gt;
+&lt;recommends&gt;
+  &lt;internet&gt;always&lt;/internet&gt;
+&lt;/recommends&gt;
+
+&lt;!-- recommends the internet for when it’s first run, but can work without --&gt;
+&lt;recommends&gt;
+  &lt;internet&gt;first-run&lt;/internet&gt;
+&lt;/recommends&gt;
+
+&lt;!-- requires the internet on first run, can run without it afterwards but with a degraded experience --&gt;
+&lt;requires&gt;
+  &lt;internet&gt;first-run&lt;/internet&gt;
+&lt;/requires&gt;
+&lt;recommends&gt;
+  &lt;internet&gt;always&lt;/internet&gt;
+&lt;/recommends&gt;</pre></div><p>Valid for: <code class="literal">requires</code>, <code class="literal">recommends</code>, <code class="literal">supports</code></p></dd></dl></div></dd><dt id="tag-replaces"><span class="term">&lt;replaces/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-replaces">#</a></dt><dd><p>
+				The <code class="literal">replaces</code> tag denotes indicates that the given component completely replaces
+				another one on the system. In most cases, the replaced component and the one that replaces it can not be
+				coinstalled. Compared to a <a class="xref" href="chap-Metadata.html#tag-provides">&lt;provides/&gt;</a> ↪ <code class="literal">id</code> relationship,
+				for a replaced component there is no common interface that two components can provide at once.
+			</p><p>
+				A <code class="literal">replaces</code> tag has <code class="literal">id</code> children which have the component-IDs of the
+				components that the current component replaces as value.
+			</p><p>
+				This feature is usually used for components that have to change their ID. While metainfo data may
+				contain <code class="literal">replaces</code> tags, software repository providers should filter these tags
+				carefully to ensure that the new component has the right to replace an old one.
+			</p><p>
+					Example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;!-- the 7-zip application changes its ID and therefore replaces the component with its old ID --&gt;
+&lt;id&gt;org._7_zip._7zip&lt;/id&gt;
+[...]
+&lt;replaces&gt;
+  &lt;id&gt;org.7-zip.7zip&lt;/id&gt;
+&lt;/replaces&gt;</pre></div></dd><dt id="tag-mimetypes"><span class="term">&lt;mimetypes/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-mimetypes">#</a></dt><dd><p>
+			This tag can contain one or more <code class="code">&lt;mimetype/&gt;</code> children, describing the MIME types this application supports.
+		</p><div id="id-1.3.6.4.5.15.2.2" class="admonition important normal"><img class="symbol" alt="Important" title="Important" src="static/images/icon-important.png" /><h6>Important: Deprecation</h6><p>
+				This tag is deprecated and should not be used for new metadata. Please use <a class="xref" href="chap-Metadata.html#tag-provides">&lt;provides/&gt;</a> ↪ <code class="literal">mediatype</code> tags
+				instead.
+			</p></div></dd><dt id="tag-project_group"><span class="term">&lt;project_group/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-project_group">#</a></dt><dd><p>
+			If you include the <code class="code">&lt;project_group/&gt;</code> tag then this identifies your project with a specific upstream umbrella project.
+			Known values include <code class="literal">GNOME</code>, <code class="literal">KDE</code>, <code class="literal">XFCE</code>, <code class="literal">MATE</code> and <code class="literal">LXDE</code>,
+			although other umbrella projects like Yorba or Mozilla make sense too.
+		</p><div id="id-1.3.6.4.5.16.2.2" class="admonition note normal"><img class="symbol" alt="Note" title="Note" src="static/images/icon-note.png" /><h6>Note</h6><p>
+				You should only identify with an umbrella project if you use <span class="emphasis"><em>all</em></span> their infrastructure and policies, for instance string
+				freezes dates, bugtracker and source control instance.
+			</p></div></dd><dt id="tag-compulsory_for_desktop"><span class="term">&lt;compulsory_for_desktop/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-compulsory_for_desktop">#</a></dt><dd><p>
+				The <code class="code">&lt;compulsory_for_desktop&gt;</code> tag indicates that the component which the metadata belongs to is essential for the
+				functionality of the defined desktop environment. Examples for compulsory components are the <code class="literal">GNOME Shell</code> by the GNOME Project,
+				or the <code class="literal">Plasma Desktop</code> by KDE, as well as things like <code class="literal">iBus</code> or the desktop login manager.
+			</p><p>
+				Software centers are expected to detect the running desktop environment and disable uninstallation for compulsory components of that desktop,
+				so users will not be able to damage their currently running, primary desktop environment.
+			</p><p>
+				Multiple occurrences of the <code class="code">&lt;compulsory_for_desktop&gt;</code> tag are allowed, so a project can be essential for many desktops.
+				The distributor decides which components should be made compulsory, however it is generally a good idea to follow upstream's recommendations on that matter.
+			</p><p>
+				A list of all allowed values for this tag is defined in the <a class="ulink" href="https://specifications.freedesktop.org/menu-spec/latest/apb.html" target="_blank">XDG Menu Specification<span class="ulink-url"> (https://specifications.freedesktop.org/menu-spec/latest/apb.html)</span></a>.
+				Software center applications will only recognize these values.
+			</p></dd><dt id="tag-project_license"><span class="term">&lt;project_license/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-project_license">#</a></dt><dd><p>
+				The <code class="code">&lt;project_license/&gt;</code> tag is indicating the license of the component (application/library/addon/font/etc.) described in the metadata document.
+				It should be an <a class="ulink" href="https://spdx.org/specifications" target="_blank">SPDX license expression<span class="ulink-url"> (https://spdx.org/specifications)</span></a>. Please note the SPDX license IDs are case-sensitive in AppStream.
+				Possible values include:
+				</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="literal">GPL-2.0</code></p></li><li class="listitem"><p><code class="literal">LGPL-3.0+ AND GPL-3.0+</code></p></li><li class="listitem"><p><code class="literal">MIT</code></p></li><li class="listitem"><p><code class="literal">CC-BY-SA-2.0</code></p></li><li class="listitem"><p><code class="literal">LicenseRef-proprietary=https://example.com/mylicense.html</code></p></li></ul></div><p>
+				A full list of recognized licenses and their identifiers can be found at the
+				<a class="ulink" href="https://spdx.org/licenses/" target="_blank">SPDX OpenSource License Registry<span class="ulink-url"> (https://spdx.org/licenses/)</span></a>.
+			</p><p>
+				Custom licenses which are not in the SPDX registry, like proprietary licenses, can be denoted using the <code class="code">LicenseRef</code> notation.
+				<code class="code">LicenseRef-proprietary</code> can be used to denote a proprietary license, with an optional URL to the license text following after
+				a <code class="code">=</code> sign.
+			</p><p>
+				The license given in the <code class="literal">project_license</code> tag should be the ‘main’ license of the project. For a software project, this
+				is typically the license for the code. It is not recommended to include the license for accompanying documentation (for example) in
+				<code class="literal">project_license</code>, as that could confuse users. In particular, the <code class="literal">CC-BY-SA-3.0</code> license which is commonly
+				used for documentation is not an (FSF or OSI) approved license for free software, so including it in <code class="literal">project_license</code> results in the
+				project as a whole being considered non-free.
+			</p><p>
+				Although the <code class="literal">project_license</code> tag is not mandatory, it is highly recommended to include it.
+			</p><p>
+				Examples:
+			</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;project_license&gt;LGPL-3.0+ OR MPL-2.0&lt;/project_license&gt;
+&lt;project_license&gt;LGPL-3.0+ OR MPL-2.0&lt;/project_license&gt;
+&lt;project_license&gt;GPL-3.0-or-later&lt;/project_license&gt;
+&lt;project_license&gt;LicenseRef-proprietary=https://code.visualstudio.com/license&lt;/project_license&gt;</pre></div></dd><dt id="tag-developer"><span class="term">&lt;developer/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-developer">#</a></dt><dd><p>
+			The <code class="code">&lt;developer/&gt;</code> element is designed to represent the developers or project responsible for development of the project described in the metadata.
+		</p><p>
+			The element should have a <code class="literal">id</code> property, containing a unique ID to identify the respective developer. It is recommended to use a reverse-DNS
+			name, like <code class="code">org.gnome</code> or <code class="code">io.github.ximion</code>, or a Fediverse handle (like <code class="code">@user@example.org</code>) as ID to achieve a higher chance
+			of uniqueness.
+		</p><p>
+			Every <code class="literal">developer</code> element must have a <code class="literal">name</code> tag as child, which contains a translatable name for the
+			respective developer. Values might be for example "The GNOME Foundation" or "The KDE Community".
+			Hyperlinks or emails must not be used in the name; if you want to link to the developer's homepage, use the <a class="xref" href="chap-Metadata.html#tag-url">&lt;url/&gt;</a>-tag instead.
+			The <code class="literal">name</code> tag is translatable.
+		</p></dd><dt id="tag-developer_name"><span class="term">&lt;developer_name/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-developer_name">#</a></dt><dd><p>
+			The <code class="code">&lt;developer_name/&gt;</code> tag is designed to represent the developers or project responsible for development
+			of the project described in the metadata.
+		</p><div id="id-1.3.6.4.5.20.2.2" class="admonition important normal"><img class="symbol" alt="Important" title="Important" src="static/images/icon-important.png" /><h6>Important: Deprecation</h6><p>
+				This tag is deprecated and should not be used for new metadata. Please use <a class="xref" href="chap-Metadata.html#tag-developer">&lt;developer/&gt;</a> instead.
+			</p></div></dd><dt id="tag-screenshots"><span class="term">&lt;screenshots/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-screenshots">#</a></dt><dd><p>
+			Visual components (like fonts or graphical applications) may choose to add one or multiple screenshots to their metadata.
+			Screenshots can be either a video or a static image.
+		</p><p>
+			The <code class="code">&lt;screenshots/&gt;</code> tag contains multiple <code class="code">&lt;screenshot/&gt;</code> children, where at least one of them must have the property
+			<code class="code">type="default"</code> to indicate the primary and most representative screenshot of the software.
+		</p><p>
+			Optionally, a <code class="literal">screenshot</code> may also have an <code class="code">environment</code> property.
+			This string property denotes the GUI environment the screenshot was recorded in, in the form of <code class="code">{env}:{style}</code>,
+			where <code class="literal">{env}</code> is a desktop-environment name in lowercase and <code class="literal">{style}</code> is a specific style
+			that the desktop environment recognizes, e.g. <code class="code">light</code> and <code class="code">dark</code> for light and dark themes.
+			See <a class="ulink" href="https://github.com/ximion/appstream/blob/main/data/desktop-style-ids.txt" target="_blank">desktop-style-ids.txt<span class="ulink-url"> (https://github.com/ximion/appstream/blob/main/data/desktop-style-ids.txt)</span></a> for a list
+			of currently recognized environment and style combinations.
+		</p><p>
+			Software centers displaying the component will usually prefer screenshots of the current environment and style, and display them first,
+			even before the screenshot marked as <code class="literal">default</code>.
+		</p><p>
+			In general, screenshots should be displayed in the order the are defined in in their <code class="literal">screenshots</code> block
+			for the respective component on a per-environment basis (all screenshots of the same environment/style will be displayed in the order
+			they are listed in the XML, but may be moved to the front of the list as a whole depending on the current environment).
+		</p><p>
+			Every <code class="code">&lt;screenshot/&gt;</code> element must have at least one <code class="code">&lt;image/&gt;</code> <span class="emphasis"><em>or</em></span> <code class="code">&lt;video/&gt;</code> child,
+			but never an <code class="literal">image</code> <span class="emphasis"><em>and</em></span> <code class="literal">video</code> at the same time.
+		</p><p>
+			Screenshots containing videos must not be the default screenshot.
+		</p><p>
+			The value of the <code class="code">&lt;image/&gt;</code> tag is a direct HTTP/HTTPS URL to a screenshot uploaded to a public location on the web.
+			Images should ideally be provided in the PNG format; using JPEG or WebP is also permitted for images in metainfo files.
+		</p><p>
+			The <code class="code">&lt;image/&gt;</code> tag may have the following properties:
+			</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="code">type</code></p><p>
+						The type of the image: <code class="code">source</code> for the source image, and <code class="code">thumbnail</code> for a thumbnail image.
+						In case the type is <code class="code">thumbnail</code>, the <code class="code">width</code> and <code class="code">height</code> properties must be present.
+					</p></li><li class="listitem"><p><code class="code">width</code></p><p>
+						The width of the image in pixels.
+					</p></li><li class="listitem"><p><code class="code">height</code></p><p>
+						The height of the image in pixels.
+					</p></li><li class="listitem"><p><code class="code">scale</code></p><p>
+						A scaling factor for the image, if it is intended for a HiDPI display.
+						If a scaling factor &gt; 1 is set, the <code class="literal">width</code>/<code class="literal">height</code> values
+						are not adjusted to scale. They always represent the exact image dimensions in pixels.
+					</p></li><li class="listitem"><p><code class="code">xml:lang</code></p><p>
+						The language this screenshot image is translated in. This property should only be present if there are multiple images with
+						different locales present.
+					</p></li></ul></div><p>
+		</p><p>
+			The value of the <code class="code">&lt;video/&gt;</code> tag is a direct HTTP/HTTPS URL to a video uploaded to a public location on the web. The video must be in a
+			<a class="ulink" href="https://www.matroska.org/" target="_blank">Matroska (.mkv)<span class="ulink-url"> (https://www.matroska.org/)</span></a> or <a class="ulink" href="https://www.webmproject.org/" target="_blank">WebM<span class="ulink-url"> (https://www.webmproject.org/)</span></a> container and use either the
+			<a class="ulink" href="https://www.webmproject.org/vp9/" target="_blank">VP9<span class="ulink-url"> (https://www.webmproject.org/vp9/)</span></a> or <a class="ulink" href="https://aomedia.org/av1-features/" target="_blank">AV1<span class="ulink-url"> (https://aomedia.org/av1-features/)</span></a> codec.
+			The video should ideally work without any audio, but if audio is needed, the <a class="ulink" href="https://opus-codec.org/" target="_blank">Opus<span class="ulink-url"> (https://opus-codec.org/)</span></a> codec should be used.
+			Software centers may still play the video without any sound though. Additionally, AppStream metadata repositories (like in distributions such as Fedora and Debian)
+			may impose size limitations to video files delivered by their CDN, so it is recommended to keep the video file size below 10MiB.
+			There is also a chance that software centers do not display any video at all, so a video must never be in a default screenshot.
+		</p><p>
+			The <code class="code">&lt;video/&gt;</code> tag may have the following properties:
+			</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="code">container</code></p><p>
+						The video container that is used, can be <code class="code">webm</code> or <code class="code">matroska</code>.
+					</p></li><li class="listitem"><p><code class="code">codec</code></p><p>
+						The video codec used, can be <code class="code">av1</code> or <code class="code">vp9</code>.
+					</p></li><li class="listitem"><p><code class="code">width</code></p><p>
+						The width of the video in pixels.
+					</p></li><li class="listitem"><p><code class="code">height</code></p><p>
+						The height of the video in pixels.
+					</p></li><li class="listitem"><p><code class="code">xml:lang</code></p><p>
+						The language this video is translated in. This property should only be present if there are multiple videos with
+						different locales present.
+					</p></li></ul></div><p>
+		</p><p>
+			Optionally, a <code class="code">&lt;screenshot/&gt;</code> tag may have a translatable <code class="code">&lt;caption/&gt;</code> child, defining a short (ideally not more than 100 characters)
+			description of what the user can see on the referenced screenshot.
+		</p><p>
+			A <code class="code">source</code> video should be concise, easy to understand and not have an overly large file size.
+			Try to use a reasonably large image for <code class="code">source</code> images, as they may be scaled down to <code class="code">thumbnail</code> images in metadata processing.
+			It is suggested to have videos and images in 16:9 aspect ratio, as long as that is sensible for the displayed application.
+		</p><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;screenshots&gt;
+  &lt;screenshot type="default"&gt;
+    &lt;caption&gt;The FooBar main window.&lt;/caption&gt;
+    &lt;image type="source" width="1600" height="900"&gt;https://example.com/foobar/screenshot-1.png&lt;/image&gt;
+  &lt;/screenshot&gt;
+  &lt;screenshot&gt;
+    &lt;caption&gt;Foobar showing the frobnicate functionality.&lt;/caption&gt;
+    &lt;image type="source" width="1600" height="900"&gt;https://example.com/foobar/screenshot-2.png&lt;/image&gt;
+  &lt;/screenshot&gt;
+  &lt;screenshot&gt;
+    &lt;video codec="av1" width="1600" height="900"&gt;https://example.com/foobar/screencast.mkv&lt;/video&gt;
+  &lt;/screenshot&gt;
+
+  &lt;screenshot environment="plasma-mobile"&gt;
+    &lt;caption&gt;The FooBar main window, but on Plasma Mobile&lt;/caption&gt;
+    &lt;image type="source" width="1600" height="900"&gt;https://example.com/foobar/screenshot-1_plasma-mobile.png&lt;/image&gt;
+  &lt;/screenshot&gt;
+
+  &lt;screenshot environment="gnome:dark"&gt;
+    &lt;caption&gt;The FooBar main window, on GNOME in dark mode&lt;/caption&gt;
+    &lt;image type="source" width="1600" height="900"&gt;https://example.com/foobar/screenshot-1_gnome_dark.png&lt;/image&gt;
+  &lt;/screenshot&gt;
+ &lt;/screenshots&gt;</pre></div></dd><dt id="tag-translation"><span class="term">&lt;translation/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-translation">#</a></dt><dd><p>
+			The <code class="code">&lt;translation/&gt;</code> tag is an optional tag which can be added to specify the translation domain used for this software component.
+			It may be used by the AppStream distro metadata generator to determine the translation status of the respective software (e.g. which languages the
+			software is translated into and how complete the translations are).
+		</p><p>
+			The tag must have a <code class="literal">type</code> property, assuming the value of the translation system which is used. Right now, allowed translation systems and
+			values for <code class="literal">type</code> are:
+			</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="literal">gettext</code></p></li><li class="listitem"><p><code class="literal">qt</code></p></li></ul></div><p>
+			In case a software components gets its translation from multiple translation domains, the <code class="code">&lt;translation/&gt;</code> tag may be defined more
+			than once.
+		</p><p>
+			The source strings in the component are assumed to be in the <code class="code">en_US</code> locale. If that is not the case, specify the source locale using
+			the <code class="code">source_locale</code> attribute on the <code class="code">&lt;translation/&gt;</code> tag. The metadata generator will use the source locale
+			to synthesize a <code class="code">&lt;lang/&gt;</code> tag for the source locale, with 100% translation.
+		</p><p>
+			For Gettext translations, localization data will be looked for in <code class="filename">${prefix}/share/locale/${locale}/LC_MESSAGES/${id}.mo</code>, where
+			<code class="code">${id}</code> is replaced with the translation domain specified in the <code class="code">&lt;translation/&gt;</code> tag.
+			For Qt translations, if the ID string contains slashes, we will look for translations following either the <code class="filename">${prefix}/share/${id}_${locale}.qm</code>
+			or the <code class="filename">${prefix}/share/${id}/${locale}.qm</code> pattern. If no slashes are contained, we will look for translation data in
+			<code class="filename">${prefix}/share/locale/${locale}/LC_MESSAGES/${id}.qm</code>.
+		</p><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;translation type="gettext"&gt;foobar&lt;/translation&gt;
+&lt;translation type="gettext" source_locale="de_DE"&gt;foobar&lt;/translation&gt;
+&lt;translation type="qt"&gt;FooBar/translations/foobar&lt;/translation&gt;</pre></div></dd><dt id="tag-suggests"><span class="term">&lt;suggests/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-suggests">#</a></dt><dd><p>
+			The <code class="code">&lt;suggests/&gt;</code> tag is an optional tag which can be added to specify the component-ids of other software this components suggests.
+			Software centers might present the suggested software on the installation page of the described component.
+		</p><p>
+			The tag may have a <code class="literal">type</code> property, with the value <code class="code">upstream</code>, indicating that this suggestion originates from the upstream project.
+			If no <code class="literal">type</code> property is given, <code class="code">upstream</code> is implicitly assumed as value. Metainfo files must not define other <code class="literal">suggests</code>
+			types, those are reserved for AppStream catalog XML (see <a class="xref" href="chap-CatalogData.html#tag-ct-suggests">&lt;suggests/&gt;</a> in catalog XML).
+		</p><p>
+			The <code class="literal">suggests</code> tag must have one or more <code class="code">&lt;id/&gt;</code> tags as children, specifying the IDs of the suggested other software components.
+		</p><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;suggests&gt;
+  &lt;id&gt;org.kde.gwenview.desktop&lt;/id&gt;
+  &lt;id&gt;org.inkscape.inkscape&lt;/id&gt;
+&lt;/suggests&gt;</pre></div></dd><dt id="tag-content_rating"><span class="term">&lt;content_rating/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-content_rating">#</a></dt><dd><p>
+			The <code class="code">&lt;content_rating/&gt;</code> tag is an optional tag which can be added to specify age ratings for the respective software components.
+			These maybe be used for parental control or to display their information in software centers.
+		</p><p>
+			The tag must have a <code class="literal">type</code> property, indicating the type of the rating system that is used. At the moment, the
+			<a class="ulink" href="https://hughsie.github.io/oars/" target="_blank">Open Age Ratings Service<span class="ulink-url"> (https://hughsie.github.io/oars/)</span></a> (value <code class="code">oars-1.0</code>) is supported natively, but more services might be
+			added in future.
+		</p><p>
+			The <code class="code">&lt;content_rating/&gt;</code> tag may have <code class="code">&lt;content_attribute/&gt;</code> children which each must have an <code class="literal">id</code> property indicating
+			the specific section that is rated. Their value indicates the intensity of the rated section and can be one of:
+		</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="literal">none</code> - no rating given</p></li><li class="listitem"><p><code class="literal">mild</code></p></li><li class="listitem"><p><code class="literal">moderate</code></p></li><li class="listitem"><p><code class="literal">intense</code></p></li></ul></div><p>
+			In case the <code class="code">&lt;content_rating/&gt;</code> tag is empty (no <code class="code">&lt;content_attribute/&gt;</code> is present), it is assumed that the component was checked
+			for age ratings and no age restrictions apply.
+		</p><p>
+			The website of the Open Age Ratings Service provides <a class="ulink" href="https://hughsie.github.io/oars/generate.html" target="_blank">an online form<span class="ulink-url"> (https://hughsie.github.io/oars/generate.html)</span></a> which will automatically generate AppStream
+			compatible metadata based on a set of questions answered about the content.
+		</p><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;content_rating type="oars-1.0"&gt;
+  &lt;content_attribute id="drugs-alcohol"&gt;moderate&lt;/content_attribute&gt;
+  &lt;content_attribute id="language-humor"&gt;mild&lt;/content_attribute&gt;
+&lt;/content_rating&gt;</pre></div></dd><dt id="tag-agreement"><span class="term">&lt;agreement/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-agreement">#</a></dt><dd><p>
+			The <code class="code">&lt;agreement/&gt;</code> tag is an optional tag which can be added to specify agreements the user has to accept or acknowledge before using the software.
+			This tag can appear multiple times, if multiple agreements are required for a software component.
+		</p><p>
+			The tag should have a <code class="literal">type</code> property, indicating the type of the agreement. If the <code class="literal">type</code> property is missing,
+			an agreement of type <code class="code">generic</code> is assumed.
+			Currently recognized agreement types are:
+		</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="literal">eula</code> - an  end-user license agreement the user has to accept before installing the software.</p></li><li class="listitem"><p><code class="literal">privacy</code> - a privacy statement for the software, usually a <a class="ulink" href="https://www.eugdpr.org/" target="_blank">GDPR<span class="ulink-url"> (https://www.eugdpr.org/)</span></a> compliant statement</p></li></ul></div><p>
+			The <code class="code">&lt;agreement/&gt;</code> tag must have a <code class="literal">version_id</code> property, containing a version identifier for the license. It may be used by client applications to
+			determine whether an agreement needs to be shown again after it has been accepted already by the user.
+		</p><p>
+			Every <code class="code">&lt;agreement/&gt;</code> must have <code class="code">&lt;agreement_section/&gt;</code> children which each have an <code class="literal">id</code> property indicating
+			the specific section that they describe (e.g. <code class="code">introduction</code>). These values may be used to automatically jump to a specific section.
+			Each <code class="code">&lt;agreement_section/&gt;</code> has a translatable <code class="literal">name</code> child denoting the name or title of the respective section, and a <code class="literal">description</code>
+			child that is translated according to the same translation rules that apply to the <a class="xref" href="chap-Metadata.html#tag-description">&lt;description/&gt;</a> tag.
+			The <code class="literal">description</code> contains the content of the respective agreement section.
+		</p><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;agreement type="privacy" version_id="1.0"&gt;
+    &lt;agreement_section id="introduction"&gt;
+      &lt;name&gt;Introduction&lt;/name&gt;
+      &lt;description&gt;
+        &lt;p&gt;
+          We hold personal data about vendors, administrators, clients and other
+          individuals for a variety of purposes.
+          [...]
+        &lt;/p&gt;
+      &lt;/description&gt;
+    &lt;/agreement_section&gt;
+
+    &lt;agreement_section id="scope"&gt;
+      &lt;name&gt;Scope&lt;/name&gt;
+      &lt;description&gt;
+        &lt;p&gt;
+          This policy applies to all users who have access to any of the personally
+          identifiable data.
+        &lt;/p&gt;
+      &lt;/description&gt;
+    &lt;/agreement_section&gt;
+
+    [...]
+&lt;/agreement&gt;</pre></div></dd><dt id="tag-update_contact"><span class="term">&lt;update_contact/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-update_contact">#</a></dt><dd><p>
+			The <code class="code">&lt;update_contact/&gt;</code> tag is an optional tag which can be added to provide an email address distributors can use to contact the project
+			about invalid or incomplete metadata or – in case the specification has changed – about old metadata. It can also be used to ask general questions in case of
+			an update of the component described in the metadata file.
+		</p><p>
+			The <code class="code">&lt;update_contact/&gt;</code> tag must <span class="emphasis"><em>only be used by distributors</em></span>. It is not included in the distribution-provided
+			AppStream XML file, and therefore not exposed to the end user via any kind of UI.
+		</p><p>
+			Upstream authors might decide to add an email address in cleartext, but spam protection using <code class="code">_AT_</code> is also valid.
+			The value of this tag is generally treated a case-insensitive way.
+		</p><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;update_contact&gt;developer_AT_example.com&lt;/update_contact&gt;</pre></div></dd><dt id="tag-name_variant_suffix"><span class="term">&lt;name_variant_suffix/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-name_variant_suffix">#</a></dt><dd><p>
+				Variant suffix that software centers may append to the component name on lists in case multiple components have the same name.
+				This is currently primarily used for firmware, where components only need to be distinguished if multiple variants are displayed.
+				A name variant suffix could e.g. be 'Prerelease' or 'China'.
+			</p></dd><dt id="tag-branding"><span class="term">&lt;branding/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-branding">#</a></dt><dd><p>
+			The <code class="code">&lt;branding/&gt;</code> tag is an optional tag which defines properties affecting the branding and presentation of the
+			component. It usually affects how the component is displayed in software centers and on websites.
+		</p><p>
+			The tag may currently only contain <code class="literal">color</code> tags as children, defining accent colors for the component. Each
+			<code class="literal">color</code> element contains an HTML hexadecimal color string as its value. This string must start with a <code class="literal">#</code> character.
+			An accent color may for example be used as the background behind the logo/icon of an application.
+		</p><p>
+			A <code class="literal">color</code> tag must have a <code class="literal">type</code> attribute which denotes the color type. The color type
+			may currently only be <code class="literal">primary</code>.
+			A <code class="literal">color</code> tag may have an optional <code class="literal">scheme_preference</code> attribute which denotes a preference
+			for a particular color scheme where this color should be used over other colors. Values for this attribute may either be
+			<code class="code">light</code> or <code class="code">dark</code> for a light or dark theme preference.
+			Each color type/scheme combination may only appear once.
+		</p><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;branding&gt;
+  &lt;color type="primary" scheme_preference="light"&gt;#ff00ff&lt;/color&gt;
+  &lt;color type="primary" scheme_preference="dark"&gt;#993d3d&lt;/color&gt;
+&lt;/branding&gt;</pre></div></dd><dt id="tag-tags"><span class="term">&lt;tags/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-tags">#</a></dt><dd><p>
+			The <code class="code">&lt;tags/&gt;</code> tag is an optional tag which can be used to give the component one or multiple arbitrary labels.
+			For example, it can be used for apps to tag themselves as "featured" in specific software centers, or to group software together
+			by some well-defined criteria.
+		</p><p>
+			The interpretation of tags is completely defined by the client application that is reading AppStream metadata. Tags defined
+			in metainfo files may be filtered by catalog metadata generators, and may even be completely ignored by clients. Components
+			must not rely on the presence of specific tags to behave correctly.
+		</p><p>
+			The <code class="literal">tags</code> tag must have <code class="literal">tag</code> children which must have a value comprised only of lower-case
+			ASCII characters, dots, hyphens and numbers. Spaces are not allowed. The tag must also have a <code class="literal">namespace</code>
+			attribute to designate a namespace where the particular tag is valid. The namespace is an arbitrary string which has the
+			same character limitations as the tag value. It may for example be the name of the client too that consumes the data, or
+			the name of the organization the tag belongs to.
+		</p><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;tags&gt;
+  &lt;tag namespace="lvfs"&gt;vendor-2021q1&lt;/tag&gt;
+  &lt;tag namespace="plasma"&gt;featured&lt;/tag&gt;
+&lt;/tags&gt;</pre></div></dd><dt id="tag-references"><span class="term">&lt;references/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-references">#</a></dt><dd><p>
+			The <code class="code">&lt;references/&gt;</code> element is an optional tag to indicate references to this component in other registries.
+			This is primarily used for scientific registries, citation information and DOI
+			(<a class="ulink" href="https://en.wikipedia.org/wiki/Digital_object_identifier" target="_blank">Digital Object Identifier<span class="ulink-url"> (https://en.wikipedia.org/wiki/Digital_object_identifier)</span></a>) associations.
+		</p><p>
+			This information is primarily consumed by specialized tools, but may also be shown by software centers or read by the
+			applications themselves to compose references.
+		</p><p>
+			The <code class="literal">references</code> element may have <code class="literal">doi</code> children containing DOI identifier strings as value,
+			<code class="literal">citation_cff</code> children containing a link to a citation file in CFF (<a class="ulink" href="https://citation-file-format.github.io/" target="_blank">Citation File Format<span class="ulink-url"> (https://citation-file-format.github.io/)</span></a>)
+			format or <code class="literal">registry</code> children.
+			A <code class="literal">registry</code> child must have a <code class="literal">name</code> property containing the name of a registry referencing this component,
+			while the value of it must be the identification string in the respective registry.
+		</p><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;references&gt;
+  &lt;doi&gt;10.1000/182&lt;/doi&gt;
+  &lt;registry name="SciCrunch"&gt;SCR_000000&lt;/registry&gt;
+  &lt;citation_cff&gt;https://example.org/CITATION.cff&lt;/citation_cff&gt;
+&lt;/references&gt;</pre></div></dd><dt id="tag-custom"><span class="term">&lt;custom/&gt;</span> <a title="Permalink" class="permalink" href="chap-Metadata.html#tag-custom">#</a></dt><dd><p>
+			The <code class="code">&lt;custom/&gt;</code> tag is an optional tag which can be used as a key-value store for custom values that are not covered by the AppStream specification.
+			The tag is usually stripped out or filtered by catalog metadata generators, such as <code class="literal">appstream-generator</code>.
+			When present, the data contained in a <code class="literal">custom</code> can be read by all tools making use of AppStream metadata, making it an ideal extension point when using
+			an existing AppStream library is desired and some custom additions to the metadata are still required.
+			The <code class="literal">custom</code> tag is also often used for prototyping new features in AppStream.
+		</p><p>
+			The tag must have <code class="literal">value</code> children which must have a <code class="literal">key</code> property. The value of the <code class="literal">value</code>
+			tag denotes a user-defined value, while the key string set for the <code class="literal">key</code> property denotes a user-specified key string.
+			The key must be unique; multiple keys with the same name are not allowed.
+		</p><p>
+			To avoid name conflicts, it is recommended to prefix keys with a vendor prefix, like <code class="code">GNOME::</code> or <code class="code">KDE::</code>.
+		</p><div id="id-1.3.6.4.5.31.2.4" class="admonition note normal"><img class="symbol" alt="Note" title="Note" src="static/images/icon-note.png" /><h6>Note</h6><p>
+				Before using a <code class="literal">custom</code> tag, please consider if there is a better way to achieve your goal than adding the data to the AppStream metainfo file,
+				or whether AppStream maybe already contains a way to achieve what you want.
+				Additionally, if you think that the purpose you use the <code class="literal">custom</code> tag for is generally useful, please file a feature request against AppStream,
+				so we can discuss adding the new feature to the specification and make it more usable for a bigger audience.
+			</p></div><p>
+			Example:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;custom&gt;
+  &lt;value key="MyCorp::app_color"&gt;#FF0000&lt;/value&gt;
+  &lt;value key="MyCorp::special_id"&gt;284fd262-6870-42a6-89a4-b189d3109e3e&lt;/value&gt;
+&lt;/custom&gt;</pre></div></dd></dl></div><p>
+		An example for a very basic component file could look like this:
+	</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;component&gt;
+  &lt;id&gt;com.example.foobar&lt;/id&gt;
+  &lt;name&gt;Foo Bar&lt;/name&gt;
+  &lt;summary&gt;A foo-ish bar&lt;/summary&gt;
+  &lt;url type="homepage"&gt;https://www.example.org&lt;/url&gt;
+  &lt;metadata_license&gt;CC0-1.0&lt;/metadata_license&gt;
+
+  &lt;provides&gt;
+    &lt;library&gt;libfoobar.so.2&lt;/library&gt;
+    &lt;font&gt;foo.ttf&lt;/font&gt;
+    &lt;binary&gt;foobar&lt;/binary&gt;
+  &lt;/provides&gt;
+  &lt;releases&gt;
+    &lt;release version="1.2" date="2015-02-16" /&gt;
+  &lt;/releases&gt;
+  &lt;developer id="example.org"&gt;
+    &lt;name&gt;FooBar Team&lt;/name&gt;
+  &lt;/developer&gt;
+&lt;/component&gt;</pre></div><p>
+		For a component of type <code class="literal">generic</code>, the minimal amount of required tags is: <a class="xref" href="chap-Metadata.html#tag-id-generic">&lt;id/&gt;</a>, <a class="xref" href="chap-Metadata.html#tag-name">&lt;name/&gt;</a>,
+		<a class="xref" href="chap-Metadata.html#tag-summary">&lt;summary/&gt;</a>, <a class="xref" href="chap-Metadata.html#tag-metadata_license">&lt;metadata_license/&gt;</a>.
+	</p></div></div></div></div><div class="page-bottom"><div id="_bottom-navigation"><a class="nav-link" href="sect-Metadata-Releases.html"><span class="next-icon">→</span><span class="nav-label">Release Information</span></a><a class="nav-link" href="chap-AppStream-About.html"><span class="prev-icon">←</span><span class="nav-label"><span class="number">Chapter 1 </span>About AppStream</span></a></div></div></div><div id="_inward"></div></div><div id="_footer-wrap"><div id="_footer"><p>©
+        2024 
+        Freedesktop.org, the AppStream Project</p></div></div></body></html>

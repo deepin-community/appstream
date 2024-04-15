@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -83,7 +83,7 @@ as_desktop_entry_add_issue (GPtrArray *issues, const gchar *tag, const gchar *fo
 /**
  * as_get_locale_from_key:
  */
-static gchar*
+static gchar *
 as_get_locale_from_key (const gchar *key)
 {
 	gchar *tmp1;
@@ -102,9 +102,8 @@ as_get_locale_from_key (const gchar *key)
 	locale[tmp2 - tmp1 - 1] = '\0';
 
 	/* drop UTF-8 suffixes */
-	if (g_str_has_suffix (locale, ".utf-8") ||
-	    g_str_has_suffix (locale, ".UTF-8"))
-		locale[strlen (locale)-6] = '\0';
+	if (g_str_has_suffix (locale, ".utf-8") || g_str_has_suffix (locale, ".UTF-8"))
+		locale[strlen (locale) - 6] = '\0';
 
 	/* filter out cruft */
 	if (as_is_cruft_locale (locale))
@@ -142,36 +141,19 @@ as_add_filtered_categories (gchar **cats, AsComponent *cpt, GPtrArray *issues)
 	for (i = 0; cats[i] != NULL; i++) {
 		const gchar *cat = cats[i];
 
-		if (g_strcmp0 (cat, "GTK") == 0)
-			continue;
-		if (g_strcmp0 (cat, "Qt") == 0)
-			continue;
-		if (g_strcmp0 (cat, "GNOME") == 0)
-			continue;
-		if (g_strcmp0 (cat, "KDE") == 0)
-			continue;
-		if (g_strcmp0 (cat, "GUI") == 0)
-			continue;
-		if (g_strcmp0 (cat, "Application") == 0)
-			continue;
-
-		/* custom categories are ignored */
-		if (g_str_has_prefix (cat, "X-"))
-			continue;
-		if (g_str_has_prefix (cat, "x-"))
-			continue;
-
 		/* check for invalid */
 		if (g_strcmp0 (cat, "") == 0)
+			continue;
+
+		/* ignore low-quality and custom categories */
+		if (as_utils_category_name_is_bad (cat))
 			continue;
 
 		/* add the category if it is valid */
 		if (as_utils_is_category_name (cat))
 			as_component_add_category (cpt, cat);
 		else
-			as_desktop_entry_add_issue (issues,
-						    "desktop-entry-category-invalid",
-						    cat);
+			as_desktop_entry_add_issue (issues, "desktop-entry-category-invalid", cat);
 	}
 }
 
@@ -189,9 +171,7 @@ as_get_desktop_entry_value (GKeyFile *df, GPtrArray *issues, const gchar *key)
 
 	str = g_key_file_get_string (df, DESKTOP_GROUP, key, &error);
 	if (error != NULL)
-		as_desktop_entry_add_issue (issues,
-					    "desktop-entry-bad-data",
-					    error->message);
+		as_desktop_entry_add_issue (issues, "desktop-entry-bad-data", error->message);
 	if (str == NULL)
 		return NULL;
 
@@ -214,9 +194,7 @@ as_get_desktop_entry_value (GKeyFile *df, GPtrArray *issues, const gchar *key)
 	}
 
 	if (has_invalid_chars)
-		as_desktop_entry_add_issue (issues,
-					    "desktop-entry-value-invalid-chars",
-					    key);
+		as_desktop_entry_add_issue (issues, "desktop-entry-value-invalid-chars", key);
 	return g_string_free (sane_str, FALSE);
 }
 
@@ -232,15 +210,20 @@ as_check_desktop_string (GPtrArray *issues, const gchar *field, const gchar *str
 	    (g_str_has_prefix (str, "'") && g_str_has_suffix (str, "'")))
 		as_desktop_entry_add_issue (issues,
 					    "desktop-entry-value-quoted",
-					    "%s: %s", field, str);
+					    "%s: %s",
+					    field,
+					    str);
 }
 
 /**
  * as_get_external_desktop_translations:
  */
-static GPtrArray*
-as_get_external_desktop_translations (GKeyFile *kf, const gchar *text, const gchar *locale,
-				      AsTranslateDesktopTextFn de_l10n_fn, gpointer user_data)
+static GPtrArray *
+as_get_external_desktop_translations (GKeyFile *kf,
+				      const gchar *text,
+				      const gchar *locale,
+				      AsTranslateDesktopTextFn de_l10n_fn,
+				      gpointer user_data)
 {
 	GPtrArray *l10n;
 	if (de_l10n_fn == NULL)
@@ -251,8 +234,10 @@ as_get_external_desktop_translations (GKeyFile *kf, const gchar *text, const gch
 	l10n = de_l10n_fn (kf, text, user_data);
 	if (G_UNLIKELY (l10n->len % 2 != 0)) {
 		/* NOTE: We could use g_return_val_if_fail here, but we could just as well write a more descriptive message */
-		g_critical ("Invalid amount of list entries in external desktop translation l10n listing. "
-			    "Make sure you return locale names in even, and translations in odd indices. This is a programmer error.");
+		g_critical (
+		    "Invalid amount of list entries in external desktop translation l10n listing. "
+		    "Make sure you return locale names in even, and translations in odd indices. "
+		    "This is a programmer error.");
 		return NULL;
 	}
 	return l10n;
@@ -263,7 +248,8 @@ as_get_external_desktop_translations (GKeyFile *kf, const gchar *text, const gch
  */
 gboolean
 as_desktop_entry_parse_data (AsComponent *cpt,
-			     const gchar *data, gssize data_len,
+			     const gchar *data,
+			     gssize data_len,
 			     AsFormatVersion fversion,
 			     gboolean ignore_nodisplay,
 			     GPtrArray *issues,
@@ -280,19 +266,16 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 	g_autofree gchar *desktop_basename = g_strdup (as_component_get_id (cpt));
 
 	if (desktop_basename == NULL) {
-		g_set_error_literal (error,
-				     AS_METADATA_ERROR,
-				     AS_METADATA_ERROR_PARSE,
-				     "Unable to determine component-id for component from desktop-entry data.");
+		g_set_error_literal (
+		    error,
+		    AS_METADATA_ERROR,
+		    AS_METADATA_ERROR_PARSE,
+		    "Unable to determine component-id for component from desktop-entry data.");
 		return FALSE;
 	}
 
 	df = g_key_file_new ();
-	g_key_file_load_from_data (df,
-				   data,
-				   data_len,
-				   G_KEY_FILE_KEEP_TRANSLATIONS,
-				   &tmp_error);
+	g_key_file_load_from_data (df, data, data_len, G_KEY_FILE_KEEP_TRANSLATIONS, &tmp_error);
 	if (tmp_error != NULL) {
 		g_propagate_error (error, tmp_error);
 		return FALSE;
@@ -301,17 +284,15 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 	/* check this is a valid desktop file */
 	if (!g_key_file_has_group (df, DESKTOP_GROUP)) {
 		g_set_error (error,
-				AS_METADATA_ERROR,
-				AS_METADATA_ERROR_PARSE,
-				"Data in '%s' does not contain a valid Desktop Entry.", as_component_get_id (cpt));
+			     AS_METADATA_ERROR,
+			     AS_METADATA_ERROR_PARSE,
+			     "Data in '%s' does not contain a valid Desktop Entry.",
+			     as_component_get_id (cpt));
 		return FALSE;
 	}
 
 	/* Type */
-	tmp = g_key_file_get_string (df,
-				     DESKTOP_GROUP,
-				     "Type",
-				     NULL);
+	tmp = g_key_file_get_string (df, DESKTOP_GROUP, "Type", NULL);
 	if (!as_strequal_casefold (tmp, "application")) {
 		g_free (tmp);
 		/* not an application, so we can't proceed, but also no error */
@@ -320,10 +301,7 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 	g_free (tmp);
 
 	/* NoDisplay */
-	tmp = g_key_file_get_string (df,
-				     DESKTOP_GROUP,
-				     "NoDisplay",
-				     NULL);
+	tmp = g_key_file_get_string (df, DESKTOP_GROUP, "NoDisplay", NULL);
 	if (as_strequal_casefold (tmp, "true")) {
 		/* we may read the application data, but it will be ignored in its current form */
 		ignore_cpt = TRUE;
@@ -335,10 +313,7 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 	g_free (tmp);
 
 	/* X-AppStream-Ignore */
-	tmp = g_key_file_get_string (df,
-				     DESKTOP_GROUP,
-				     "X-AppStream-Ignore",
-				     NULL);
+	tmp = g_key_file_get_string (df, DESKTOP_GROUP, "X-AppStream-Ignore", NULL);
 	if (as_strequal_casefold (tmp, "true")) {
 		g_free (tmp);
 		/* this file should be ignored, we can't return a component (but this is also no error) */
@@ -347,15 +322,10 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 	g_free (tmp);
 
 	/* Hidden */
-	tmp = g_key_file_get_string (df,
-				     DESKTOP_GROUP,
-				     "Hidden",
-				     NULL);
+	tmp = g_key_file_get_string (df, DESKTOP_GROUP, "Hidden", NULL);
 	if (as_strequal_casefold (tmp, "true")) {
 		ignore_cpt = TRUE;
-		as_desktop_entry_add_issue (issues,
-					    "desktop-entry-hidden-set",
-					    NULL);
+		as_desktop_entry_add_issue (issues, "desktop-entry-hidden-set", NULL);
 		if (!ignore_nodisplay) {
 			g_free (tmp);
 			return FALSE;
@@ -364,15 +334,10 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 	g_free (tmp);
 
 	/* OnlyShowIn */
-	tmp = g_key_file_get_string (df,
-				     DESKTOP_GROUP,
-				     "OnlyShowIn",
-				     NULL);
+	tmp = g_key_file_get_string (df, DESKTOP_GROUP, "OnlyShowIn", NULL);
 	if (tmp != NULL) {
 		if (as_is_empty (tmp))
-			as_desktop_entry_add_issue (issues,
-						    "desktop-entry-empty-onlyshowin",
-						    NULL);
+			as_desktop_entry_add_issue (issues, "desktop-entry-empty-onlyshowin", NULL);
 		/* We want to ignore all desktop-entry files which were made desktop-exclusive
 		 * via OnlyShowIn (those are usually configuration apps and control center modules)
 		 * Only exception is if a metainfo file was present. */
@@ -389,27 +354,35 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 
 	/* strip .desktop suffix if the reverse-domain-name scheme is followed and we build for
          * a recent AppStream version */
-        if (fversion >= AS_FORMAT_VERSION_V0_10) {
+	{
 		g_auto(GStrv) parts = g_strsplit (desktop_basename, ".", 3);
 		if (g_strv_length (parts) == 3) {
-			if (as_utils_is_tld (parts[0]) && g_str_has_suffix (desktop_basename, ".desktop")) {
+			if (as_utils_is_tld (parts[0]) &&
+			    g_str_has_suffix (desktop_basename, ".desktop")) {
 				g_autofree gchar *id_raw = NULL;
 				/* remove .desktop suffix */
 				id_raw = g_strdup (desktop_basename);
-				id_raw[strlen (id_raw)-8] = '\0';
+				id_raw[strlen (id_raw) - 8] = '\0';
 
 				as_component_set_id (cpt, id_raw);
 			}
+		} else {
+			/* for components synthesized from desktop-entry files, that we can't guess
+			 * a rDNS ID for, we need a lower-cased ID instead */
+			g_autofree gchar *cid_low = g_utf8_strdown (desktop_basename, -1);
+			as_component_set_id (cpt, cid_low);
 		}
 	}
 
 	had_name = !as_is_empty (as_component_get_name (cpt));
 	had_summary = !as_is_empty (as_component_get_name (cpt));
 	had_categories = as_component_get_categories (cpt)->len > 0;
-	had_mimetypes = as_component_get_provided_for_kind (cpt, AS_PROVIDED_KIND_MEDIATYPE) != NULL;
+	had_mimetypes = as_component_get_provided_for_kind (cpt, AS_PROVIDED_KIND_MEDIATYPE) !=
+			NULL;
 
 	keys = g_key_file_get_keys (df, DESKTOP_GROUP, NULL, NULL);
 	for (guint i = 0; keys[i] != NULL; i++) {
+		g_autofree gchar *locale_posix = NULL;
 		g_autofree gchar *locale = NULL;
 		g_autofree gchar *val = NULL;
 		gchar *key = keys[i];
@@ -418,11 +391,12 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 			continue;
 
 		g_strstrip (key);
-		locale = as_get_locale_from_key (key);
+		locale_posix = as_get_locale_from_key (key);
 
 		/* skip invalid stuff */
-		if (locale == NULL)
+		if (locale_posix == NULL)
 			continue;
+		locale = as_utils_posix_locale_to_bcp47 (locale_posix);
 
 		val = as_get_desktop_entry_value (df, issues, key);
 		if (val == NULL)
@@ -434,13 +408,17 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 
 			as_component_set_name (cpt, val, locale);
 			as_check_desktop_string (issues, key, val);
-			l10n_data = as_get_external_desktop_translations (df, val, locale,
-									  de_l10n_fn, user_data);
+			l10n_data = as_get_external_desktop_translations (df,
+									  val,
+									  locale,
+									  de_l10n_fn,
+									  user_data);
 			if (l10n_data != NULL) {
 				for (guint j = 0; j < l10n_data->len; j += 2)
-					as_component_set_name (cpt,
-							       g_ptr_array_index (l10n_data, j),
-							       g_ptr_array_index (l10n_data, j + 1));
+					as_component_set_name (
+					    cpt,
+					    g_ptr_array_index (l10n_data, j),
+					    g_ptr_array_index (l10n_data, j + 1));
 			}
 		} else if (g_str_has_prefix (key, "Comment")) {
 			g_autoptr(GPtrArray) l10n_data = NULL;
@@ -449,13 +427,17 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 
 			as_component_set_summary (cpt, val, locale);
 			as_check_desktop_string (issues, key, val);
-			l10n_data = as_get_external_desktop_translations (df, val, locale,
-									  de_l10n_fn, user_data);
+			l10n_data = as_get_external_desktop_translations (df,
+									  val,
+									  locale,
+									  de_l10n_fn,
+									  user_data);
 			if (l10n_data != NULL) {
 				for (guint j = 0; j < l10n_data->len; j += 2)
-					as_component_set_name (cpt,
-							       g_ptr_array_index (l10n_data, j),
-							       g_ptr_array_index (l10n_data, j + 1));
+					as_component_set_name (
+					    cpt,
+					    g_ptr_array_index (l10n_data, j),
+					    g_ptr_array_index (l10n_data, j + 1));
 			}
 		} else if (g_strcmp0 (key, "Categories") == 0) {
 			g_auto(GStrv) cats = NULL;
@@ -466,6 +448,7 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 			as_add_filtered_categories (cats, cpt, issues);
 		} else if (g_str_has_prefix (key, "Keywords")) {
 			g_auto(GStrv) kws = NULL;
+			g_autoptr(GPtrArray) kws_list = NULL;
 			g_autoptr(GPtrArray) l10n_data = NULL;
 
 			/* skip adding keywords if the metainfo file or previous component has
@@ -474,18 +457,25 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 				continue;
 
 			kws = g_strsplit (val, ";", -1);
-			as_component_set_keywords (cpt, kws, locale);
+			kws_list = as_strv_to_ptr_array (kws, TRUE, TRUE);
+			as_component_set_keywords (cpt, kws_list, locale, FALSE);
 
-			l10n_data = as_get_external_desktop_translations (df, val, locale,
-									  de_l10n_fn, user_data);
+			l10n_data = as_get_external_desktop_translations (df,
+									  val,
+									  locale,
+									  de_l10n_fn,
+									  user_data);
 			if (l10n_data != NULL) {
 				for (guint j = 0; j < l10n_data->len; j += 2) {
-					g_auto(GStrv) e_kws = NULL;
+					g_auto(GStrv) tmp_strv = NULL;
+					g_autoptr(GPtrArray) e_kws = NULL;
+
 					const gchar *e_locale = g_ptr_array_index (l10n_data, j);
 					gchar *e_value = g_ptr_array_index (l10n_data, j + 1);
 
-					e_kws = g_strsplit (e_value, ";", -1);
-					as_component_set_keywords (cpt, e_kws, e_locale);
+					tmp_strv = g_strsplit (e_value, ";", -1);
+					e_kws = as_strv_to_ptr_array (tmp_strv, TRUE, TRUE);
+					as_component_set_keywords (cpt, e_kws, e_locale, FALSE);
 				}
 			}
 		} else if (g_strcmp0 (key, "MimeType") == 0) {
@@ -527,8 +517,7 @@ as_desktop_entry_parse_data (AsComponent *cpt,
 				/* work around stock icons being suffixed */
 				dot = g_strstr_len (val, -1, ".");
 				if (dot != NULL &&
-				    (g_strcmp0 (dot, ".png") == 0 ||
-				     g_strcmp0 (dot, ".xpm") == 0 ||
+				    (g_strcmp0 (dot, ".png") == 0 || g_strcmp0 (dot, ".xpm") == 0 ||
 				     g_strcmp0 (dot, ".svg") == 0 ||
 				     g_strcmp0 (dot, ".svgz") == 0)) {
 					*dot = '\0';

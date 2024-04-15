@@ -8,7 +8,13 @@
 as_doc_target_dir = join_paths(get_option('datadir'), 'doc', 'appstream')
 
 # make manual pages
+manpages_xsl = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
 xsltproc = find_program('xsltproc')
+if run_command([xsltproc, '--nonet', manpages_xsl],
+                check: false).returncode() != 0
+    error('Unable to find Docbook XSL stylesheets for man pages')
+endif
+
 custom_target('man-appstreamcli',
     input: 'xml/man/appstreamcli.1.xml',
     output: 'appstreamcli.1',
@@ -21,7 +27,7 @@ custom_target('man-appstreamcli',
         '--stringparam', 'funcsynopsis.style', 'ansi',
         '--stringparam', 'man.th.extra1.suppress', '1',
         '-o', '@OUTPUT@',
-        'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl',
+        manpages_xsl,
         '@INPUT@'
     ]
 )
@@ -39,19 +45,38 @@ if get_option('compose')
             '--stringparam', 'funcsynopsis.style', 'ansi',
             '--stringparam', 'man.th.extra1.suppress', '1',
             '-o', '@OUTPUT@',
-            'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl',
+            manpages_xsl,
             '@INPUT@'
         ]
     )
 endif
 
 if get_option('docs') or get_option('apidocs')
+  if get_option('gir')
     subdir('api/')
+  endif
 endif
 
 #
 # Documentation
 #
+
+gen_doc_valsec_src = [
+    'gen-valtag-sections.c',
+    '../src/as-validator-issue-tag.h',
+    '../compose/asc-hint-tags.h',
+    '../compose/asc-hint-tags.c',
+]
+
+gen_doc_valsec_exe = executable('gen-validator-tag-sections',
+    [gen_doc_valsec_src],
+    dependencies: [appstream_dep,
+                   gio_dep],
+    include_directories: [root_inc_dir,
+                          include_directories ('../compose')],
+    c_args: ['-DASC_COMPILATION', '-Wno-inline'],
+    install: false,
+)
 
 as_doc_src = [
     'xml/APIDoc.xml',
@@ -92,6 +117,7 @@ as_doc_src = [
     'xml/quickstart-desktopapps.xml',
     'xml/quickstart-packaging.xml',
     'xml/quickstart-translation.xml',
+    'xml/Validation.xml',
 ]
 
 hljs_installed_file = '/usr/share/javascript/highlight.js/highlight.min.js'
@@ -105,6 +131,7 @@ if get_option('docs')
             '--build',
             '--src', meson.current_source_dir(),
             '--builddir', meson.current_build_dir(),
+            '--valsec-gen', gen_doc_valsec_exe.path(),
             'AppStream'
         ]
 
@@ -112,12 +139,15 @@ if get_option('docs')
         input: ['DC-AppStream',
                 as_doc_src],
         output: ['docs_built.stamp'],
+        depends: [gen_doc_valsec_exe],
         build_by_default: true,
         command: build_docs_cmd
     )
 
     # helper if you only and always want to rebuild the docs
-    run_target('documentation', command: build_docs_cmd)
+    run_target('documentation',
+                command: build_docs_cmd,
+                depends: [gen_doc_valsec_exe])
 
     if get_option('install-docs')
         install_subdir('html', install_dir: as_doc_target_dir)
@@ -131,11 +161,12 @@ if get_option('docs')
     endif
 
     # add an extra testcase for documentation validation
-    test ('as-validate_docs',
+    test('as-validate_docs',
           python_exe,
           args: [join_paths(meson.current_source_dir(), 'doc-build-helper.py'),
                  '--validate',
-                 '--src', meson.current_source_dir()],
+                 '--src', meson.current_source_dir(),
+                 '--valsec-gen', gen_doc_valsec_exe.path()],
           timeout: 60
     )
 elif get_option('install-docs')

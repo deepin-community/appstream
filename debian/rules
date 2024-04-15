@@ -3,15 +3,16 @@
 #export DH_VERBOSE=1
 
 ifneq (,$(filter $(DEB_HOST_ARCH), amd64 arm64 armel armhf i386 mips64el mipsel ppc64el s390x powerpc ppc64 riscv64 sparc64 x32))
-	ENABLE_COMPOSE=-Dcompose=true
+	ENABLE_COMPOSE=true
 else
-	ENABLE_COMPOSE=-Dcompose=false
+	ENABLE_COMPOSE=false
 endif
 
-AS_CONFIGURE_ARGS = -Dqt=true \
-		-Dapt-support=true \
-		$(ENABLE_COMPOSE) \
-		-Dvapi=true
+AS_CONFIGURE_ARGS = -Dapt-support=true \
+		-Dcompose=$(ENABLE_COMPOSE) \
+		-Dvapi=true \
+		-Dqt=true \
+		-Dqt-versions=5,6
 
 ifneq ($(DEB_HOST_ARCH_OS), linux)
 	AS_CONFIGURE_ARGS += -Dsystemd=false

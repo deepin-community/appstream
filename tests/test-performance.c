@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -31,13 +31,12 @@
 
 static gchar *datadir = NULL;
 
-
 /**
  * test_get_sampledata_pool:
  *
  * Internal helper to get a pool with the sample data locations set.
  */
-static AsPool*
+static AsPool *
 test_get_sampledata_pool (gboolean use_caches)
 {
 	AsPool *pool;
@@ -64,7 +63,6 @@ test_get_sampledata_pool (gboolean use_caches)
 	return pool;
 }
 
-
 /**
  * Test performance of loading a metadata pool from XML.
  */
@@ -78,15 +76,14 @@ test_pool_xml_read_perf (void)
 
 	timer = g_timer_new ();
 	for (i = 0; i < loops; i++) {
-		g_autoptr(GPtrArray) cpts = NULL;
+		g_autoptr(AsComponentBox) cbox = NULL;
 		g_autoptr(AsPool) pool = test_get_sampledata_pool (FALSE);
 
 		as_pool_load (pool, NULL, &error);
 		g_assert_no_error (error);
 
-		cpts = as_pool_get_components (pool);
-		g_assert_cmpint (cpts->len, ==, 19);
-
+		cbox = as_pool_get_components (pool);
+		g_assert_cmpint (as_component_box_len (cbox), ==, 19);
 	}
 	g_print ("%.2f ms: ", g_timer_elapsed (timer, NULL) * 1000 / loops);
 }
@@ -99,7 +96,7 @@ test_pool_cache_perf (void)
 {
 	g_autoptr(GError) error = NULL;
 	g_autoptr(GTimer) timer = NULL;
-	g_autoptr(GPtrArray) prep_cpts = NULL;
+	g_autoptr(AsComponentBox) prep_cpts = NULL;
 	g_autoptr(AsCache) cache = NULL;
 	g_auto(GStrv) strv = NULL;
 	g_autofree gchar *mdata_dir = NULL;
@@ -118,14 +115,13 @@ test_pool_cache_perf (void)
 		g_assert_no_error (error);
 
 		prep_cpts = as_pool_get_components (prep_pool);
-		g_assert_cmpint (prep_cpts->len, ==, 19);
+		g_assert_cmpint (as_component_box_len (prep_cpts), ==, 19);
 	}
-
 
 	/* test fetching all components from cache */
 	timer = g_timer_new ();
 	for (guint i = 0; i < loops; i++) {
-		g_autoptr(GPtrArray) cpts = NULL;
+		g_autoptr(AsComponentBox) cpts = NULL;
 		g_autoptr(AsCache) tmp_cache = as_cache_new ();
 
 		as_cache_set_locale (tmp_cache, "C");
@@ -134,8 +130,7 @@ test_pool_cache_perf (void)
 
 		cpts = as_cache_get_components_all (tmp_cache, &error);
 		g_assert_no_error (error);
-		g_assert_cmpint (cpts->len, ==, 19);
-
+		g_assert_cmpint (as_component_box_len (cpts), ==, 19);
 	}
 	g_print ("\n    Cache readall: %.2f ms", g_timer_elapsed (timer, NULL) * 1000 / loops);
 	g_assert_true (as_utils_delete_dir_recursive (cache_location));
@@ -147,7 +142,7 @@ test_pool_cache_perf (void)
 		as_cache_set_locale (tmp_cache, "C");
 
 		as_cache_set_contents_for_path (tmp_cache,
-						prep_cpts,
+						as_component_box_as_array (prep_cpts),
 						"dummy",
 						NULL,
 						&error);
@@ -161,7 +156,7 @@ test_pool_cache_perf (void)
 	cache = as_cache_new ();
 	as_cache_set_locale (cache, "C");
 	as_cache_set_contents_for_path (cache,
-					prep_cpts,
+					as_component_box_as_array (prep_cpts),
 					"dummy",
 					NULL,
 					&error);
@@ -170,14 +165,11 @@ test_pool_cache_perf (void)
 	strv = g_strsplit ("gam|amateur", "|", -1);
 	g_timer_reset (timer);
 	for (guint i = 0; i < loops; i++) {
-		g_autoptr(GPtrArray) test_cpts = NULL;
-		test_cpts = as_cache_search (cache,
-					     (const gchar * const *) strv,
-					     TRUE,
-					     &error);
+		g_autoptr(AsComponentBox) test_cpts = NULL;
+		test_cpts = as_cache_search (cache, (const gchar *const *) strv, TRUE, &error);
 		g_assert_no_error (error);
 
-		g_assert_cmpint (test_cpts->len, ==, 6);
+		g_assert_cmpint (as_component_box_len (test_cpts), ==, 6);
 	}
 	g_print ("\n    Cache search: %.4f ms", g_timer_elapsed (timer, NULL) * 1000 / loops);
 
@@ -211,7 +203,6 @@ main (int argc, char **argv)
 	 * This prevents build/test failures on slower machines */
 	if (!g_test_slow ())
 		return 0;
-
 
 	g_test_add_func ("/Perf/Pool/ReadXML", test_pool_xml_read_perf);
 	g_test_add_func ("/Perf/Pool/Cache", test_pool_cache_perf);
