@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -18,7 +18,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined (__APPSTREAM_H) && !defined (AS_COMPILATION)
+#if !defined(__APPSTREAM_H) && !defined(AS_COMPILATION)
 #error "Only <appstream.h> can be included directly."
 #endif
 
@@ -32,8 +32,7 @@ G_BEGIN_DECLS
 #define AS_TYPE_CHECKSUM (as_checksum_get_type ())
 G_DECLARE_DERIVABLE_TYPE (AsChecksum, as_checksum, AS, CHECKSUM, GObject)
 
-struct _AsChecksumClass
-{
+struct _AsChecksumClass {
 	GObjectClass parent_class;
 	/*< private >*/
 	void (*_as_reserved1) (void);
@@ -49,35 +48,34 @@ struct _AsChecksumClass
  * @AS_CHECKSUM_KIND_NONE:	No checksum
  * @AS_CHECKSUM_KIND_SHA1:	SHA1 checksum
  * @AS_CHECKSUM_KIND_SHA256:	SHA256 checksum
- * @AS_CHECKSUM_KIND_BLAKE2B:	BLAKE2b checksum
- * @AS_CHECKSUM_KIND_BLAKE2S:	BLAKE2s checksum
+ * @AS_CHECKSUM_KIND_SHA512:	SHA512 checksum
+ * @AS_CHECKSUM_KIND_BLAKE2B:	BLAKE2 checksum
+ * @AS_CHECKSUM_KIND_BLAKE3:	BLAKE3 checksum
  *
  * Checksums supported by #AsRelease
  **/
-typedef enum  {
+typedef enum {
 	AS_CHECKSUM_KIND_NONE,
 	AS_CHECKSUM_KIND_SHA1,
 	AS_CHECKSUM_KIND_SHA256,
+	AS_CHECKSUM_KIND_SHA512,
 	AS_CHECKSUM_KIND_BLAKE2B,
-	AS_CHECKSUM_KIND_BLAKE2S,
+	AS_CHECKSUM_KIND_BLAKE3,
 	/*< private >*/
 	AS_CHECKSUM_KIND_LAST
 } AsChecksumKind;
 
-const gchar		*as_checksum_kind_to_string (AsChecksumKind kind);
-AsChecksumKind		as_checksum_kind_from_string (const gchar *kind_str);
+const gchar   *as_checksum_kind_to_string (AsChecksumKind kind);
+AsChecksumKind as_checksum_kind_from_string (const gchar *kind_str);
 
-AsChecksum		*as_checksum_new (void);
-AsChecksum		*as_checksum_new_for_kind_value (AsChecksumKind kind,
-							 const gchar *value);
+AsChecksum    *as_checksum_new (void);
+AsChecksum    *as_checksum_new_with_value (AsChecksumKind kind, const gchar *value);
 
-AsChecksumKind		as_checksum_get_kind (AsChecksum *cs);
-void			as_checksum_set_kind (AsChecksum *cs,
-						AsChecksumKind kind);
+AsChecksumKind as_checksum_get_kind (AsChecksum *cs);
+void	       as_checksum_set_kind (AsChecksum *cs, AsChecksumKind kind);
 
-const gchar		*as_checksum_get_value (AsChecksum *cs);
-void			as_checksum_set_value (AsChecksum *cs,
-						const gchar *value);
+const gchar   *as_checksum_get_value (AsChecksum *cs);
+void	       as_checksum_set_value (AsChecksum *cs, const gchar *value);
 
 G_END_DECLS
 

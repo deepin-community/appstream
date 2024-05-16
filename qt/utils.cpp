@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2019-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -22,12 +22,6 @@
 #include "appstream.h"
 #include "chelpers.h"
 
-QString AppStream::Utils::currentDistroComponentId()
-{
-    return QString::fromUtf8(as_get_current_distro_component_id());
-}
-
-
 QString AppStream::Utils::currentAppStreamVersion()
 {
     return QString::fromUtf8(as_version_string());
@@ -35,14 +29,5 @@ QString AppStream::Utils::currentAppStreamVersion()
 
 int AppStream::Utils::vercmpSimple(const QString &a, const QString &b)
 {
-    return as_vercmp (qPrintable(a), qPrintable(b), AS_VERCMP_FLAG_NONE);
-}
-
-int AppStream::Utils::compareVersions(const QString &a, const QString &b)
-{
-    gint r;
-    r = as_vercmp (qPrintable(a), qPrintable(b), AS_VERCMP_FLAG_NONE);
-    if (r == 0)
-        return 0;
-    return (r < 0)? -1 : 1;
+    return as_vercmp(qPrintable(a), qPrintable(b), AS_VERCMP_FLAG_NONE);
 }

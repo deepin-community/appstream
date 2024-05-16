@@ -1,7 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  * Copyright (C) 2018 Richard Hughes <richard@hughsie.com>
- * Copyright (C) 2021-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2021-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -47,10 +47,9 @@
  *
  * Since: 0.14.0
  **/
-const gchar*
+const gchar *
 as_version_string (void)
 {
-	return G_STRINGIFY(AS_MAJOR_VERSION) "."
-		G_STRINGIFY(AS_MINOR_VERSION) "."
-		G_STRINGIFY(AS_MICRO_VERSION);
+	return G_STRINGIFY (AS_MAJOR_VERSION) "." G_STRINGIFY (AS_MINOR_VERSION) "." G_STRINGIFY (
+	    AS_MICRO_VERSION);
 }

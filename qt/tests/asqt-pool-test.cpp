@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2016 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2023 Kai Uwe Broulik <kde@broulik.de>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -23,15 +24,17 @@
 #include "pool.h"
 #include "testpaths.h"
 
-class PoolReadTest : public QObject {
+class PoolReadTest : public QObject
+{
     Q_OBJECT
-    private Q_SLOTS:
-        void testRead01();
+private Q_SLOTS:
+    void testRead01();
+    void testLoadAsync();
 };
 
 using namespace AppStream;
 
-void PoolReadTest::testRead01()
+static std::unique_ptr<Pool> createPool()
 {
     // set up the data pool to read our sample data, without localization
     auto pool = std::make_unique<Pool>();
@@ -39,12 +42,7 @@ void PoolReadTest::testRead01()
     pool->resetExtraDataLocations();
     pool->setLocale("C");
     pool->setLoadStdDataLocations(false);
-    pool->addExtraDataLocation(AS_SAMPLE_DATA_PATH,
-                               Metadata::FormatStyleCatalog);
-
-    // temporary cache location, so we don't use any system cache ever during tests
-    QTemporaryDir cacheDir;
-    QVERIFY(cacheDir.isValid());
+    pool->addExtraDataLocation(AS_SAMPLE_DATA_PATH, Metadata::FormatStyleCatalog);
 
     // don't load system metainfo/desktop files
     auto flags = pool->flags();
@@ -52,6 +50,17 @@ void PoolReadTest::testRead01()
     flags &= ~Pool::FlagLoadOsMetainfo;
     flags &= ~Pool::FlagIgnoreCacheAge;
     pool->setFlags(flags);
+
+    return pool;
+}
+
+void PoolReadTest::testRead01()
+{
+    auto pool = createPool();
+
+    // temporary cache location, so we don't use any system cache ever during tests
+    QTemporaryDir cacheDir;
+    QVERIFY(cacheDir.isValid());
 
     // use clean caches
     pool->overrideCacheLocations(cacheDir.path(), nullptr);
@@ -62,10 +71,41 @@ void PoolReadTest::testRead01()
         qWarning() << pool->lastError();
     QVERIFY(ret);
 
-    auto cpts = pool->components();
-    QCOMPARE(cpts.size(), 20);
+    auto cbox = pool->components();
+    QCOMPARE(cbox.size(), 20);
 
-    cpts = pool->componentsById("org.neverball.Neverball");
+    cbox = pool->componentsById("org.neverball.Neverball");
+    QCOMPARE(cbox.size(), 1);
+
+    auto cpt = cbox.indexSafe(0);
+    QVERIFY(!cpt->id().isEmpty());
+
+    QCOMPARE(cpt->name(), QLatin1String("Neverball"));
+}
+
+void PoolReadTest::testLoadAsync()
+{
+    auto pool = createPool();
+
+    QTemporaryDir cacheDir;
+    QVERIFY(cacheDir.isValid());
+
+    pool->overrideCacheLocations(cacheDir.path(), nullptr);
+
+    QSignalSpy loadedSpy(pool.get(), &Pool::loadFinished);
+    QVERIFY(loadedSpy.isValid());
+
+    pool->loadAsync();
+
+    QVERIFY(loadedSpy.wait());
+    QCOMPARE(loadedSpy.count(), 1);
+    const QList<QVariant> arguments = loadedSpy.takeFirst();
+    QCOMPARE(arguments.first().toBool(), true);
+
+    auto cbox = pool->components();
+    QCOMPARE(cbox.size(), 20);
+
+    auto cpts = pool->componentsById("org.neverball.Neverball").toList();
     QCOMPARE(cpts.size(), 1);
 
     auto cpt = cpts[0];

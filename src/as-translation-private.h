@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2017-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2017-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -28,14 +28,12 @@
 G_BEGIN_DECLS
 #pragma GCC visibility push(hidden)
 
-gboolean	as_translation_load_from_xml (AsTranslation *tr,
-						AsContext *ctx,
-						xmlNode *node,
-						GError **error);
+gboolean	       as_translation_load_from_xml (AsTranslation *tr,
+						     AsContext	   *ctx,
+						     xmlNode	   *node,
+						     GError	  **error);
 
-void		as_translation_to_xml_node (AsTranslation *tr,
-						AsContext *ctx,
-						xmlNode *root);
+void as_translation_to_xml_node (AsTranslation *tr, AsContext *ctx, xmlNode *root);
 
 #pragma GCC visibility pop
 G_END_DECLS

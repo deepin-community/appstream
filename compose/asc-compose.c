@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -45,38 +45,37 @@
 #include "asc-utils-fonts.h"
 #include "asc-image.h"
 
-typedef struct
-{
-	GPtrArray	*units;
-	GPtrArray	*results;
-	AscUnit		*locale_unit;
+typedef struct {
+	GPtrArray *units;
+	GPtrArray *results;
+	AscUnit *locale_unit;
 
-	GHashTable	*allowed_cids;
-	GRefString	*prefix;
-	GRefString	*origin;
-	gchar		*media_baseurl;
-	AsFormatKind	format;
-	guint		min_l10n_percentage;
-	GPtrArray	*custom_allowed;
-	gssize		max_scr_size_bytes;
-	gchar		*cainfo;
+	GHashTable *allowed_cids;
+	GRefString *prefix;
+	GRefString *origin;
+	gchar *media_baseurl;
+	AsFormatKind format;
+	guint min_l10n_percentage;
+	GPtrArray *custom_allowed;
+	gssize max_scr_size_bytes;
+	gchar *cainfo;
 
-	AscComposeFlags	flags;
-	AscIconPolicy	*icon_policy;
+	AscComposeFlags flags;
+	AscIconPolicy *icon_policy;
 
-	gchar		*data_result_dir;
-	gchar		*icons_result_dir;
-	gchar		*media_result_dir;
-	gchar		*hints_result_dir;
+	gchar *data_result_dir;
+	gchar *icons_result_dir;
+	gchar *media_result_dir;
+	gchar *hints_result_dir;
 
-	GHashTable	*known_cids;
-	GMutex		mutex;
+	GHashTable *known_cids;
+	GMutex mutex;
 
 	AscCheckMetadataEarlyFn check_md_early_fn;
-	gpointer	check_md_early_fn_udata;
+	gpointer check_md_early_fn_udata;
 
 	AscTranslateDesktopTextFn de_l10n_fn;
-	gpointer	de_l10n_fn_udata;
+	gpointer de_l10n_fn_udata;
 } AscComposePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AscCompose, asc_compose, G_TYPE_OBJECT)
@@ -89,14 +88,8 @@ asc_compose_init (AscCompose *compose)
 
 	priv->units = g_ptr_array_new_with_free_func (g_object_unref);
 	priv->results = g_ptr_array_new_with_free_func (g_object_unref);
-	priv->allowed_cids = g_hash_table_new_full (g_str_hash,
-						    g_str_equal,
-						    g_free,
-						    NULL);
-	priv->known_cids = g_hash_table_new_full (g_str_hash,
-						  g_str_equal,
-						  g_free,
-						  NULL);
+	priv->allowed_cids = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+	priv->known_cids = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	priv->custom_allowed = g_ptr_array_new_with_free_func (g_free);
 	g_mutex_init (&priv->mutex);
 
@@ -105,13 +98,10 @@ asc_compose_init (AscCompose *compose)
 	as_ref_string_assign_safe (&priv->prefix, "/usr");
 	priv->min_l10n_percentage = 25;
 	priv->max_scr_size_bytes = -1;
-	priv->flags = ASC_COMPOSE_FLAG_USE_THREADS |
-			ASC_COMPOSE_FLAG_ALLOW_NET |
-			ASC_COMPOSE_FLAG_VALIDATE |
-			ASC_COMPOSE_FLAG_STORE_SCREENSHOTS |
-			ASC_COMPOSE_FLAG_ALLOW_SCREENCASTS |
-			ASC_COMPOSE_FLAG_PROCESS_FONTS |
-			ASC_COMPOSE_FLAG_PROCESS_TRANSLATIONS;
+	priv->flags = ASC_COMPOSE_FLAG_USE_THREADS | ASC_COMPOSE_FLAG_ALLOW_NET |
+		      ASC_COMPOSE_FLAG_VALIDATE | ASC_COMPOSE_FLAG_STORE_SCREENSHOTS |
+		      ASC_COMPOSE_FLAG_ALLOW_SCREENCASTS | ASC_COMPOSE_FLAG_PROCESS_FONTS |
+		      ASC_COMPOSE_FLAG_PROCESS_TRANSLATIONS;
 
 	/* the icon policy will initialize with default settings */
 	priv->icon_policy = asc_icon_policy_new ();
@@ -193,8 +183,7 @@ asc_compose_add_unit (AscCompose *compose, AscUnit *unit)
 			return;
 		}
 	}
-	g_ptr_array_add (priv->units,
-			 g_object_ref (unit));
+	g_ptr_array_add (priv->units, g_object_ref (unit));
 }
 
 /**
@@ -210,8 +199,7 @@ asc_compose_add_allowed_cid (AscCompose *compose, const gchar *component_id)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
 	g_autoptr(GMutexLocker) locker = g_mutex_locker_new (&priv->mutex);
-	g_hash_table_add (priv->allowed_cids,
-			  g_strdup (component_id));
+	g_hash_table_add (priv->allowed_cids, g_strdup (component_id));
 }
 
 /**
@@ -220,7 +208,7 @@ asc_compose_add_allowed_cid (AscCompose *compose, const gchar *component_id)
  *
  * Get the directory prefix used for processing.
  */
-const gchar*
+const gchar *
 asc_compose_get_prefix (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -253,7 +241,7 @@ asc_compose_set_prefix (AscCompose *compose, const gchar *prefix)
  *
  * Get the metadata origin field.
  */
-const gchar*
+const gchar *
 asc_compose_get_origin (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -309,9 +297,9 @@ asc_compose_set_format (AscCompose *compose, AsFormatKind kind)
  * @compose: an #AscCompose instance.
  *
  * Get the media base URL to be used for the generated data,
- * or %NULL if this feature is not used.
+ * or %NULL if no media is cached.
  */
-const gchar*
+const gchar *
 asc_compose_get_media_baseurl (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -323,7 +311,8 @@ asc_compose_get_media_baseurl (AscCompose *compose)
  * @compose: an #AscCompose instance.
  * @url: (nullable): the media base URL.
  *
- * Set the media base URL for the generated metadata. Can be %NULL.
+ * Set the media base URL for the generated metadata. Can be %NULL if no media
+ * should be cached and the original URLs should be kept.
  */
 void
 asc_compose_set_media_baseurl (AscCompose *compose, const gchar *url)
@@ -397,7 +386,7 @@ asc_compose_remove_flags (AscCompose *compose, AscComposeFlags flags)
  *
  * Returns: (transfer none): an #AscIconPolicy
  */
-AscIconPolicy*
+AscIconPolicy *
 asc_compose_get_icon_policy (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -427,7 +416,7 @@ asc_compose_set_icon_policy (AscCompose *compose, AscIconPolicy *policy)
  *
  * Get the CA file used to verify peers with, or %NULL for default.
  */
-const gchar*
+const gchar *
 asc_compose_get_cainfo (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -456,7 +445,7 @@ asc_compose_set_cainfo (AscCompose *compose, const gchar *cainfo)
  *
  * Get the data result directory.
  */
-const gchar*
+const gchar *
 asc_compose_get_data_result_dir (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -485,7 +474,7 @@ asc_compose_set_data_result_dir (AscCompose *compose, const gchar *dir)
  *
  * Get the icon result directory.
  */
-const gchar*
+const gchar *
 asc_compose_get_icons_result_dir (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -514,7 +503,7 @@ asc_compose_set_icons_result_dir (AscCompose *compose, const gchar *dir)
  *
  * Get the media result directory, that can be served on a webserver.
  */
-const gchar*
+const gchar *
 asc_compose_get_media_result_dir (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -543,7 +532,7 @@ asc_compose_set_media_result_dir (AscCompose *compose, const gchar *dir)
  *
  * Get hints report output directory.
  */
-const gchar*
+const gchar *
 asc_compose_get_hints_result_dir (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -646,7 +635,9 @@ asc_compose_set_max_screenshot_size (AscCompose *compose, gssize size_bytes)
  * The callback function may be called from any thread, so it needs to ensure thread safety on its own.
  */
 void
-asc_compose_set_check_metadata_early_func (AscCompose *compose, AscCheckMetadataEarlyFn func, gpointer user_data)
+asc_compose_set_check_metadata_early_func (AscCompose *compose,
+					   AscCheckMetadataEarlyFn func,
+					   gpointer user_data)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
 	priv->check_md_early_fn = func;
@@ -665,7 +656,9 @@ asc_compose_set_check_metadata_early_func (AscCompose *compose, AscCheckMetadata
  * The callback function may be called from any thread, so it needs to ensure thread safety on its own.
  */
 void
-asc_compose_set_desktop_entry_l10n_func (AscCompose *compose, AscTranslateDesktopTextFn func, gpointer user_data)
+asc_compose_set_desktop_entry_l10n_func (AscCompose *compose,
+					 AscTranslateDesktopTextFn func,
+					 gpointer user_data)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
 	priv->de_l10n_fn = func;
@@ -680,7 +673,7 @@ asc_compose_set_desktop_entry_l10n_func (AscCompose *compose, AscTranslateDeskto
  *
  * Return: (transfer none) (nullable): The unit used for locale processing, or %NULL for default.
  */
-AscUnit*
+AscUnit *
 asc_compose_get_locale_unit (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -716,7 +709,7 @@ asc_compose_set_locale_unit (AscCompose *compose, AscUnit *locale_unit)
  *
  * Returns: (transfer none) (element-type AscResult): The results
  */
-GPtrArray*
+GPtrArray *
 asc_compose_get_results (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -731,7 +724,7 @@ asc_compose_get_results (AscCompose *compose)
  *
  * Returns: (transfer container) (element-type AsComponent): The components
  */
-GPtrArray*
+GPtrArray *
 asc_compose_fetch_components (AscCompose *compose)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -777,12 +770,12 @@ asc_compose_has_errors (AscCompose *compose)
 }
 
 typedef struct {
-	AscUnit		*unit;
-	AscResult	*result;
-	GHashTable	*files_units_map;	/* no ref */
+	AscUnit *unit;
+	AscResult *result;
+	GHashTable *files_units_map; /* no ref */
 } AscComposeTask;
 
-static AscComposeTask*
+static AscComposeTask *
 asc_compose_task_new (AscUnit *unit)
 {
 	AscComposeTask *ctask;
@@ -803,7 +796,7 @@ asc_compose_task_free (AscComposeTask *ctask)
 /**
  * asc_compose_find_icon_filename:
  */
-static gchar*
+static gchar *
 asc_compose_find_icon_filename (AscCompose *compose,
 				AscUnit *unit,
 				const gchar *icon_name,
@@ -814,39 +807,27 @@ asc_compose_find_icon_filename (AscCompose *compose,
 	guint min_size_idx = 0;
 	guint min_ext_idx = 0;
 	gboolean vector_relaxed = FALSE;
-	const gchar *supported_ext[] = { ".png",
-					 ".svg",
-					 ".svgz",
-					 "",
-					 NULL };
+	gboolean scale_relaxed = FALSE;
+	/* clang-format off */
+	const gchar *supported_ext[] = { ".png", ".svg", ".svgz", "", NULL };
 	const struct {
 		guint size;
 		const gchar *size_str;
-	} sizes[] =  {
-		{ 48,  "48x48" },
-		{ 32,  "32x32" },
-		{ 64,  "64x64" },
-		{ 96,  "96x96" },
+	} sizes[] = {
+		{ 48,  "48x48"   },
+		{ 32,  "32x32"	 },
+		{ 64,  "64x64"   },
+		{ 96,  "96x96"   },
 		{ 128, "128x128" },
 		{ 256, "256x256" },
 		{ 512, "512x512" },
-		{ 0,   "scalable" },
-		{ 0,   NULL }
+		{ 0,   "scalable"},
+		{ 0,   NULL	 }
 	};
-	const gchar *types[] = { "actions",
-				 "apps",
-				 "applets",
-				 "categories",
-				 "devices",
-				 "emblems",
-				 "emotes",
-				 "filesystems",
-				 "mimetypes",
-				 "places",
-				 "preferences",
-				 "status",
-				 "stock",
-				 NULL };
+	const gchar *types[] = { "actions",	"apps",	  "applets",	 "categories", "devices",
+				 "emblems",	"emotes", "filesystems", "mimetypes",  "places",
+				 "preferences", "status", "stock",	 NULL };
+	/* clang-format on */
 
 	g_return_val_if_fail (icon_name != NULL, NULL);
 
@@ -884,13 +865,18 @@ asc_compose_find_icon_filename (AscCompose *compose,
 			for (guint m = 0; types[m] != NULL; m++) {
 				for (guint j = min_ext_idx; supported_ext[j] != NULL; j++) {
 					g_autofree gchar *tmp = NULL;
+					/* skip bitmaps if we only want vector graphics anyway */
+					if ((scale_relaxed || vector_relaxed) &&
+					    as_str_equal0 (supported_ext[j], ".png"))
+						continue;
+
 					tmp = g_strdup_printf ("%s/share/icons/"
-								"hicolor/%s/%s/%s%s",
-								priv->prefix,
-								size,
-								types[m],
-								icon_name,
-								supported_ext[j]);
+							       "hicolor/%s/%s/%s%s",
+							       priv->prefix,
+							       size,
+							       types[m],
+							       icon_name,
+							       supported_ext[j]);
 					if (asc_unit_file_exists (unit, tmp))
 						return g_strdup (tmp);
 				}
@@ -907,13 +893,18 @@ asc_compose_find_icon_filename (AscCompose *compose,
 			for (guint m = 0; types[m] != NULL; m++) {
 				for (guint j = min_ext_idx; supported_ext[j] != NULL; j++) {
 					g_autofree gchar *tmp = NULL;
+					/* skip bitmaps if we only want vector graphica anyway */
+					if ((scale_relaxed || vector_relaxed) &&
+					    as_str_equal0 (supported_ext[j], ".png"))
+						continue;
+
 					tmp = g_strdup_printf ("%s/share/icons/"
-								"breeze/%s/%s/%s%s",
-								priv->prefix,
-								types[m],
-								size,
-								icon_name,
-								supported_ext[j]);
+							       "breeze/%s/%s/%s%s",
+							       priv->prefix,
+							       types[m],
+							       size,
+							       icon_name,
+							       supported_ext[j]);
 					if (asc_unit_file_exists (unit, tmp))
 						return g_strdup (tmp);
 				}
@@ -921,7 +912,15 @@ asc_compose_find_icon_filename (AscCompose *compose,
 		}
 
 		if (vector_relaxed) {
-			break;
+			if (scale_relaxed || icon_scale == 1) {
+				break;
+			} else {
+				/* check if we can scale up a vector graphic to match the requested size */
+				min_size_idx = 0;
+				min_ext_idx = 1;
+				icon_size = icon_size * icon_scale;
+				icon_scale = 1;
+			}
 		} else {
 			if (g_str_has_suffix (icon_name, ".png"))
 				break;
@@ -1006,45 +1005,55 @@ asc_compose_process_icons (AscCompose *compose,
 			continue;
 
 		icon_fname = asc_compose_find_icon_filename (compose,
-								unit,
-								icon_name,
-								size,
-								scale_factor);
+							     unit,
+							     icon_name,
+							     size,
+							     scale_factor);
 
 		if (icon_fname == NULL) {
 			/* only a 64x64px icon is mandatory, everything else is optional */
 			if (size == 64 && scale_factor == 1) {
-				asc_result_add_hint (cres, cpt,
-							"icon-not-found",
-							"icon_fname", icon_name,
-							NULL);
+				asc_result_add_hint (cres,
+						     cpt,
+						     "icon-not-found",
+						     "icon_fname",
+						     icon_name,
+						     NULL);
 				return;
 			}
 			continue;
 		}
 
-		is_vector_icon = g_str_has_suffix (icon_fname, ".svgz") || g_str_has_suffix (icon_fname, ".svg");
+		is_vector_icon = g_str_has_suffix (icon_fname, ".svgz") ||
+				 g_str_has_suffix (icon_fname, ".svg");
 		img_bytes = asc_unit_read_data (unit, icon_fname, &error);
 		if (img_bytes == NULL) {
-			asc_result_add_hint (cres, cpt,
-						"file-read-error",
-						"fname", icon_fname,
-						"msg", error->message,
-						NULL);
+			asc_result_add_hint (cres,
+					     cpt,
+					     "file-read-error",
+					     "fname",
+					     icon_fname,
+					     "msg",
+					     error->message,
+					     NULL);
 			return;
 		}
 		img_data = g_bytes_get_data (img_bytes, &img_len);
-		img = asc_image_new_from_data (img_data, img_len,
-						is_vector_icon? size * scale_factor : 0,
-						g_str_has_suffix (icon_fname, ".svgz"),
-						ASC_IMAGE_LOAD_FLAG_ALWAYS_RESIZE,
-						&error);
+		img = asc_image_new_from_data (img_data,
+					       img_len,
+					       is_vector_icon ? size * scale_factor : 0,
+					       g_str_has_suffix (icon_fname, ".svgz"),
+					       ASC_IMAGE_LOAD_FLAG_ALWAYS_RESIZE,
+					       &error);
 		if (img == NULL) {
-			asc_result_add_hint (cres, cpt,
-						"file-read-error",
-						"fname", icon_fname,
-						"msg", error->message,
-						NULL);
+			asc_result_add_hint (cres,
+					     cpt,
+					     "file-read-error",
+					     "fname",
+					     icon_fname,
+					     "msg",
+					     error->message,
+					     NULL);
 			return;
 		}
 
@@ -1052,32 +1061,31 @@ asc_compose_process_icons (AscCompose *compose,
 		if (size == 48 && asc_image_get_width (img) > 48)
 			continue;
 
-		res_icon_size_str = (scale_factor == 1)?
-					g_strdup_printf ("%ix%i",
-							 size, size)
-					: g_strdup_printf ("%ix%i@%i",
-							   size, size,
-							   scale_factor);
+		res_icon_size_str = (scale_factor == 1)
+					? g_strdup_printf ("%ix%i", size, size)
+					: g_strdup_printf ("%ix%i@%i", size, size, scale_factor);
 		res_icon_sizedir = g_build_filename (icon_export_dir, res_icon_size_str, NULL);
 
 		g_mkdir_with_parents (res_icon_sizedir, 0755);
 		res_icon_basename = g_strdup_printf ("%s.png", as_component_get_id (cpt));
-		res_icon_fname = g_build_filename (res_icon_sizedir,
-							res_icon_basename,
-							NULL);
+		res_icon_fname = g_build_filename (res_icon_sizedir, res_icon_basename, NULL);
 
 		/* scale & save the image */
 		g_debug ("Saving icon: %s", res_icon_fname);
 		if (!asc_image_save_filename (img,
-						res_icon_fname,
-						size * scale_factor, size * scale_factor,
-						ASC_IMAGE_SAVE_FLAG_OPTIMIZE,
-						&error)) {
-			asc_result_add_hint (cres, cpt,
-						"icon-write-error",
-						"fname", icon_fname,
-						"msg", error->message,
-						NULL);
+					      res_icon_fname,
+					      size * scale_factor,
+					      size * scale_factor,
+					      ASC_IMAGE_SAVE_FLAG_OPTIMIZE,
+					      &error)) {
+			asc_result_add_hint (cres,
+					     cpt,
+					     "icon-write-error",
+					     "fname",
+					     icon_fname,
+					     "msg",
+					     error->message,
+					     NULL);
 			return;
 		}
 
@@ -1088,28 +1096,32 @@ asc_compose_process_icons (AscCompose *compose,
 			g_autofree gchar *icons_media_path = NULL;
 			g_autofree gchar *icon_media_fname = NULL;
 			g_autoptr(AsIcon) remote_icon = NULL;
-			icons_media_urlpart_dir = g_strdup_printf ("%s/%s/%s",
-								   asc_result_gcid_for_component (cres, cpt),
-								   "icons",
-								   res_icon_size_str);
+			icons_media_urlpart_dir = g_strdup_printf (
+			    "%s/%s/%s",
+			    asc_result_gcid_for_component (cres, cpt),
+			    "icons",
+			    res_icon_size_str);
 			icon_media_urlpart_fname = g_strdup_printf ("%s/%s",
-								     icons_media_urlpart_dir,
-								     res_icon_basename);
+								    icons_media_urlpart_dir,
+								    res_icon_basename);
 			icons_media_path = g_build_filename (priv->media_result_dir,
-								icons_media_urlpart_dir,
-								NULL);
+							     icons_media_urlpart_dir,
+							     NULL);
 			icon_media_fname = g_build_filename (icons_media_path,
-								res_icon_basename,
-								NULL);
+							     res_icon_basename,
+							     NULL);
 			g_mkdir_with_parents (icons_media_path, 0755);
 
 			g_debug ("Adding media pool icon: %s", icon_media_fname);
 			if (!as_copy_file (res_icon_fname, icon_media_fname, &error)) {
 				g_warning ("Unable to write media pool icon: %s", icon_media_fname);
-				asc_result_add_hint (cres, cpt,
+				asc_result_add_hint (cres,
+						     cpt,
 						     "icon-write-error",
-						     "fname", icon_fname,
-						     "msg", error->message,
+						     "fname",
+						     icon_fname,
+						     "msg",
+						     error->message,
 						     NULL);
 				return;
 			}
@@ -1124,10 +1136,15 @@ asc_compose_process_icons (AscCompose *compose,
 			/* We can only make use of the media-baseurl-using partial URLs if screenshot storage
 			 * is also enabled, because otherwise screenshots will use full URLs which conflicts
 			 * with the media baseurl (as it is unconditionally prefixed to *all* media URLs */
-			if (as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_STORE_SCREENSHOTS)) {
+			if (as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_STORE_SCREENSHOTS) &&
+			    !as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_NO_PARTIAL_URLS)) {
 				as_icon_set_url (remote_icon, icon_media_urlpart_fname);
 			} else {
-				g_autofree gchar *icon_remote_url = g_strconcat (priv->media_baseurl, "/", icon_media_urlpart_fname, NULL);
+				g_autofree gchar *icon_remote_url = g_strconcat (
+				    priv->media_baseurl,
+				    "/",
+				    icon_media_urlpart_fname,
+				    NULL);
 				/* if priv->media_result_dir is set, media_baseurl will be set too (checked before each run) */
 				as_icon_set_url (remote_icon, icon_remote_url);
 			}
@@ -1160,11 +1177,10 @@ asc_compose_process_icons (AscCompose *compose,
 
 		as_icon_set_width (stock_icon, 0);
 		as_icon_set_height (stock_icon, 0);
-		as_icon_set_scale (stock_icon, 0);
+		as_icon_set_scale (stock_icon, 1);
 		as_icon_set_name (stock_icon, tmp);
 		as_component_add_icon (cpt, stock_icon);
 	}
-
 }
 
 /**
@@ -1176,8 +1192,8 @@ static int
 as_compose_yaml_write_handler_cb (void *ptr, unsigned char *buffer, size_t size)
 {
 	GString *str;
-	str = (GString*) ptr;
-	g_string_append_len (str, (const gchar*) buffer, size);
+	str = (GString *) ptr;
+	g_string_append_len (str, (const gchar *) buffer, size);
 
 	return 1;
 }
@@ -1198,8 +1214,8 @@ asc_compose_component_known (AscCompose *compose, AsComponent *cpt)
 static gboolean
 asc_evaluate_custom_entry_cb (gpointer key_p, gpointer value_p, gpointer user_data)
 {
-	const gchar *key = (const gchar*) key_p;
-	GPtrArray *whitelist = (GPtrArray*) user_data;
+	const gchar *key = (const gchar *) key_p;
+	GPtrArray *whitelist = (GPtrArray *) user_data;
 
 	for (guint i = 0; i < whitelist->len; i++) {
 		if (g_strcmp0 (g_ptr_array_index (whitelist, i), key) == 0)
@@ -1214,11 +1230,22 @@ static void
 asc_compose_finalize_components (AscCompose *compose, AscResult *cres)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
+	AsValueFlags value_flags;
 	g_autoptr(GPtrArray) final_cpts = NULL;
+	g_autoptr(AsContext) default_context = NULL;
+
+	/* create a default context */
+	default_context = as_context_new ();
+	as_context_set_locale (default_context, "C");
+	as_context_set_origin (default_context, priv->origin);
+	as_context_set_style (default_context, AS_FORMAT_STYLE_CATALOG);
+	value_flags = as_context_get_value_flags (default_context) |
+		      AS_VALUE_FLAG_NO_TRANSLATION_FALLBACK;
+	as_context_set_value_flags (default_context, value_flags);
 
 	final_cpts = asc_result_fetch_components (cres);
 	for (guint i = 0; i < final_cpts->len; i++) {
-		AsValueFlags value_flags;
+		AsContext *cpt_ctx = NULL;
 		AsComponent *cpt = AS_COMPONENT (g_ptr_array_index (final_cpts, i));
 		AsComponentKind ckind = as_component_get_kind (cpt);
 
@@ -1237,9 +1264,13 @@ asc_compose_finalize_components (AscCompose *compose, AscResult *cres)
 			}
 		}
 
-		value_flags = as_component_get_value_flags (cpt);
-		as_component_set_value_flags (cpt, value_flags | AS_VALUE_FLAG_NO_TRANSLATION_FALLBACK);
-		as_component_set_active_locale (cpt, "C");
+		cpt_ctx = as_component_get_context (cpt);
+		if (cpt_ctx == NULL) {
+			as_component_set_context (cpt, default_context);
+		} else {
+			as_context_set_locale (cpt_ctx, "C");
+			as_context_set_value_flags (cpt_ctx, value_flags);
+		}
 
 		if (ckind == AS_COMPONENT_KIND_UNKNOWN) {
 			if (!asc_result_add_hint_simple (cres, cpt, "metainfo-unknown-type"))
@@ -1255,8 +1286,8 @@ asc_compose_finalize_components (AscCompose *compose, AscResult *cres)
 			} else {
 				GHashTable *custom_entries = as_component_get_custom (cpt);
 				g_hash_table_foreach_remove (custom_entries,
-								asc_evaluate_custom_entry_cb,
-								priv->custom_allowed);
+							     asc_evaluate_custom_entry_cb,
+							     priv->custom_allowed);
 			}
 		}
 
@@ -1267,9 +1298,9 @@ asc_compose_finalize_components (AscCompose *compose, AscResult *cres)
 
 		/* strip out release artifacts unless we were told to propagate them */
 		if (!as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_PROPAGATE_ARTIFACTS)) {
-			GPtrArray *releases = as_component_get_releases (cpt);
-			for (guint j = 0; j < releases->len; j++) {
-				AsRelease *rel = AS_RELEASE (g_ptr_array_index (releases, j));
+			AsReleaseList *releases = as_component_get_releases_plain (cpt);
+			for (guint j = 0; j < as_release_list_len (releases); j++) {
+				AsRelease *rel = as_release_list_index (releases, j);
 				g_ptr_array_set_size (as_release_get_artifacts (rel), 0);
 			}
 		}
@@ -1299,25 +1330,27 @@ asc_compose_finalize_components (AscCompose *compose, AscResult *cres)
 			}
 		}
 
-                if (ckind == AS_COMPONENT_KIND_DESKTOP_APP ||
-		    ckind == AS_COMPONENT_KIND_CONSOLE_APP ||
-		    ckind == AS_COMPONENT_KIND_WEB_APP) {
+		if (ckind == AS_COMPONENT_KIND_DESKTOP_APP ||
+		    ckind == AS_COMPONENT_KIND_CONSOLE_APP || ckind == AS_COMPONENT_KIND_WEB_APP) {
 			/* desktop-application components are required to have a category */
 			if (ckind != AS_COMPONENT_KIND_CONSOLE_APP) {
 				if (as_component_get_categories (cpt)->len <= 0)
-					if (!asc_result_add_hint_simple (cres, cpt, "no-valid-category"))
-							continue;
+					if (!asc_result_add_hint_simple (cres,
+									 cpt,
+									 "no-valid-category"))
+						continue;
 			}
 
 			if (as_is_empty (as_component_get_description (cpt))) {
 				if (!asc_result_add_hint (cres,
 							  cpt,
 							  "description-missing",
-							  "kind", as_component_kind_to_string (ckind),
+							  "kind",
+							  as_component_kind_to_string (ckind),
 							  NULL))
 					continue;
 			}
-                }
+		}
 	}
 }
 
@@ -1340,10 +1373,8 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 	GPtrArray *contents = NULL;
 
 	/* propagate unit bundle ID */
-	asc_result_set_bundle_id (ctask->result,
-				  asc_unit_get_bundle_id (ctask->unit));
-	asc_result_set_bundle_kind (ctask->result,
-				  asc_unit_get_bundle_kind (ctask->unit));
+	asc_result_set_bundle_id (ctask->result, asc_unit_get_bundle_id (ctask->unit));
+	asc_result_set_bundle_kind (ctask->result, asc_unit_get_bundle_kind (ctask->unit));
 
 	/* configure metadata loader */
 	mdata = as_metadata_new ();
@@ -1370,11 +1401,13 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 	if (!asc_unit_open (ctask->unit, &tmp_error)) {
 		g_warning ("Failed to open unit: %s", tmp_error->message);
 		asc_result_add_hint (ctask->result,
-					NULL,
-					"unit-read-error",
-					"name", asc_unit_get_bundle_id (ctask->unit),
-					"msg", tmp_error->message,
-					NULL);
+				     NULL,
+				     "unit-read-error",
+				     "name",
+				     asc_unit_get_bundle_id (ctask->unit),
+				     "msg",
+				     tmp_error->message,
+				     NULL);
 		return;
 	}
 	contents = asc_unit_get_contents (ctask->unit);
@@ -1383,15 +1416,15 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 	metainfo_dir = g_build_filename (share_dir, "metainfo", NULL);
 	app_dir = g_build_filename (share_dir, "applications", NULL);
 	mi_fnames = g_ptr_array_new_with_free_func (g_free);
-	de_fname_map = g_hash_table_new_full (g_str_hash, g_str_equal,
-					      g_free, g_free);
+	de_fname_map = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 
 	g_debug ("Looking for metainfo files in: %s", metainfo_dir);
 	for (guint i = 0; i < contents->len; i++) {
 		const gchar *fname = g_ptr_array_index (contents, i);
 
 		if (g_str_has_prefix (fname, metainfo_dir) &&
-			(g_str_has_suffix (fname, ".metainfo.xml") || g_str_has_suffix (fname, ".appdata.xml"))) {
+		    (g_str_has_suffix (fname, ".metainfo.xml") ||
+		     g_str_has_suffix (fname, ".appdata.xml"))) {
 			g_ptr_array_add (mi_fnames, g_strdup (fname));
 			continue;
 		}
@@ -1422,17 +1455,16 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 			asc_result_add_hint_by_cid (ctask->result,
 						    mi_basename,
 						    "file-read-error",
-						    "fname", mi_fname,
-						    "msg", local_error->message,
+						    "fname",
+						    mi_fname,
+						    "msg",
+						    local_error->message,
 						    NULL);
 			g_debug ("Failed '%s': %s", mi_basename, local_error->message);
 			continue;
 		}
 		as_metadata_clear_components (mdata);
-		cpt = asc_parse_metainfo_data (ctask->result,
-						mdata,
-						mi_bytes,
-						mi_basename);
+		cpt = asc_parse_metainfo_data (ctask->result, mdata, mi_bytes, mi_basename);
 		if (cpt == NULL) {
 			g_debug ("Rejected: %s", mi_basename);
 			continue;
@@ -1440,7 +1472,8 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 
 		/* filter out this component if it isn't on the allowlist */
 		if (filter_cpts) {
-			if (!g_hash_table_contains (priv->allowed_cids, as_component_get_id (cpt))) {
+			if (!g_hash_table_contains (priv->allowed_cids,
+						    as_component_get_id (cpt))) {
 				asc_result_remove_component (ctask->result, cpt);
 				continue;
 			}
@@ -1452,18 +1485,18 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 			continue;
 		} else {
 			g_autoptr(GMutexLocker) locker = g_mutex_locker_new (&priv->mutex);
-			g_hash_table_add (priv->known_cids,
-					  g_strdup (as_component_get_id (cpt)));
+			g_hash_table_add (priv->known_cids, g_strdup (as_component_get_id (cpt)));
 		}
 
 		/* process any release information of this component and download release data if needed */
-		asc_process_metainfo_releases (ctask->result,
-					       ctask->unit,
-					       cpt,
-					       mi_fname,
-					       as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_ALLOW_NET),
-					       acurl,
-					       &rel_bytes);
+		asc_process_metainfo_releases (
+		    ctask->result,
+		    ctask->unit,
+		    cpt,
+		    mi_fname,
+		    as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_ALLOW_NET),
+		    acurl,
+		    &rel_bytes);
 
 		/* validate the data */
 		if (as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_VALIDATE)) {
@@ -1483,7 +1516,9 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 		 * This heuristic is, of course, not ideal, which is why everything should have a launchable tag.
 		 */
 		if (as_component_get_kind (cpt) == AS_COMPONENT_KIND_DESKTOP_APP) {
-			AsLaunchable *launchable = as_component_get_launchable (cpt, AS_LAUNCHABLE_KIND_DESKTOP_ID);
+			AsLaunchable *launchable = as_component_get_launchable (
+			    cpt,
+			    AS_LAUNCHABLE_KIND_DESKTOP_ID);
 			if (launchable == NULL) {
 				AsIcon *stock_icon = NULL;
 				GPtrArray *icons = as_component_get_icons (cpt);
@@ -1499,13 +1534,17 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 					g_autoptr(AsLaunchable) launch = as_launchable_new ();
 					g_autofree gchar *synth_desktop_id = NULL;
 
-					if (g_str_has_suffix (as_component_get_id (cpt), ".desktop"))
-						synth_desktop_id = g_strdup (as_component_get_id (cpt));
+					if (g_str_has_suffix (as_component_get_id (cpt),
+							      ".desktop"))
+						synth_desktop_id = g_strdup (
+						    as_component_get_id (cpt));
 					else
-						synth_desktop_id = g_strdup_printf ("%s.desktop",
-										    as_component_get_id (cpt));
+						synth_desktop_id = g_strdup_printf (
+						    "%s.desktop",
+						    as_component_get_id (cpt));
 
-					as_launchable_set_kind (launch, AS_LAUNCHABLE_KIND_DESKTOP_ID);
+					as_launchable_set_kind (launch,
+								AS_LAUNCHABLE_KIND_DESKTOP_ID);
 					as_launchable_add_entry (launch, synth_desktop_id);
 					as_component_add_launchable (cpt, launch);
 				}
@@ -1514,18 +1553,25 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 
 		/* find an accompanying desktop-entry file, if one exists */
 		if (as_component_get_kind (cpt) == AS_COMPONENT_KIND_DESKTOP_APP) {
-			AsLaunchable *launchable = as_component_get_launchable (cpt, AS_LAUNCHABLE_KIND_DESKTOP_ID);
+			AsLaunchable *launchable = as_component_get_launchable (
+			    cpt,
+			    AS_LAUNCHABLE_KIND_DESKTOP_ID);
 			if (launchable != NULL) {
 				GPtrArray *launch_entries = as_launchable_get_entries (launchable);
 				for (guint j = 0; j < launch_entries->len; j++) {
-					const gchar *de_basename = g_ptr_array_index (launch_entries, j);
-					const gchar *de_fname = g_hash_table_lookup (de_fname_map, de_basename);
+					const gchar *de_basename = g_ptr_array_index (
+					    launch_entries,
+					    j);
+					const gchar *de_fname = g_hash_table_lookup (de_fname_map,
+										     de_basename);
 					if (de_fname == NULL) {
-						asc_result_add_hint (ctask->result,
-								     cpt,
-								     "missing-launchable-desktop-file",
-								     "desktop_id", de_basename,
-								     NULL);
+						asc_result_add_hint (
+						    ctask->result,
+						    cpt,
+						    "missing-launchable-desktop-file",
+						    "desktop_id",
+						    de_basename,
+						    NULL);
 						continue;
 					}
 
@@ -1535,39 +1581,47 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 						g_autoptr(GBytes) de_bytes = NULL;
 
 						g_debug ("Reading: %s", de_fname);
-						de_bytes = asc_unit_read_data (ctask->unit, de_fname, &local_error);
+						de_bytes = asc_unit_read_data (ctask->unit,
+									       de_fname,
+									       &local_error);
 						if (de_bytes == NULL) {
 							asc_result_add_hint (ctask->result,
 									     cpt,
 									     "file-read-error",
-									     "fname", de_fname,
-									     "msg", local_error->message,
+									     "fname",
+									     de_fname,
+									     "msg",
+									     local_error->message,
 									     NULL);
-							g_error_free (g_steal_pointer (&local_error));
-							g_hash_table_remove (de_fname_map, de_basename);
+							g_error_free (
+							    g_steal_pointer (&local_error));
+							g_hash_table_remove (de_fname_map,
+									     de_basename);
 							continue;
 						}
 
-						de_cpt = asc_parse_desktop_entry_data (ctask->result,
-											cpt,
-											de_bytes,
-											de_basename,
-											TRUE, /* ignore NoDisplay & Co. */
-											AS_FORMAT_VERSION_CURRENT,
-											priv->de_l10n_fn,
-										        priv->de_l10n_fn_udata);
+						de_cpt = asc_parse_desktop_entry_data (
+						    ctask->result,
+						    cpt,
+						    de_bytes,
+						    de_basename,
+						    TRUE, /* ignore NoDisplay & Co. */
+						    AS_FORMAT_VERSION_LATEST,
+						    priv->de_l10n_fn,
+						    priv->de_l10n_fn_udata);
 						if (de_cpt != NULL) {
 							/* update component hash based on new source data */
-							asc_result_update_component_gcid (ctask->result,
-											  cpt,
-											  de_bytes);
+							asc_result_update_component_gcid (
+							    ctask->result,
+							    cpt,
+							    de_bytes);
 						}
 					}
 					g_hash_table_remove (de_fname_map, de_basename);
 				} /* end launch entry loop */
 			}
 		} /* end of desktop-entry support */
-	} /* end of metadata parsing loop */
+	}	  /* end of metadata parsing loop */
 
 	/* process the remaining .desktop files */
 	if (as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_PROCESS_UNPAIRED_DESKTOP)) {
@@ -1577,8 +1631,8 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 
 		g_hash_table_iter_init (&ht_iter, de_fname_map);
 		while (g_hash_table_iter_next (&ht_iter, &ht_key, &ht_value)) {
-			const gchar *de_fname = (const gchar*) ht_value;
-			const gchar *de_basename = (const gchar*) ht_key;
+			const gchar *de_fname = (const gchar *) ht_value;
+			const gchar *de_basename = (const gchar *) ht_key;
 			g_autoptr(AsComponent) de_cpt = NULL;
 			g_autoptr(GBytes) de_bytes = NULL;
 			g_autoptr(GError) local_error = NULL;
@@ -1589,8 +1643,10 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 				asc_result_add_hint_by_cid (ctask->result,
 							    de_basename,
 							    "file-read-error",
-							    "fname", de_fname,
-							    "msg", local_error->message,
+							    "fname",
+							    de_fname,
+							    "msg",
+							    local_error->message,
 							    NULL);
 				g_error_free (g_steal_pointer (&local_error));
 				continue;
@@ -1598,14 +1654,15 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 
 			/* synthesize component from desktop entry. The component will be auto-added
 			 * to the results set if it is valid. */
-			de_cpt = asc_parse_desktop_entry_data (ctask->result,
-								NULL, /* existing component */
-								de_bytes,
-								de_basename,
-								FALSE, /* don't ignore NoDisplay & Co. */
-								AS_FORMAT_VERSION_CURRENT,
-								priv->de_l10n_fn,
-								priv->de_l10n_fn_udata);
+			de_cpt = asc_parse_desktop_entry_data (
+			    ctask->result,
+			    NULL, /* existing component */
+			    de_bytes,
+			    de_basename,
+			    FALSE, /* don't ignore NoDisplay & Co. */
+			    AS_FORMAT_VERSION_LATEST,
+			    priv->de_l10n_fn,
+			    priv->de_l10n_fn_udata);
 			if (de_cpt != NULL && !asc_result_is_ignored (ctask->result, de_cpt))
 				asc_result_add_hint_simple (ctask->result, de_cpt, "no-metainfo");
 		}
@@ -1613,22 +1670,20 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 
 	/* allow external function to alter the detected components early on before we do expensive processing */
 	if (priv->check_md_early_fn != NULL)
-		priv->check_md_early_fn (ctask->result,
-					 ctask->unit,
-					 priv->check_md_early_fn_udata);
+		priv->check_md_early_fn (ctask->result, ctask->unit, priv->check_md_early_fn_udata);
 
 	/* process translation status */
 	if (as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_PROCESS_TRANSLATIONS)) {
 		if (priv->locale_unit == NULL) {
 			asc_read_translation_status (ctask->result,
-							ctask->unit,
-							priv->prefix,
-							priv->min_l10n_percentage);
+						     ctask->unit,
+						     priv->prefix,
+						     priv->min_l10n_percentage);
 		} else {
 			asc_read_translation_status (ctask->result,
-							priv->locale_unit,
-							priv->prefix,
-							priv->min_l10n_percentage);
+						     priv->locale_unit,
+						     priv->prefix,
+						     priv->min_l10n_percentage);
 		}
 	}
 
@@ -1641,10 +1696,11 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 		if (!as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_IGNORE_ICONS)) {
 			g_autofree gchar *icons_export_dir = NULL;
 			if (priv->icons_result_dir == NULL)
-				icons_export_dir = g_build_filename (asc_globals_get_tmp_dir (),
-									asc_result_gcid_for_component (ctask->result, cpt),
-									"icons",
-									NULL);
+				icons_export_dir = g_build_filename (
+				    asc_globals_get_tmp_dir (),
+				    asc_result_gcid_for_component (ctask->result, cpt),
+				    "icons",
+				    NULL);
 			else
 				icons_export_dir = g_strdup (priv->icons_result_dir);
 
@@ -1660,13 +1716,17 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 
 		/* screenshots, but only if we allow network access */
 		if (as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_ALLOW_NET) && acurl != NULL)
-			asc_process_screenshots (ctask->result,
-						 cpt,
-						 acurl,
-						 priv->media_result_dir,
-						 priv->max_scr_size_bytes,
-						 as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_ALLOW_SCREENCASTS),
-						 as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_STORE_SCREENSHOTS));
+			asc_process_screenshots (
+			    ctask->result,
+			    cpt,
+			    acurl,
+			    priv->media_result_dir,
+			    as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_NO_PARTIAL_URLS)
+				? priv->media_baseurl
+				: NULL,
+			    priv->max_scr_size_bytes,
+			    as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_ALLOW_SCREENCASTS),
+			    as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_STORE_SCREENSHOTS));
 
 		if (as_component_get_kind (cpt) == AS_COMPONENT_KIND_FONT)
 			has_fonts = TRUE;
@@ -1676,6 +1736,7 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 	if (has_fonts && as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_PROCESS_FONTS)) {
 		asc_process_fonts (ctask->result,
 				   ctask->unit,
+				   priv->prefix,
 				   priv->media_result_dir,
 				   priv->icons_result_dir,
 				   priv->icon_policy,
@@ -1687,8 +1748,19 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 	if (filter_cpts) {
 		const gchar **cids = asc_result_get_component_ids_with_hints (ctask->result);
 		for (guint i = 0; cids[i] != NULL; i++) {
-			if (!g_hash_table_contains (priv->allowed_cids, cids[i]))
+			if (!g_hash_table_contains (priv->allowed_cids, cids[i])) {
+				/* we want to catch out-of-scope XML errors as well, which have a CID
+				 * guessed from the filename, and don't include any .desktop suffix. */
+				if (!g_str_has_suffix (cids[i], ".desktop")) {
+					g_autofree gchar *cid_desktop = g_strconcat (cids[i],
+										     ".desktop",
+										     NULL);
+					if (g_hash_table_contains (priv->allowed_cids, cid_desktop))
+						continue;
+				}
+
 				asc_result_remove_hints_for_cid (ctask->result, cids[i]);
+			}
 		}
 	}
 
@@ -1743,12 +1815,11 @@ asc_compose_export_hints_data_yaml (AscCompose *compose, GError **error)
 		/* main dict start */
 		as_yaml_mapping_start (&emitter);
 
-		as_yaml_emit_entry (&emitter,
-				    "Tag",
-				    tag);
-		as_yaml_emit_entry (&emitter,
-				    "Severity",
-				    as_issue_severity_to_string (asc_globals_hint_tag_severity (tag)));
+		as_yaml_emit_entry (&emitter, "Tag", tag);
+		as_yaml_emit_entry (
+		    &emitter,
+		    "Severity",
+		    as_issue_severity_to_string (asc_globals_hint_tag_severity (tag)));
 		as_yaml_emit_entry (&emitter,
 				    "Explanation",
 				    asc_globals_hint_tag_explanation (tag));
@@ -1831,7 +1902,6 @@ asc_compose_export_hints_data_yaml (AscCompose *compose, GError **error)
 	return g_file_set_contents (yaml_fname, yaml_result->str, yaml_result->len, error);
 }
 
-
 static gboolean
 asc_compose_export_hints_data_html (AscCompose *compose, GError **error)
 {
@@ -1841,62 +1911,68 @@ asc_compose_export_hints_data_html (AscCompose *compose, GError **error)
 
 	/* create header */
 	html = g_string_new ("");
-	g_string_append (html, "<!DOCTYPE html>\n"
-			       "<html lang=\"en\">\n");
+	g_string_append (html,
+			 "<!DOCTYPE html>\n"
+			 "<html lang=\"en\">\n");
 	g_string_append (html, "<head>\n");
-	g_string_append (html, "<meta http-equiv=\"Content-Type\" content=\"text/html; "
-			       "charset=UTF-8\" />\n");
-	g_string_append (html, "<meta name=\"generator\" content=\"appstream-compose " PACKAGE_VERSION "\" />\n");
-	g_string_append_printf (html, "<title>Compose issue hints for \"%s\"</title>\n", priv->origin);
+	g_string_append (html,
+			 "<meta http-equiv=\"Content-Type\" content=\"text/html; "
+			 "charset=UTF-8\" />\n");
+	g_string_append (html,
+			 "<meta name=\"generator\" content=\"appstream-compose " PACKAGE_VERSION
+			 "\" />\n");
+	g_string_append_printf (html,
+				"<title>Compose issue hints for \"%s\"</title>\n",
+				priv->origin);
 
 	g_string_append (html,
-	"\n<style type=\"text/css\">\n"
-	"body {\n"
-	"	margin-top: 2em;\n"
-	"	margin-left: 5%;\n"
-	"	margin-right: 5%;\n"
-	"	font-family: 'Lucida Grande', Verdana, Arial, Sans-Serif;\n"
-	"}\n"
-	"a {\n"
-	"    color: #337ab7;\n"
-	"    text-decoration: none;\n"
-	"    background-color: transparent;\n"
-	"}\n"
-	".permalink {\n"
-	"    font-size: 75%;\n"
-	"    color: #999;\n"
-	"    line-height: 100%;\n"
-	"    font-weight: normal;\n"
-	"    text-decoration: none;\n"
-	"}\n"
-	".label {\n"
-	"    border-radius: 0.25em;\n"
-	"    color: #fff;\n"
-	"    display: inline;\n"
-	"    font-size: 75%;\n"
-	"    font-weight: 700;\n"
-	"    line-height: 1;\n"
-	"    padding: 0.2em 0.6em 0.3em;\n"
-	"    text-align: center;\n"
-	"    vertical-align: baseline;\n"
-	"    white-space: nowrap;\n"
-	"}\n"
-	".label-info {\n"
-	"   background-color: #5bc0de;\n"
-	"}\n"
-	".label-warning {\n"
-	"    background-color: #f0ad4e;\n"
-	"}\n"
-	".label-error {\n"
-	"    background-color: #d9534f;\n"
-	"}\n"
-	".label-neutral {\n"
-	"    background-color: #777;\n"
-	"}\n"
-	".content {\n"
-	"    width: 60%;\n"
-	"}\n"
-	"</style>\n\n");
+			 "\n<style type=\"text/css\">\n"
+			 "body {\n"
+			 "	margin-top: 2em;\n"
+			 "	margin-left: 5%;\n"
+			 "	margin-right: 5%;\n"
+			 "	font-family: 'Lucida Grande', Verdana, Arial, Sans-Serif;\n"
+			 "}\n"
+			 "a {\n"
+			 "    color: #337ab7;\n"
+			 "    text-decoration: none;\n"
+			 "    background-color: transparent;\n"
+			 "}\n"
+			 ".permalink {\n"
+			 "    font-size: 75%;\n"
+			 "    color: #999;\n"
+			 "    line-height: 100%;\n"
+			 "    font-weight: normal;\n"
+			 "    text-decoration: none;\n"
+			 "}\n"
+			 ".label {\n"
+			 "    border-radius: 0.25em;\n"
+			 "    color: #fff;\n"
+			 "    display: inline;\n"
+			 "    font-size: 75%;\n"
+			 "    font-weight: 700;\n"
+			 "    line-height: 1;\n"
+			 "    padding: 0.2em 0.6em 0.3em;\n"
+			 "    text-align: center;\n"
+			 "    vertical-align: baseline;\n"
+			 "    white-space: nowrap;\n"
+			 "}\n"
+			 ".label-info {\n"
+			 "   background-color: #5bc0de;\n"
+			 "}\n"
+			 ".label-warning {\n"
+			 "    background-color: #f0ad4e;\n"
+			 "}\n"
+			 ".label-error {\n"
+			 "    background-color: #d9534f;\n"
+			 "}\n"
+			 ".label-neutral {\n"
+			 "    background-color: #777;\n"
+			 "}\n"
+			 ".content {\n"
+			 "    width: 60%;\n"
+			 "}\n"
+			 "</style>\n\n");
 
 	g_string_append (html, "</head>\n");
 	g_string_append (html, "<body>\n");
@@ -1910,7 +1986,10 @@ asc_compose_export_hints_data_html (AscCompose *compose, GError **error)
 		if (hints_cids == NULL)
 			continue;
 
-		g_string_append_printf (html, "<h1 style=\"font-weight: 100;\">Compose issue hints for \"%s\"</h1>\n", priv->origin);
+		g_string_append_printf (
+		    html,
+		    "<h1 style=\"font-weight: 100;\">Compose issue hints for \"%s\"</h1>\n",
+		    priv->origin);
 		g_string_append (html, "<div class=\"content\">");
 		bundle_hstr = g_markup_escape_text (asc_result_get_bundle_id (result), -1);
 		g_string_append_printf (html, "<h2>Unit: %s</h2>\n<hr/>\n", bundle_hstr);
@@ -1920,8 +1999,12 @@ asc_compose_export_hints_data_html (AscCompose *compose, GError **error)
 			GPtrArray *hints = asc_result_get_hints (result, hints_cids[j]);
 
 			cid_hstr = g_markup_escape_text (hints_cids[j], -1);
-			g_string_append_printf (html, "<h3 id=\"%s\">%s <a title=\"Permalink\" class=\"permalink\" href=\"#%s\">#</a></h3>\n",
-						cid_hstr, cid_hstr, cid_hstr);
+			g_string_append_printf (html,
+						"<h3 id=\"%s\">%s <a title=\"Permalink\" "
+						"class=\"permalink\" href=\"#%s\">#</a></h3>\n",
+						cid_hstr,
+						cid_hstr,
+						cid_hstr);
 			g_string_append (html, "<ul>\n");
 			for (guint k = 0; k < hints->len; k++) {
 				g_autofree gchar *explanation = NULL;
@@ -1931,26 +2014,32 @@ asc_compose_export_hints_data_html (AscCompose *compose, GError **error)
 
 				severity = asc_hint_get_severity (hint);
 				switch (severity) {
-					case AS_ISSUE_SEVERITY_ERROR:
-						label_style = "label-error";
-						break;
-					case AS_ISSUE_SEVERITY_WARNING:
-						label_style = "label-warning";
-						break;
-					case AS_ISSUE_SEVERITY_INFO:
-						label_style = "label-info";
-						break;
-					case AS_ISSUE_SEVERITY_PEDANTIC:
-						label_style = "label-neutral";
-						break;
-					default:
-						label_style = "label-neutral";
+				case AS_ISSUE_SEVERITY_ERROR:
+					label_style = "label-error";
+					break;
+				case AS_ISSUE_SEVERITY_WARNING:
+					label_style = "label-warning";
+					break;
+				case AS_ISSUE_SEVERITY_INFO:
+					label_style = "label-info";
+					break;
+				case AS_ISSUE_SEVERITY_PEDANTIC:
+					label_style = "label-neutral";
+					break;
+				default:
+					label_style = "label-neutral";
 				}
 
 				explanation = asc_hint_format_explanation (hint);
-				g_string_append_printf (html, "    <li>\n    <strong>%s</strong>&nbsp;<span class=\"label %s\">%s</span>\n",
-							asc_hint_get_tag (hint), label_style, as_issue_severity_to_string (severity));
-				g_string_append_printf (html, "    <p>%s</p>\n    </li>\n",
+				g_string_append_printf (
+				    html,
+				    "    <li>\n    <strong>%s</strong>&nbsp;<span class=\"label "
+				    "%s\">%s</span>\n",
+				    asc_hint_get_tag (hint),
+				    label_style,
+				    as_issue_severity_to_string (severity));
+				g_string_append_printf (html,
+							"    <p>%s</p>\n    </li>\n",
 							explanation);
 			}
 			g_string_append (html, "</ul>\n");
@@ -1976,11 +2065,14 @@ asc_compose_save_metadata_result (AscCompose *compose, gboolean *results_not_emp
 
 	mdata = as_metadata_new ();
 	as_metadata_set_format_style (mdata, AS_FORMAT_STYLE_CATALOG);
-	as_metadata_set_format_version (mdata, AS_FORMAT_VERSION_CURRENT);
+	as_metadata_set_format_version (mdata, AS_FORMAT_VERSION_LATEST);
 
 	/* Set baseurl only if one is set and we actually store any screenshot media. If no screenshot media
-	 * is stored, upstream's URLs are used and having a media base URL makes no sense */
-	if (priv->media_baseurl != NULL && as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_STORE_SCREENSHOTS))
+	 * is stored, upstream's URLs are used and having a media base URL makes no sense.
+	 * In addition, we *must not* set a media-baseurl if *any* represented component uses full URLs. */
+	if (priv->media_baseurl != NULL &&
+	    as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_STORE_SCREENSHOTS) &&
+	    !as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_NO_PARTIAL_URLS))
 		as_metadata_set_media_baseurl (mdata, priv->media_baseurl);
 
 	if (priv->format == AS_FORMAT_KIND_YAML)
@@ -2007,7 +2099,7 @@ asc_compose_save_metadata_result (AscCompose *compose, gboolean *results_not_emp
 		cpts = asc_result_fetch_components (result);
 		for (guint j = 0; j < cpts->len; j++)
 			as_metadata_add_component (mdata,
-						   AS_COMPONENT(g_ptr_array_index (cpts, j)));
+						   AS_COMPONENT (g_ptr_array_index (cpts, j)));
 
 		if (cpts->len > 0 && results_not_empty != NULL)
 			*results_not_empty = TRUE;
@@ -2061,7 +2153,7 @@ asc_compose_finalize_result (AscCompose *compose, AscResult *result)
  *
  * Returns: (transfer none) (element-type AscResult): The results, or %NULL on error
  */
-GPtrArray*
+GPtrArray *
 asc_compose_run (AscCompose *compose, GCancellable *cancellable, GError **error)
 {
 	AscComposePrivate *priv = GET_PRIVATE (compose);
@@ -2070,7 +2162,8 @@ asc_compose_run (AscCompose *compose, GCancellable *cancellable, GError **error)
 	gboolean results_generated = FALSE;
 
 	/* ensure icon output dir is set, hint and data output dirs are optional */
-	if (priv->icons_result_dir == NULL && !as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_IGNORE_ICONS)) {
+	if (priv->icons_result_dir == NULL &&
+	    !as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_IGNORE_ICONS)) {
 		g_set_error_literal (error,
 				     ASC_COMPOSE_ERROR,
 				     ASC_COMPOSE_ERROR_FAILED,
@@ -2087,34 +2180,50 @@ asc_compose_run (AscCompose *compose, GCancellable *cancellable, GError **error)
 		return NULL;
 	}
 
+	if (as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_NO_PARTIAL_URLS) &&
+	    priv->media_baseurl == NULL) {
+		g_set_error_literal (error,
+				     ASC_COMPOSE_ERROR,
+				     ASC_COMPOSE_ERROR_FAILED,
+				     _("Partial URLs are not allowed, but no base URL is set to create full URLs."));
+		return NULL;
+	}
+
 	if (priv->media_result_dir == NULL) {
 		AscIconPolicyIter ip_iter;
 		guint icon_size;
 		guint scale_factor;
 		AscIconState icon_state;
 		asc_icon_policy_iter_init (&ip_iter, priv->icon_policy);
-		while (asc_icon_policy_iter_next (&ip_iter, &icon_size, &scale_factor, &icon_state)) {
+		while (
+		    asc_icon_policy_iter_next (&ip_iter, &icon_size, &scale_factor, &icon_state)) {
 			if (icon_state == ASC_ICON_STATE_IGNORED)
 				continue;
-			if (icon_state == ASC_ICON_STATE_REMOTE_ONLY || icon_state == ASC_ICON_STATE_CACHED_REMOTE) {
-				g_debug ("No media export directory set, but icon %ix%i@%i is set for remote delivery. Disabling remote for this icon type.",
-					 icon_size, icon_size, scale_factor);
+			if (icon_state == ASC_ICON_STATE_REMOTE_ONLY ||
+			    icon_state == ASC_ICON_STATE_CACHED_REMOTE) {
+				g_debug (
+				    "No media export directory set, but icon %ix%i@%i is set for "
+				    "remote delivery. Disabling remote for this icon type.",
+				    icon_size,
+				    icon_size,
+				    scale_factor);
 				asc_icon_policy_set_policy (priv->icon_policy,
 							    icon_size,
 							    scale_factor,
 							    ASC_ICON_STATE_CACHED_ONLY);
 			}
-
 		}
 
 		if (as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_STORE_SCREENSHOTS)) {
-			g_debug ("No media export directory set, but screenshots are supposed to be stored. Disabling screenshot storage.");
+			g_debug ("No media export directory set, but screenshots are supposed to "
+				 "be stored. Disabling screenshot storage.");
 			as_flags_remove (priv->flags, ASC_COMPOSE_FLAG_STORE_SCREENSHOTS);
 		}
 	}
 
 	if (g_file_test (asc_globals_get_tmp_dir (), G_FILE_TEST_EXISTS)) {
-		g_debug ("Will use existing directory '%s' for temporary data (and will not delete it later).",
+		g_debug ("Will use existing directory '%s' for temporary data (and will not delete "
+			 "it later).",
 			 asc_globals_get_tmp_dir ());
 		temp_dir_created = FALSE;
 	} else {
@@ -2139,7 +2248,7 @@ asc_compose_run (AscCompose *compose, GCancellable *cancellable, GError **error)
 		GThreadPool *tpool = NULL;
 		tpool = g_thread_pool_new ((GFunc) asc_compose_process_task_cb,
 					   compose,
-					   -1, /* max threads */
+					   -1,	  /* max threads */
 					   FALSE, /* exclusive */
 					   error);
 		if (tpool == NULL)
@@ -2154,8 +2263,9 @@ asc_compose_run (AscCompose *compose, GCancellable *cancellable, GError **error)
 	} else {
 		/* run everything in sequence */
 		for (guint i = 0; i < tasks->len; i++)
-			asc_compose_process_task_cb ((AscComposeTask *) g_ptr_array_index (tasks, i),
-						     compose);
+			asc_compose_process_task_cb (
+			    (AscComposeTask *) g_ptr_array_index (tasks, i),
+			    compose);
 	}
 
 	/* collect results */
@@ -2174,9 +2284,7 @@ asc_compose_run (AscCompose *compose, GCancellable *cancellable, GError **error)
 	if (g_hash_table_size (priv->allowed_cids) > 0 && !results_generated) {
 		/* we had filters set but generated no results - this was most certainly not intended */
 		AscComposeTask *ctask = g_ptr_array_index (tasks, 0);
-		asc_result_add_hint_simple (ctask->result,
-						NULL,
-						"filters-but-no-output");
+		asc_result_add_hint_simple (ctask->result, NULL, "filters-but-no-output");
 	}
 
 	/* write hints */
@@ -2202,7 +2310,7 @@ asc_compose_run (AscCompose *compose, GCancellable *cancellable, GError **error)
  *
  * Creates a new #AscCompose.
  **/
-AscCompose*
+AscCompose *
 asc_compose_new (void)
 {
 	AscCompose *compose;

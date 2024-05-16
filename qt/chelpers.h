@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -20,10 +20,13 @@
 #ifndef APPSTREAMQT_CHELPERS_H
 #define APPSTREAMQT_CHELPERS_H
 
+#pragma GCC visibility push(hidden)
+
 #include <glib.h>
 #include <QStringList>
 
-namespace AppStream {
+namespace AppStream
+{
 
 inline QString valueWrap(const gchar *cstr)
 {
@@ -36,7 +39,7 @@ inline QStringList valueWrap(gchar **strv)
     if (strv == NULL)
         return res;
     for (uint i = 0; strv[i] != NULL; i++) {
-        res.append (QString::fromUtf8(strv[i]));
+        res.append(QString::fromUtf8(strv[i]));
     }
     return res;
 }
@@ -47,7 +50,7 @@ inline QStringList valueWrap(const gchar **strv)
     if (strv == NULL)
         return res;
     for (uint i = 0; strv[i] != NULL; i++) {
-        res.append (QString::fromUtf8(strv[i]));
+        res.append(QString::fromUtf8(strv[i]));
     }
     return res;
 }
@@ -57,8 +60,8 @@ inline QStringList valueWrap(GPtrArray *array)
     QStringList res;
     res.reserve(array->len);
     for (uint i = 0; i < array->len; i++) {
-        auto strval = (const gchar*) g_ptr_array_index (array, i);
-        res.append (QString::fromUtf8(strval));
+        auto strval = (const gchar *) g_ptr_array_index(array, i);
+        res.append(QString::fromUtf8(strval));
     }
     return res;
 }
@@ -69,18 +72,18 @@ inline QStringList valueWrap(GList *list)
     QStringList res;
     res.reserve(g_list_length(list));
     for (l = list; l != NULL; l = l->next) {
-        auto strval = (const gchar*) l->data;
-        res.append (QString::fromUtf8(strval));
+        auto strval = (const gchar *) l->data;
+        res.append(QString::fromUtf8(strval));
     }
     return res;
 }
 
-inline char ** stringListToCharArray(const QStringList& list)
+inline char **stringListToCharArray(const QStringList &list)
 {
-    char **array = (char**) g_malloc(sizeof(char*) * list.size() + 1);
+    char **array = (char **) g_malloc(sizeof(char *) * list.size() + 1);
     for (int i = 0; i < list.size(); ++i) {
         const QByteArray string = list[i].toLocal8Bit();
-        array[i] = (char*) g_malloc(sizeof(char) * (string.size() + 1));
+        array[i] = (char *) g_malloc(sizeof(char) * (string.size() + 1));
         strcpy(array[i], string.constData());
     }
     array[list.size()] = nullptr;
@@ -88,5 +91,7 @@ inline char ** stringListToCharArray(const QStringList& list)
 }
 
 }
+
+#pragma GCC visibility pop
 
 #endif // APPSTREAMQT_CHELPERS_H

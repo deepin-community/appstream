@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -26,54 +26,62 @@
 #include "appstreamqt_export.h"
 
 struct _AsSystemInfo;
-namespace AppStream {
+namespace AppStream
+{
+
+enum class CheckResult {
+    Error,
+    Unknown,
+    False,
+    True
+};
 
 class SystemInfoData;
-class APPSTREAMQT_EXPORT SystemInfo {
-    Q_GADGET
-    public:
-        SystemInfo();
-        SystemInfo(_AsSystemInfo *sysInfo);
-        SystemInfo(const SystemInfo& sysInfo);
-        ~SystemInfo();
+class APPSTREAMQT_EXPORT SystemInfo : public QObject
+{
+    Q_OBJECT
 
-        SystemInfo& operator=(const SystemInfo& sysInfo);
-        bool operator==(const SystemInfo& r) const;
+public:
+    SystemInfo();
+    SystemInfo(_AsSystemInfo *sysInfo);
+    ~SystemInfo();
 
-        /**
-         * \returns the internally stored AsSystemInfo
-         */
-        _AsSystemInfo *asSystemInfo() const;
+    /**
+     * \returns the internally stored AsSystemInfo
+     */
+    _AsSystemInfo *cPtr() const;
 
-        QString osId() const;
-        QString osCid() const;
-        QString osName() const;
-        QString osVersion() const;
-        QString osHomepage() const;
+    QString osId() const;
+    QString osCid() const;
+    QString osName() const;
+    QString osVersion() const;
+    QString osHomepage() const;
 
-        QString kernelName() const;
-        QString kernelVersion() const;
+    QString kernelName() const;
+    QString kernelVersion() const;
 
-        ulong memoryTotal() const;
+    ulong memoryTotal() const;
 
-        QStringList modaliases() const;
-        QString modaliasToSyspath(const QString &modalias);
+    QStringList modaliases() const;
+    QString modaliasToSyspath(const QString &modalias);
 
-        bool hasDeviceMatchingModalias(const QString &modaliasGlob);
-        QString deviceNameForModalias(const QString &modalias, bool allowFallback);
+    bool hasDeviceMatchingModalias(const QString &modaliasGlob);
+    QString deviceNameForModalias(const QString &modalias, bool allowFallback);
 
-        CheckResult hasInputControl(Relation::ControlKind kind);
-        void setInputControl(Relation::ControlKind kind, bool found);
+    CheckResult hasInputControl(Relation::ControlKind kind);
+    void setInputControl(Relation::ControlKind kind, bool found);
 
-        ulong displayLength(Relation::DisplaySideKind kind);
-        void setDisplayLength(Relation::DisplaySideKind kind, ulong valueDip);
+    ulong displayLength(Relation::DisplaySideKind kind);
+    void setDisplayLength(Relation::DisplaySideKind kind, ulong valueDip);
 
-        /**
-         * \return The last error message received.
-         */
-        QString lastError() const;
+    static QString currentDistroComponentId();
 
-    private:
-        QSharedDataPointer<SystemInfoData> d;
+    /**
+     * \return The last error message received.
+     */
+    QString lastError() const;
+
+private:
+    QSharedDataPointer<SystemInfoData> d;
 };
 }

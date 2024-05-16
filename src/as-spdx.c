@@ -1,7 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  * Copyright (C) 2016 Richard Hughes <richard@hughsie.com>
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -27,6 +27,7 @@
 
 #include "as-resources.h"
 #include "as-utils-private.h"
+#include "as-spdx-data.h"
 
 /**
  * SECTION:as-spdx
@@ -36,9 +37,9 @@
  */
 
 typedef struct {
-	gboolean	 last_token_literal;
-	GPtrArray	*array;
-	GString		*collect;
+	gboolean last_token_literal;
+	GPtrArray *array;
+	GString *collect;
 } AsSpdxHelper;
 
 static gpointer
@@ -59,17 +60,18 @@ as_spdx_license_tokenize_drop (AsSpdxHelper *helper)
 	guint i;
 	g_autofree gchar *last_literal = NULL;
 	struct {
-		const gchar	*old;
-		const gchar	*new;
-	} licenses[] =  {
-		{ "CC0",	"CC0-1.0" },
-		{ "CC-BY",	"CC-BY-3.0" },
-		{ "CC-BY-SA",	"CC-BY-SA-3.0" },
-		{ "GFDL",	"GFDL-1.3" },
-		{ "GPL-2",	"GPL-2.0" },
-		{ "GPL-3",	"GPL-3.0" },
-		{ "proprietary", "LicenseRef-proprietary" },
-		{ NULL, NULL } };
+		const gchar *old;
+		const gchar *new;
+	} licenses[] = {
+		{"CC0",		 "CC0-1.0"		   },
+		{ "CC-BY",	   "CC-BY-3.0"	       },
+		{ "CC-BY-SA",    "CC-BY-SA-3.0"	     },
+		{ "GFDL",	  "GFDL-1.3"		     },
+		{ "GPL-2",	   "GPL-2.0"		     },
+		{ "GPL-3",	   "GPL-3.0"		     },
+		{ "proprietary", "LicenseRef-proprietary"},
+		{ NULL,		NULL		     }
+	};
 
 	/* nothing from last time */
 	if (helper->collect->len == 0)
@@ -99,8 +101,7 @@ as_spdx_license_tokenize_drop (AsSpdxHelper *helper)
 	for (i = 0; licenses[i].old != NULL; i++) {
 		if (g_strcmp0 (tmp, licenses[i].old) != 0)
 			continue;
-		g_ptr_array_add (helper->array,
-				 g_strdup_printf ("@%s", licenses[i].new));
+		g_ptr_array_add (helper->array, g_strdup_printf ("@%s", licenses[i].new));
 		helper->last_token_literal = FALSE;
 		g_string_truncate (helper->collect, 0);
 		return;
@@ -134,8 +135,7 @@ as_spdx_license_tokenize_drop (AsSpdxHelper *helper)
 	if (helper->last_token_literal) {
 		last_literal = g_strdup (_g_ptr_array_last (helper->array));
 		g_ptr_array_remove_index (helper->array, helper->array->len - 1);
-		g_ptr_array_add (helper->array,
-				 g_strdup_printf ("%s %s", last_literal, tmp));
+		g_ptr_array_add (helper->array, g_strdup_printf ("%s %s", last_literal, tmp));
 	} else {
 		g_ptr_array_add (helper->array, g_strdup (tmp));
 		helper->last_token_literal = TRUE;
@@ -156,7 +156,6 @@ as_spdx_license_tokenize_drop (AsSpdxHelper *helper)
 gboolean
 as_is_spdx_license_id (const gchar *license_id)
 {
-	g_autoptr(GBytes) data = NULL;
 	g_autofree gchar *key = NULL;
 
 	/* handle invalid */
@@ -167,16 +166,12 @@ as_is_spdx_license_id (const gchar *license_id)
 	if (g_str_has_prefix (license_id, "LicenseRef-"))
 		return TRUE;
 
-	/* load the readonly data section and look for the license ID */
-	data = g_resource_lookup_data (as_get_resource (),
-				       "/org/freedesktop/appstream/spdx-license-ids.txt",
-				       G_RESOURCE_LOOKUP_FLAGS_NONE,
-				       NULL);
-	if (data == NULL)
-		return FALSE;
-	key = g_strdup_printf ("\n%s\n", license_id);
+	for (guint i = 0; as_spdx_license_info_list[i].id != NULL; i++) {
+		if (as_str_equal0 (as_spdx_license_info_list[i].id, license_id))
+			return TRUE;
+	}
 
-	return g_strstr_len (g_bytes_get_data (data, NULL), -1, key) != NULL;
+	return FALSE;
 }
 
 /**
@@ -192,23 +187,18 @@ as_is_spdx_license_id (const gchar *license_id)
 gboolean
 as_is_spdx_license_exception_id (const gchar *exception_id)
 {
-	g_autoptr(GBytes) data = NULL;
 	g_autofree gchar *key = NULL;
 
 	/* handle invalid */
 	if (exception_id == NULL || exception_id[0] == '\0')
 		return FALSE;
 
-	/* load the readonly data section and look for the license exception ID */
-	data = g_resource_lookup_data (as_get_resource (),
-				       "/org/freedesktop/appstream/spdx-license-exception-ids.txt",
-				       G_RESOURCE_LOOKUP_FLAGS_NONE,
-				       NULL);
-	if (data == NULL)
-		return FALSE;
-	key = g_strdup_printf ("\n%s\n", exception_id);
+	for (guint i = 0; as_spdx_exception_info_list[i].id != NULL; i++) {
+		if (as_str_equal0 (as_spdx_exception_info_list[i].id, exception_id))
+			return TRUE;
+	}
 
-	return g_strstr_len (g_bytes_get_data (data, NULL), -1, key) != NULL;
+	return FALSE;
 }
 
 /**
@@ -264,6 +254,10 @@ as_is_spdx_license_expression (const gchar *license)
 			continue;
 		if (g_strcmp0 (tokens[i], "+") == 0)
 			continue;
+		if (g_strcmp0 (tokens[i], "(") == 0)
+			continue;
+		if (g_strcmp0 (tokens[i], ")") == 0)
+			continue;
 		if (g_strcmp0 (tokens[i], "^") == 0) {
 			expect_exception = TRUE;
 			continue;
@@ -282,12 +276,12 @@ as_is_spdx_license_expression (const gchar *license)
  * So we will just convert licenses back to the previous notation where
  * necessary.
  */
-static GString*
+static GString *
 as_utils_spdx_license_3to2 (const gchar *license3)
 {
 	GString *license2 = g_string_new (license3);
-	as_gstring_replace2 (license2, "-only", "", 1);
-	as_gstring_replace2 (license2, "-or-later", "+", 1);
+	as_gstring_replace (license2, "-only", "", 1);
+	as_gstring_replace (license2, "-or-later", "+", 1);
 	return license2;
 }
 
@@ -298,12 +292,12 @@ as_utils_spdx_license_3to2 (const gchar *license3)
  * which broke a lot of tools that we cannot really fix now.
  * So we will convert between notations where necessary.
  */
-static GString*
+static GString *
 as_utils_spdx_license_2to3 (const gchar *license2)
 {
 	GString *license3 = g_string_new (license2);
-	as_gstring_replace2 (license3, ".0+", ".0-or-later", 1);
-	as_gstring_replace2 (license3, ".1+", ".1-or-later", 1);
+	as_gstring_replace (license3, ".0+", ".0-or-later", 1);
+	as_gstring_replace (license3, ".1+", ".1-or-later", 1);
 	return license3;
 }
 
@@ -322,7 +316,7 @@ as_utils_spdx_license_2to3 (const gchar *license2)
  *
  * Since: 0.9.8
  **/
-gchar**
+gchar **
 as_spdx_license_tokenize (const gchar *license)
 {
 	AsSpdxHelper helper;
@@ -377,7 +371,7 @@ as_spdx_license_tokenize (const gchar *license)
  *
  * Since: 0.9.8
  **/
-gchar*
+gchar *
 as_spdx_license_detokenize (gchar **license_tokens)
 {
 	GString *tmp;
@@ -425,13 +419,14 @@ as_spdx_license_detokenize (gchar **license_tokens)
  *
  * Since: 0.9.8
  **/
-gchar*
+gchar *
 as_license_to_spdx_id (const gchar *license)
 {
 	GString *str;
 	guint i;
 	guint j;
 	guint license_len;
+	/* clang-format off */
 	struct {
 		const gchar	*old;
 		const gchar	*new;
@@ -490,7 +485,9 @@ as_license_to_spdx_id (const gchar *license)
 		{ "Copyright only",		"LicenseRef-public-domain" },
 		{ "Proprietary",		"LicenseRef-proprietary" },
 		{ "Commercial",			"LicenseRef-proprietary" },
-		{ NULL, NULL } };
+		{ NULL, NULL }
+	};
+	/* clang-format on */
 
 	/* nothing set */
 	if (license == NULL)
@@ -507,9 +504,7 @@ as_license_to_spdx_id (const gchar *license)
 		gboolean found = FALSE;
 		for (j = 0; convert[j].old != NULL; j++) {
 			guint old_len = strlen (convert[j].old);
-			if (g_ascii_strncasecmp (license + i,
-						 convert[j].old,
-						 old_len) != 0)
+			if (g_ascii_strncasecmp (license + i, convert[j].old, old_len) != 0)
 				continue;
 			if (convert[j].new != NULL)
 				g_string_append (str, convert[j].new);
@@ -611,8 +606,7 @@ as_license_is_metadata_license (const gchar *license)
 
 	/* this is too complicated to process */
 	for (guint i = 0; tokens[i] != NULL; i++) {
-		if (g_strcmp0 (tokens[i], "(") == 0 ||
-		    g_strcmp0 (tokens[i], ")") == 0) {
+		if (g_strcmp0 (tokens[i], "(") == 0 || g_strcmp0 (tokens[i], ")") == 0) {
 			return FALSE;
 		}
 	}
@@ -649,17 +643,54 @@ as_license_is_metadata_license (const gchar *license)
 }
 
 /**
+ * as_get_license_name:
+ * @license: The SPDX license ID.
+ *
+ * Get a translated license name for the given SPDX ID.
+ *
+ * Returns: (transfer full) (nullable): The license name, or %NULL if none found.
+ *
+ * Since: 1.0.0
+ */
+gchar *
+as_get_license_name (const gchar *license)
+{
+	g_autoptr(GString) license_id = NULL;
+
+	if (license == NULL)
+		return NULL;
+
+	license_id = as_utils_spdx_license_2to3 (license);
+	if (g_str_has_prefix (license_id->str, "@"))
+		g_string_erase (license_id, 0, 1);
+
+	if (g_str_has_prefix (license_id->str, "LicenseRef")) {
+		/* we can't easily determine a name for custom licenses just yet */
+		return NULL;
+	}
+	if (!as_is_spdx_license_id (license_id->str))
+		return NULL;
+
+	for (guint i = 0; as_spdx_license_info_list[i].id != NULL; i++) {
+		if (as_str_equal0 (as_spdx_license_info_list[i].id, license_id->str))
+			return g_strdup (as_spdx_license_info_list[i].name);
+	}
+
+	return NULL;
+}
+
+/**
  * as_get_license_url:
  * @license: The SPDX license ID.
  *
  * Get a web URL to the license text and more license information for an SPDX
  * license identifier.
  *
- * Returns: (transfer full): The license URL.
+ * Returns: (transfer full) (nullable): The license URL, or %NULL if none available.
  *
  * Since: 0.12.7
  */
-gchar*
+gchar *
 as_get_license_url (const gchar *license)
 {
 	g_autoptr(GString) license_id = NULL;
@@ -687,7 +718,8 @@ as_get_license_url (const gchar *license)
 			return NULL;
 		return g_strdup (l);
 	}
-	if (!as_is_spdx_license_id (license_id->str) && !as_is_spdx_license_exception_id (license_id->str))
+	if (!as_is_spdx_license_id (license_id->str) &&
+	    !as_is_spdx_license_exception_id (license_id->str))
 		return NULL;
 
 	license_lower = g_utf8_strdown (license_id->str, -1);
@@ -708,8 +740,10 @@ as_get_license_url (const gchar *license)
 	if (g_str_has_prefix (license_lower, "agpl-3.0"))
 		return g_strdup ("https://choosealicense.com/licenses/agpl-3.0/");
 	if (g_strcmp0 (license_lower, "mpl-2.0") == 0 || g_strcmp0 (license_lower, "mit") == 0 ||
-	    g_strcmp0 (license_lower, "0bsd") == 0 || g_strcmp0 (license_lower, "bsd-2-clause") == 0 ||
-	    g_strcmp0 (license_lower, "bsd-3-clause") == 0 || g_strcmp0 (license_lower, "apache-2.0") == 0 ||
+	    g_strcmp0 (license_lower, "0bsd") == 0 ||
+	    g_strcmp0 (license_lower, "bsd-2-clause") == 0 ||
+	    g_strcmp0 (license_lower, "bsd-3-clause") == 0 ||
+	    g_strcmp0 (license_lower, "apache-2.0") == 0 ||
 	    g_strcmp0 (license_lower, "bsl-1.0") == 0)
 		return g_strdup_printf ("https://choosealicense.com/licenses/%s/", license_lower);
 
@@ -741,7 +775,6 @@ gboolean
 as_license_is_free_license (const gchar *license)
 {
 	g_auto(GStrv) tokens = NULL;
-	g_autoptr(GBytes) rdata = NULL;
 	gboolean is_free;
 
 	/* no license at all is "non-free" */
@@ -750,25 +783,17 @@ as_license_is_free_license (const gchar *license)
 	if (g_strcmp0 (license, "NONE") == 0)
 		return FALSE;
 
-	/* load the readonly data section of (free) license IDs */
-	rdata = g_resource_lookup_data (as_get_resource (),
-				       "/org/freedesktop/appstream/spdx-free-license-ids.txt",
-				       G_RESOURCE_LOOKUP_FLAGS_NONE,
-				       NULL);
-	g_return_val_if_fail (rdata != NULL, FALSE);
-
 	/* assume we have a free software license, unless proven otherwise */
 	is_free = TRUE;
 	tokens = as_spdx_license_tokenize (license);
+	if (tokens == NULL)
+		return FALSE;
 	for (guint i = 0; tokens[i] != NULL; i++) {
-		g_autofree gchar *lkey = NULL;
+		const gchar *license_id;
 
-		if (g_strcmp0 (tokens[i], "&") == 0 ||
-		    g_strcmp0 (tokens[i], "+") == 0 ||
-		    g_strcmp0 (tokens[i], "|") == 0 ||
-		    g_strcmp0 (tokens[i], "^") == 0 ||
-		    g_strcmp0 (tokens[i], "(") == 0 ||
-		    g_strcmp0 (tokens[i], ")") == 0)
+		if (g_strcmp0 (tokens[i], "&") == 0 || g_strcmp0 (tokens[i], "+") == 0 ||
+		    g_strcmp0 (tokens[i], "|") == 0 || g_strcmp0 (tokens[i], "^") == 0 ||
+		    g_strcmp0 (tokens[i], "(") == 0 || g_strcmp0 (tokens[i], ")") == 0)
 			continue;
 
 		if (g_str_has_prefix (tokens[i], "@LicenseRef")) {
@@ -777,8 +802,8 @@ as_license_is_free_license (const gchar *license)
 				is_free = FALSE;
 				break;
 			}
-		} else if (g_str_has_prefix (tokens[i], "@NOASSERTION")
-			|| g_str_has_prefix (tokens[i], "@NONE")) {
+		} else if (g_str_has_prefix (tokens[i], "@NOASSERTION") ||
+			   g_str_has_prefix (tokens[i], "@NONE")) {
 			/* no license info is fishy as well */
 			is_free = FALSE;
 			break;
@@ -790,18 +815,27 @@ as_license_is_free_license (const gchar *license)
 			break;
 		}
 
-		if (as_is_spdx_license_exception_id (tokens[i] + 1)) {
+		license_id = tokens[i] + 1;
+		if (as_is_spdx_license_exception_id (license_id)) {
 			/* for now, we assume any SPDX license exception is still fine and doesn't change the
 			 * "free-ness" status of a software component */
 			continue;
 		}
 
-		lkey = g_strdup_printf ("\n%s\n", tokens[i] + 1);
-		if (g_strstr_len (g_bytes_get_data (rdata, NULL), -1, lkey) == NULL) {
-			/* the license was not in our "free" list, so we consider it non-free */
-			is_free = FALSE;
-			break;
+		/* assume non-free by default from now on */
+		is_free = FALSE;
+
+		/* check our list of free licenses */
+		for (guint k = 0; as_spdx_license_info_list[k].id != NULL; k++) {
+			if (as_str_equal0 (as_spdx_license_info_list[k].id, license_id)) {
+				/* save the free-ness status */
+				is_free = as_spdx_license_info_list[k].is_floss;
+				break;
+			}
 		}
+
+		if (!is_free)
+			break;
 	}
 
 	return is_free;

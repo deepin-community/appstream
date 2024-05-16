@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -22,13 +22,12 @@
 
 #include <glib-object.h>
 #include <appstream.h>
-#include "as-settings-private.h"
+#include "as-macros-private.h"
 #include "as-curl.h"
 
 #include "asc-result.h"
 
-G_BEGIN_DECLS
-#pragma GCC visibility push(hidden)
+AS_BEGIN_PRIVATE_DECLS
 
 /**
  * AscVideoInfo: (skip):
@@ -37,30 +36,28 @@ G_BEGIN_DECLS
  * we downloaded from an upstream site.
  */
 typedef struct {
-	gchar *codec_name;
-	gchar *audio_codec_name;
-	gint width;
-	gint height;
-	gchar *format_name;
+	gchar		    *codec_name;
+	gchar		    *audio_codec_name;
+	gint		     width;
+	gint		     height;
+	gchar		    *format_name;
 	AsVideoContainerKind container_kind;
-	AsVideoCodecKind codec_kind;
-	gboolean is_acceptable;
+	AsVideoCodecKind     codec_kind;
+	gboolean	     is_acceptable;
 } AscVideoInfo;
 
 AS_INTERNAL_VISIBLE
-AscVideoInfo	*asc_extract_video_info (AscResult *cres,
-					 AsComponent *cpt,
-				         const gchar *vid_fname);
+AscVideoInfo *asc_extract_video_info (AscResult *cres, AsComponent *cpt, const gchar *vid_fname);
 AS_INTERNAL_VISIBLE
-void		asc_video_info_free (AscVideoInfo *vinfo);
+void asc_video_info_free (AscVideoInfo *vinfo);
 
-void		asc_process_screenshots (AscResult *cres,
-					 AsComponent *cpt,
-					 AsCurl *acurl,
-					 const gchar *media_export_root,
-					 const gssize max_size_bytes,
-					 gboolean process_videos,
-					 gboolean store_screenshots);
+void asc_process_screenshots (AscResult	  *cres,
+			      AsComponent *cpt,
+			      AsCurl	  *acurl,
+			      const gchar *media_export_root,
+			      const gchar *media_url_prefix,
+			      const gssize max_size_bytes,
+			      gboolean	   process_videos,
+			      gboolean	   store_screenshots);
 
-#pragma GCC visibility pop
-G_END_DECLS
+AS_END_PRIVATE_DECLS

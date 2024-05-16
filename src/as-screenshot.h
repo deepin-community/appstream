@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2024 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2014 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -19,7 +19,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined (__APPSTREAM_H) && !defined (AS_COMPILATION)
+#if !defined(__APPSTREAM_H) && !defined(AS_COMPILATION)
 #error "Only <appstream.h> can be included directly."
 #endif
 
@@ -28,6 +28,7 @@
 
 #include <glib-object.h>
 
+#include "as-context.h"
 #include "as-image.h"
 #include "as-video.h"
 
@@ -36,16 +37,15 @@ G_BEGIN_DECLS
 #define AS_TYPE_SCREENSHOT (as_screenshot_get_type ())
 G_DECLARE_DERIVABLE_TYPE (AsScreenshot, as_screenshot, AS, SCREENSHOT, GObject)
 
-struct _AsScreenshotClass
-{
-	GObjectClass		parent_class;
+struct _AsScreenshotClass {
+	GObjectClass parent_class;
 	/*< private >*/
-	void (*_as_reserved1)	(void);
-	void (*_as_reserved2)	(void);
-	void (*_as_reserved3)	(void);
-	void (*_as_reserved4)	(void);
-	void (*_as_reserved5)	(void);
-	void (*_as_reserved6)	(void);
+	void (*_as_reserved1) (void);
+	void (*_as_reserved2) (void);
+	void (*_as_reserved3) (void);
+	void (*_as_reserved4) (void);
+	void (*_as_reserved5) (void);
+	void (*_as_reserved6) (void);
 };
 
 /**
@@ -66,9 +66,9 @@ typedef enum {
 
 /**
  * AsScreenshotMediaKind:
- * @AS_SCREENSHOT_MEDIA_KIND_UNKNOWN:		Media kind is unknown
- * @AS_SCREENSHOT_MEDIA_KIND_IMAGE:		The screenshot contains images
- * @AS_SCREENSHOT_MEDIA_KIND_VIDEO:		The screenshot contains videos
+ * @AS_SCREENSHOT_MEDIA_KIND_UNKNOWN:	Media kind is unknown
+ * @AS_SCREENSHOT_MEDIA_KIND_IMAGE:	The screenshot contains images
+ * @AS_SCREENSHOT_MEDIA_KIND_VIDEO:	The screenshot contains videos
  *
  * The media kind contained in this screenshot.
  **/
@@ -80,40 +80,37 @@ typedef enum {
 	AS_SCREENSHOT_MEDIA_KIND_LAST
 } AsScreenshotMediaKind;
 
-AsScreenshotKind		as_screenshot_kind_from_string (const gchar *kind);
-const gchar			*as_screenshot_kind_to_string (AsScreenshotKind kind);
-gboolean			as_screenshot_is_valid (AsScreenshot *screenshot);
+AsScreenshotKind      as_screenshot_kind_from_string (const gchar *kind);
+const gchar	     *as_screenshot_kind_to_string (AsScreenshotKind kind);
+gboolean	      as_screenshot_is_valid (AsScreenshot *screenshot);
 
-AsScreenshot			*as_screenshot_new (void);
+AsScreenshot	     *as_screenshot_new (void);
 
-AsScreenshotKind		as_screenshot_get_kind (AsScreenshot *screenshot);
-void		 		as_screenshot_set_kind (AsScreenshot *screenshot,
-							AsScreenshotKind kind);
+AsScreenshotKind      as_screenshot_get_kind (AsScreenshot *screenshot);
+void		      as_screenshot_set_kind (AsScreenshot *screenshot, AsScreenshotKind kind);
 
-AsScreenshotMediaKind		as_screenshot_get_media_kind (AsScreenshot *screenshot);
+const gchar	     *as_screenshot_get_environment (AsScreenshot *screenshot);
+void		      as_screenshot_set_environment (AsScreenshot *screenshot, const gchar *env_id);
 
-const gchar			*as_screenshot_get_caption (AsScreenshot *screenshot);
-void				as_screenshot_set_caption (AsScreenshot *screenshot,
-								const gchar *caption,
-								const gchar *locale);
+AsContext	     *as_screenshot_get_context (AsScreenshot *screenshot);
+void		      as_screenshot_set_context (AsScreenshot *screenshot, AsContext *context);
 
-GPtrArray			*as_screenshot_get_images_all (AsScreenshot *screenshot);
-GPtrArray			*as_screenshot_get_images (AsScreenshot *screenshot);
-AsImage				*as_screenshot_get_image (AsScreenshot *screenshot,
-							  guint width,
-							  guint height);
-void				as_screenshot_add_image (AsScreenshot *screenshot,
-							 AsImage *image);
-void				as_screenshot_clear_images (AsScreenshot *screenshot);
+AsScreenshotMediaKind as_screenshot_get_media_kind (AsScreenshot *screenshot);
 
-GPtrArray			*as_screenshot_get_videos_all (AsScreenshot *screenshot);
-GPtrArray			*as_screenshot_get_videos (AsScreenshot *screenshot);
-void				as_screenshot_add_video (AsScreenshot *screenshot,
-							 AsVideo *video);
+const gchar	     *as_screenshot_get_caption (AsScreenshot *screenshot);
+void		      as_screenshot_set_caption (AsScreenshot *screenshot,
+						 const gchar  *caption,
+						 const gchar  *locale);
 
-const gchar			*as_screenshot_get_active_locale (AsScreenshot *screenshot);
-void				as_screenshot_set_active_locale (AsScreenshot *screenshot,
-									const gchar *locale);
+GPtrArray	     *as_screenshot_get_images_all (AsScreenshot *screenshot);
+GPtrArray	     *as_screenshot_get_images (AsScreenshot *screenshot);
+AsImage *as_screenshot_get_image (AsScreenshot *screenshot, guint width, guint height, guint scale);
+void	 as_screenshot_add_image (AsScreenshot *screenshot, AsImage *image);
+void	 as_screenshot_clear_images (AsScreenshot *screenshot);
+
+GPtrArray *as_screenshot_get_videos_all (AsScreenshot *screenshot);
+GPtrArray *as_screenshot_get_videos (AsScreenshot *screenshot);
+void	   as_screenshot_add_video (AsScreenshot *screenshot, AsVideo *video);
 
 G_END_DECLS
 

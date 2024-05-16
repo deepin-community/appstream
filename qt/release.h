@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 Aleix Pol Gonzalez <aleixpol@kde.org>
- * Copyright (C) 2018 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2018-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -29,7 +29,8 @@
 
 struct _AsRelease;
 
-namespace AppStream {
+namespace AppStream
+{
 
 class ReleaseData;
 
@@ -43,67 +44,62 @@ struct Checksum {
     const QByteArray data;
 };
 
-class APPSTREAMQT_EXPORT Release {
+class APPSTREAMQT_EXPORT Release
+{
     Q_GADGET
-    public:
-        Release(_AsRelease* release);
-        Release(const Release& release);
-        ~Release();
+public:
+    Release(_AsRelease *release);
+    Release(const Release &release);
+    ~Release();
 
-        Release& operator=(const Release& release);
-        bool operator==(const Release& r) const;
+    Release &operator=(const Release &release);
+    bool operator==(const Release &r) const;
 
-        /**
-         * \returns the internally stored AsRelease
-         */
-        _AsRelease *asRelease() const;
+    /**
+     * \returns the internally stored AsRelease
+     */
+    _AsRelease *cPtr() const;
 
-        enum Kind  {
-            KindUnknown,
-            KindStable,
-            KindDevelopment
-        };
-        Q_ENUM(Kind)
+    enum Kind {
+        KindUnknown,
+        KindStable,
+        KindDevelopment,
+        KindSnapshot
+    };
+    Q_ENUM(Kind)
 
-        enum SizeKind {
-            SizeUnknown,
-            SizeDownload,
-            SizeInstalled
-        };
-        Q_ENUM(SizeKind)
+    enum SizeKind {
+        SizeUnknown,
+        SizeDownload,
+        SizeInstalled
+    };
+    Q_ENUM(SizeKind)
 
-        enum UrgencyKind {
-            UrgencyUnknown,
-            UrgencyLow,
-            UrgencyMedium,
-            UrgencyHigh,
-            UrgencyCritical
-        };
-        Q_ENUM(UrgencyKind)
+    enum UrgencyKind {
+        UrgencyUnknown,
+        UrgencyLow,
+        UrgencyMedium,
+        UrgencyHigh,
+        UrgencyCritical
+    };
+    Q_ENUM(UrgencyKind)
 
-        Kind kind() const;
+    Kind kind() const;
 
-        QString version() const;
+    QString version() const;
 
-        QDateTime timestamp() const;
-        QDateTime timestampEol() const;
+    QDateTime timestamp() const;
+    QDateTime timestampEol() const;
 
-        QString description() const;
+    QString description() const;
 
-        QString activeLocale() const;
+    UrgencyKind urgency() const;
 
-        UrgencyKind urgency() const;
-
-        // DEPRECATED
-        Q_DECL_DEPRECATED QHash<SizeKind, quint64> sizes() const;
-	Q_DECL_DEPRECATED QList<QUrl> locations() const;
-        Q_DECL_DEPRECATED Checksum checksum() const;
-
-    private:
-        QSharedDataPointer<ReleaseData> d;
+private:
+    QSharedDataPointer<ReleaseData> d;
 };
 }
 
-APPSTREAMQT_EXPORT QDebug operator<<(QDebug s, const AppStream::Release& release);
+APPSTREAMQT_EXPORT QDebug operator<<(QDebug s, const AppStream::Release &release);
 
 #endif // APPSTREAMQT_RELEASE_H

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -29,6 +29,7 @@
 
 #include "as-utils-private.h"
 
+/* clang-format off */
 AscHintTagStatic asc_hint_tag_list[] =  {
 	{ "internal-unknown-tag",
 	  AS_ISSUE_SEVERITY_ERROR,
@@ -278,7 +279,7 @@ AscHintTagStatic asc_hint_tag_list[] =  {
 
 	{ "no-valid-category",
 	  AS_ISSUE_SEVERITY_ERROR,
-	  "This software component is no member of any valid category."
+	  "This software component is no member of any valid category (note that custom categories and toolkit categories like 'Qt' or 'GTK' are ignored)."
 	},
 
 	{ "description-missing",
@@ -307,13 +308,14 @@ AscHintTagStatic asc_hint_tag_list[] =  {
 
 	{ NULL, AS_ISSUE_SEVERITY_UNKNOWN, NULL }
 };
+/* clang-format on */
 
 /**
  * asc_hint_tag_new:
  *
  * Create a new #AscHintTag struct with the given values.
  */
-AscHintTag*
+AscHintTag *
 asc_hint_tag_new (const gchar *tag, AsIssueSeverity severity, const gchar *explanation)
 {
 	AscHintTag *htag = g_new0 (AscHintTag, 1);

@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Release Information | AppStream | AppStream 1.0</title><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" /><link rel="stylesheet" type="text/css" href="static/css/style.css" /><link rel="stylesheet" type="text/css" href="static/css/highlight.css" /><meta name="generator" content="DAPS 3.3.2" /><meta name="product-name" content="AppStream" /><meta name="product-number" content="1.0" /><meta name="book-title" content="AppStream" /><meta name="chapter-title" content="2.2. Release Information" /><meta name="description" content="2.2.1 Introduction # This section documents the &lt;releases/&gt; tag that can be part of a component to provide information about releases made for the respective component. Alternatively to being embedded in a component metainfo file, the data may also be split into a dedicated XML file to be updated se…" /><link rel="home" href="index.html" title="AppStream" /><link rel="up" href="chap-Metadata.html" title="Chapter 2. Upstream Metadata" /><link rel="prev" href="chap-Metadata.html" title="Chapter 2. Upstream Metadata" /><link rel="next" href="sect-Metadata-Application.html" title="2.3. Desktop Applications" />
+<script src="static/js/highlight.min.js" type="text/javascript"></script><script>
+
+document.addEventListener('DOMContentLoaded', (event) => {
+  document.querySelectorAll('.verbatim-wrap.highlight').forEach((block) => {
+    hljs.highlightBlock(block);
+  });
+});
+hljs.configure({
+  useBR: false
+});
+
+</script></head><body class="offline js-off"><div class="bypass-block"><a href="#_content">Jump to content</a><a href="#_bottom-navigation">Jump to page navigation: previous page [access key p]/next page [access key n]</a></div><div id="_outer-wrap"><div id="_white-bg"><div id="_header"><div id="_logo"><a href="https://www.freedesktop.org/software/appstream/docs/"><img src="static/images/logo.png" alt="Logo" /><span>AppStream</span></a></div><div class="crumbs"><a class="book-link" href="index.html" title="AppStream"><span class="book-icon">AppStream</span></a><span> › </span><a class="crumb" href="chap-Metadata.html">Upstream Metadata</a><span> › </span><a class="crumb" href="sect-Metadata-Releases.html" accesskey="c"><span class="single-contents-icon"></span>Release Information</a></div><div class="clearme"></div></div></div><div id="_toolbar-wrap"><div id="_toolbar"><div id="_toc-area" class="inactive"><a id="_toc-area-button" class="tool" title="Contents" accesskey="c" href="index.html"><span class="tool-spacer"><span class="toc-icon">Contents</span><span class="clearme"></span></span><span class="tool-label">Contents</span></a><div class="active-contents bubble-corner"></div><div class="active-contents bubble"><div class="bubble-container"><h6>AppStream</h6><div id="_bubble-toc"><ol><li class="inactive"><a href="chap-AppStream-About.html"><span class="number">1 </span><span class="name">About AppStream</span></a></li><li class="inactive"><a href="chap-Metadata.html"><span class="number">2 </span><span class="name">Upstream Metadata</span></a></li><li class="inactive"><a href="chap-CatalogData.html"><span class="number">3 </span><span class="name">Catalog Metadata</span></a></li><li class="inactive"><a href="chap-AppStream-Misc.html"><span class="number">4 </span><span class="name">Miscellaneous</span></a></li><li class="inactive"><a href="chap-Quickstart.html"><span class="number">5 </span><span class="name">Metadata Quickstart</span></a></li><li class="inactive"><a href="chap-Validation.html"><span class="number">6 </span><span class="name">Data Validation</span></a></li><li class="inactive"><a href="chap-AppStream-ManualPages.html"><span class="number">7 </span><span class="name">Manual pages</span></a><ol>
+	<a href="re01.html#id-1.8.3.1">appstreamcli</a>
+	2012-2024Matthias Klumpp
+	AppStream
+	26 July,2012
+	appstreamcli1appstreamcliHandle AppStream metadata formats and query AppStream dataappstreamcliCOMMAND<a href="re01.html#id-1.8.3.5">Description</a>
+			This manual page documents briefly the appstreamcli command.
+		
+			appstreamcli is a small helper tool to work with AppStream metadata and
+			access the AppStream component index from the command-line. The AppStream component
+			index contains a list of all available software components for your distribution, matched to their
+			package names.
+			It is generated using AppStream XML or Debian DEP-11 data, which is provided by your distributor.
+		
+			For more information about the AppStream project and the other components which are part of it, take a look at
+			the AppStream pages at Freedesktop.org.
+		<a href="re01.html#id-1.8.3.6">Options</a>get IDGet a component from the metadata pool by its identifier.ssearch TERMSearch the AppStream component pool for a given search term.what-provides TYPE TERM
+						Return components which provide a given item. An item type can be specified using the
+						TYPE parameter, a value to search for has to be
+						supplied using the TERM parameter.
+					Examples:
+						Get components which handle the "text/xml" mediatype.
+					
+						appstreamcli what-provides mediatype "text/xml"
+					
+						Get component which provides the "libfoo.so.2" library.
+					
+						appstreamcli what-provides lib libfoo.so.2
+					refreshrefresh-cache
+						Trigger a database refresh, if necessary.
+						In case you want to force the database to be rebuilt, supply the --force flag.
+					This command must be executed with root permission.status
+						Display various information about the installed metadata and
+						the metadata cache.
+					os-info
+						Show information about the current operating system from the metadata
+						index.
+						This requires the operating system to provide a operating-system
+						component for itself.
+					dump ID
+						Dump the complete XML descriptions of components with the given ID that were found in the
+						metadata pool.
+					validate FILES
+						Validate AppStream XML metadata for compliance with the specification.
+					
+						Both XML metadata types, upstream and distro XML, are handled.
+						The format type which should be validated is determined automatically.
+					
+						The --pedantic flag triggers a more pedantic
+						validation of the file, including minor and style issues in the report.
+					validate-tree DIRECTORY
+						Validate AppStream XML metadata found in a file-tree.
+					
+						This performs a standard validation of all found metadata, but also checks for additional
+						errors, like the presence of .desktop files and validity of other additional metadata.
+					check-license LICENSE
+						Test a license string or license expression for validity and display details about it.
+					
+						This will check whether the license string is considered to be valid for AppStream, and return
+						a non-zero exit code if it is not. The command will also display useful information like the
+						canonical ID of a license, whether it is suitable as license for AppStream metadata,
+						and whether the license is considered to be for Free and Open Source software or proprietary software.
+					
+						AppStream will consider any license as Free and Open Source that is marked as suitable by either the
+						Free Software Foundation (FSF), Open Source Initiative (OSI) or explicit license list
+						of the Debian Free Software Guidelines (DFSG).
+					install ID
+						Install a software component by its ID using the package manager or Flatpak.
+					
+						This resolves the AppStream component ID to an installation candidate and then
+						calls either the native package manager or Flatpak (if available) to install
+						the component.
+					remove ID
+						Uninstall a software component by its ID using the package manager or Flatpak.
+					
+						This will uninstall software matching the selected ID using either the native
+						package manager or Flatpak (if available).
+					put FILE
+						Install a metadata file into the right directory on the current machine.
+					compare-versionsvercmp VER1 [CMP] VER2
+						Compare two version numbers. If two version numbers are given as parameters, the versions will be compared and the
+						comparison result will be printed to stdout.
+					
+						If a version number, a comparison operator and another version number are passed in as parameter, the result of the comparison
+						operation will be printed to stdout, and appstreamcli will exit with a non-zero exit status in case the comparison
+						failed.
+						The comparison operator can be one of the following:
+					eq - Equal tone - Not equal tolt - Less thangt - Greater thanle - Less than or equal toge - Greater than or equal tonew-template TYPE FILE
+						Create a metainfo file template to be used by software projects. The --from-desktop option can be used
+						to use a .desktop file as template for generating the example file.
+					
+						The generated files contain example entries which need to be filed in with the actual desired values by the project author.
+					
+						The first TYPE parameter is the name of an AppStream component type. For a complete list check out
+						the documentation or the help output
+						of appstreamcli for this subcommand.
+					make-desktop-file MI_FILE DESKTOP_FILE
+						Create a XDG desktop-entry file from a metainfo file.
+						If the desktop-entry file specified in DESKTOP_FILE already exists, it will get extended with
+						the new information extracted from the metainfo file. Otherwise a new file will be created.
+					
+						This command will use the first binary mentioned in a provides tag of the component
+						for the Exec= field of the new desktop-entry file.
+						If this is not the desired behavior, the --exec flag can be used
+						to explicitly define a binary to launch. Other methods of launching the application are currently not supported.
+					
+						In order to generate a proper desktop-entry, this command assumes that not only the minimally required tags for an
+						AppStream component are set, but also that it has an &lt;icon/&gt; tag of type "stock" to describe
+						the stock icon that should be used as well as a &lt;categories/&gt; tag containing the categories the application should
+						be placed in.
+					news-to-metainfo NEWS_FILE MI_FILE [OUT_FILE]
+						This command converts a NEWS file as used by many open source projects into the XML used by AppStream. Since NEWS files are free text,
+						a lot of heuristics will be applied to get reasonable results. The converter can also read a YAML version of the AppStream release
+						description and convert it to XML as well.
+						If the metainfo file MI_FILE already exists, it will be augmented with the new release entries, otherwise the release entries
+						will be written without any wrapping component.
+						If [OUT_FILE] is specified, instead of acting on MI_FILE the changed data will
+						be written to the particular file. If any of the output filenames is set to "-", the output will instead be written to stdout.
+					
+						The --format option can be used to enforce reading the input file in a specific format ("text" or "yaml") in case the format autodetection fails.
+						The --limit option is used to limit the amount of release entries written (the newest entries will always be first).
+					metainfo-to-news MI_FILE NEWS_FILE
+						This command reverses the news-to-metainfo command and writes a NEWS file as text or YAML using the XML
+						contained in a metainfo file. If NEWS_FILE is set to "-", the resulting data
+						will be written to stdout instead of to a file.
+					
+						The --format option can be used to explicitly specify the output format ("yaml" or "text"). If it is not set,
+						appstreamcli will guess which format is most suitable.
+					convert FILE1 FILE1
+						Converts AppStream XML metadata into its YAML representation and vice versa.
+					compose
+						Composes an AppStream metadata catalog from a directory tree with metainfo files.
+						This command is only available if the org.freedesktop.appstream.compose
+						component is installed.
+						See appstreamcli-compose1
+						for more information.
+					--detailsPrint out more information about a found component.--no-colorDon't print colored output.--no-netDo not access the network when validating metadata.
+						The same effect can be achieved by setting the AS_VALIDATE_NONET environment variable
+						before running appstreamcli.
+					--versionDisplay the version number of appstreamcli<a href="re01.html#id-1.8.3.7">See Also</a>pkcon1.<a href="re01.html#id-1.8.3.8">AUTHOR</a>
+	This manual page was written by Matthias Klumpp matthias@tenstral.net.
+
+	<a href="re02.html#id-1.8.4.1">appstreamcli compose</a>
+	2020-2024Matthias Klumpp
+	AppStream
+	28 Aug,2020
+	appstreamcli compose1appstreamcli-composeCompose AppStream metadata catalog from directory treesappstreamcli composeCOMMAND<a href="re02.html#id-1.8.4.5">Description</a>
+			This manual page documents briefly the appstreamcli compose command.
+		
+			The appstreamcli compose tool is used to construct AppStream metadata catalogs from directory trees.
+			The tool will also perform many related metadata generation actions, like resizing icons and
+			screenshots and merging in data from referenced desktop-entry files as well as translation status
+			information.
+			Therefore, the tool provides a fast way to test how the final processed metadata for an application
+			that is shipped to users may look like.
+			It also provides a way to easily generate AppStream data for projects which do not need a more complex data
+			generator like appstream-generator.
+		
+			In order for the appstreamcli compose command to be available, you may need to install the
+			optional compose module for appstreamcli first.
+		
+			For more information about the AppStream project and the other components which are part of it, take a look at
+			the AppStream pages at Freedesktop.org.
+		<a href="re02.html#id-1.8.4.6">Options</a>SOURCE-DIRECTORIES
+						A list of directories to process needs to be provided as positional parameters.
+						Data from all directories will be combined into one output namespace.
+					--origin NAME
+						Set the AppStream data origin identifier. This can be a value like
+						"debian-unstable-main" or "flathub".
+					--result-root DIR
+						Sets the directory where all generated output that is deployed to a user's
+						machine is exported to. If this parameter is not set and we only have one
+						directory to process, we use that directory as default output path.
+					
+						If both --data-dir and --icons-dir are
+						set, --result-root is not necessary and no data will be
+						written to that directory.
+					--data-dir DIR
+						Override the directory where the generated AppStream metadata catalog
+						will be written to. Data will be written directly to this directory, and
+						no supdirectories will be created (unlike when using --result-root
+						to set an output location).
+					--icons-dir DIR
+						Override the directory where the cached icons are exported to.
+					--hints-dir DIR
+						Set a directory where hints reported generated during metadata processing
+						are saved to. If this parameter is not set, no HTML/YAML hint reports
+						will be saved.
+					--media-dir DIR
+						If set, creates a directory with media content (icons, screenshots, ...) that
+						can be served via a webserver. The metadata will be extended to include information
+						about these remote media.
+					--media-baseurl URL
+						The URL under which the contents of a directory set via --media-dir
+						will be served. This value must be set if a media directory is created.
+					--prefix DIR
+						Set the default prefix that is used in the processed directories. If
+						none is set explicitly, /usr is assumed.
+					--print-report MODE
+						Print the issue hints report (that gets exported as HTML and YAML
+						document when --hints-dir was set) to the console
+						in text form.
+					
+						Various print modes are supported: on-error only prints a
+						short report if the run failed (default), short generates
+						an abridged report that is always printed and full results
+						in a detailed report to be printed.
+					--no-partial-urls
+						If set, all URLs in the generated data will be absolute and media_baseurl will not be used.
+						This makes changing the media mirror harder without regenerating all data and is generally not recommended,
+						to increase flexibility.
+					--icon-policy POLICY-STRING
+						Override the existing icon policy with a custom one. The icon policy sets how icons of
+						different sizes should be dealt with. They can be in the icon cache only, be a remote icon in
+						the media location or be both cached and available in the remote location.
+					
+						The icon-policy string is comprised of comma-separated %{size}x%{size}@%{scale}=%{state} statements.
+						The size and scale are that of the respective icon, with the scale being allowed to be
+						omitted if it is 1. The state can be one of remote, cached or
+						cached-remote.
+					
+						By default, a policy of 48x48=cached,48x48@2=cached,64x64=cached,64x64@2=cached,128x128=cached-remote,128x128@2=cached-remote
+						is selected.
+					--allow-custom CUSTOM-KEY-NAMES
+						By default, all custom entries set in MetaInfo input data are removed.
+						This flag allows to whitelist custom keys to be propagated to the final catalog output data.
+						The custom-key names should be provided as a comma-separated list.
+					--components COMPONENT-IDs
+						Set a comma-separated list of AppStream component IDs that should be
+						considered for the generated metadata. All components that exist in
+						the input data but are not mentioned in this list will be ignored
+						for the generated output.
+					--no-colorDon't print colored output.--verboseDisplay extra debugging information--versionDisplay the version number of appstreamcli compose<a href="re02.html#id-1.8.4.7">See Also</a>
+			appstreamcli1,
+			appstream-generator1.
+		<a href="re02.html#id-1.8.4.8">AUTHOR</a>
+	This manual page was written by Matthias Klumpp matthias@tenstral.net.
+</ol></li><li class="inactive"><a href="chap-AppStream-API.html"><span class="number">8 </span><span class="name">AppStream API Reference</span></a></li><li class="inactive"><a href="ix01.html"><span class="number"> </span><span class="name">Index</span></a></li></ol></div><div class="clearme"></div></div></div></div><div id="_nav-area" class="inactive"><div class="tool"><span class="nav-inner"><span class="tool-label">Navigation</span><a accesskey="p" class="tool-spacer" title="Chapter 2. Upstream Metadata" href="chap-Metadata.html"><span class="prev-icon">←</span></a><a accesskey="n" class="tool-spacer" title="2.3. Desktop Applications" href="sect-Metadata-Application.html"><span class="next-icon">→</span></a></span></div></div></div></div><div id="_fixed-header-wrap" class="inactive"><div id="_fixed-header"><div class="crumbs"><a class="book-link" href="index.html" title="AppStream"><span class="book-icon">AppStream</span></a><span> › </span><a class="crumb" href="chap-Metadata.html">Upstream Metadata</a><span> › </span><a class="crumb" href="sect-Metadata-Releases.html" accesskey="c"><span class="single-contents-icon"></span>Release Information</a></div><div class="buttons"><a class="top-button button" href="#">Top</a><div class="button"><a accesskey="p" class="tool-spacer" title="Chapter 2. Upstream Metadata" href="chap-Metadata.html"><span class="prev-icon">←</span></a><a accesskey="n" class="tool-spacer" title="2.3. Desktop Applications" href="sect-Metadata-Application.html"><span class="next-icon">→</span></a></div><div class="clearme"></div></div><div class="clearme"></div></div></div><div id="_content" class=""><div class="documentation"><div class="sect1" id="sect-Metadata-Releases"><div class="titlepage"><div><div><h2 class="title" id="sect-Metadata-Releases"><span class="number">2.2 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Release Information</span> <a title="Permalink" class="permalink" href="sect-Metadata-Releases.html">#</a></h2></div></div></div><div class="sect2" id="spec-releases-introduction"><div class="titlepage"><div><div><h3 class="title" id="spec-releases-introduction"><span class="number">2.2.1 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Introduction</span> <a title="Permalink" class="permalink" href="sect-Metadata-Releases.html#spec-releases-introduction">#</a></h3></div></div></div><p>
+			This section documents the <a class="xref" href="chap-Metadata.html#tag-releases">&lt;releases/&gt;</a> tag that can be part of a <code class="literal">component</code> to provide
+			information about releases made for the respective component.
+		</p><p>
+			Alternatively to being embedded in a component metainfo file, the data may also be split into a dedicated XML file to be updated separately.
+		</p></div><div class="sect2" id="spec-releases-location"><div class="titlepage"><div><div><h3 class="title" id="spec-releases-location"><span class="number">2.2.2 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Locations</span> <a title="Permalink" class="permalink" href="sect-Metadata-Releases.html#spec-releases-location">#</a></h3></div></div></div><p>
+			Release data may be present directly in a component metainfo file, but also optionally be split out into an external metadata file.
+		</p><p>
+			If the <code class="literal">releases</code> XML is part of a metainfo file, it is embedded into it following the semantics described in the document.
+		</p><p>
+			If the <code class="literal">releases</code> XML is external, the metainfo file must contain a <a class="xref" href="chap-Metadata.html#tag-releases">&lt;releases/&gt;</a> tag with the <code class="literal">type</code>
+			property set to <code class="code">external</code> as described for component XML.
+			The data described in this section is placed in a separate XML file with <code class="literal">releases</code> being its root node.
+			The file must be installed as <code class="filename">/usr/share/metainfo/releases/%{cid}.releases.xml</code>, where <code class="code">cid</code> is the component ID of the component
+			the release information belongs to.
+		</p></div><div class="sect2" id="spec-releases-example"><div class="titlepage"><div><div><h3 class="title" id="spec-releases-example"><span class="number">2.2.3 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Example data</span> <a title="Permalink" class="permalink" href="sect-Metadata-Releases.html#spec-releases-example">#</a></h3></div></div></div><p>
+			Release information may look like this:
+		</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;releases&gt;
+  &lt;release version="1.2" date="2014-04-12" urgency="high"&gt;
+    &lt;description&gt;
+      &lt;p&gt;This stable release fixes bugs.&lt;/p&gt;
+    &lt;/description&gt;
+
+    &lt;url&gt;https://example.org/releases/version-1.2.html&lt;/url&gt;
+
+    &lt;issues&gt;
+      &lt;issue url="https://example.com/bugzilla/12345"&gt;bz#12345&lt;/issue&gt;
+      &lt;issue type="cve"&gt;CVE-2019-123456&lt;/issue&gt;
+    &lt;/issues&gt;
+
+    &lt;artifacts&gt;
+      &lt;artifact type="binary" platform="x86_64-linux-gnu"&gt;
+        &lt;location&gt;https://example.com/mytarball.bin.tar.xz&lt;/location&gt;
+        &lt;checksum type="sha256"&gt;....&lt;/checksum&gt;
+        &lt;checksum type="blake2b"&gt;....&lt;/checksum&gt;
+        &lt;size type="download"&gt;12345678&lt;/size&gt;
+        &lt;size type="installed"&gt;42424242&lt;/size&gt;
+      &lt;/artifact&gt;
+      &lt;artifact type="binary" platform="x86_64-windows-msvc"&gt;
+        &lt;location&gt;https://example.com/mytarball.bin.exe&lt;/location&gt;
+      &lt;/artifact&gt;
+      &lt;artifact type="source"&gt;
+        &lt;location&gt;https://example.com/mytarball.tar.xz&lt;/location&gt;
+        &lt;checksum type="sha256"&gt;....&lt;/checksum&gt;
+      &lt;/artifact&gt;
+    &lt;/artifacts&gt;
+  &lt;/release&gt;
+  &lt;release version="1.1" type="development" date="2013-10-20" /&gt;
+  &lt;release version="1.0" date="2012-08-26" /&gt;
+&lt;/releases&gt;</pre></div></div><div class="sect2" id="spec-releases"><div class="titlepage"><div><div><h3 class="title" id="spec-releases"><span class="number">2.2.4 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Releases tag specification</span> <a title="Permalink" class="permalink" href="sect-Metadata-Releases.html#spec-releases">#</a></h3></div></div></div><p>
+			The <code class="code">&lt;releases&gt;</code> tag contains <code class="code">&lt;release/&gt;</code> children which
+			contain metadata about individual releases of a component.
+			Each release of the software component should ideally have a <code class="code">&lt;release/&gt;</code> tag describing it,
+			but at least one <code class="literal">release</code> child is recommended to be present for the current release of the software.
+			The <code class="literal">release</code> children must be sorted in a latest-to-oldest order to simplify reading
+			the metadata file.
+		</p><p>
+			A <code class="literal">release</code> tag can have the properties <code class="literal">version</code>, <code class="literal">date</code> and <code class="literal">timestamp</code>.
+			The <code class="literal">date</code> property can have any time in <a class="ulink" href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank">ISO 8601<span class="ulink-url"> (https://en.wikipedia.org/wiki/ISO_8601)</span></a> format as its value and
+			should be present for every release. At least day-level granularity is required, which means that the ISO 8601 string must contain at least a full date (e.g. 2020-08-12).
+			The <code class="literal">timestamp</code> tag contains the release time in the form of a UNIX epoch. This tag should not be used in metainfo files in newly
+			written metadata, but will still be parsed in case it is present. The <code class="literal">timestamp</code> property is mainly used in generated distro-metadata.
+			In case both release-time tags are present, the <code class="literal">timestamp</code> tag will take precedence over <code class="literal">date</code>.
+		</p><p>
+			The algorithm used for comparing release version numbers is described at <a class="xref" href="chap-AppStream-Misc.html#sect-AppStream-Misc-VerCmp" title="4.1. Version Comparison Algorithm">Section 4.1, “Version Comparison Algorithm”</a>.
+		</p><p>
+			A <code class="literal">release</code> tag may also have a <code class="literal">date_eol</code> property that denotes the date when the release stops to receive
+			support from the software developers (end-of-life). Its value can be any complete date or time in <a class="ulink" href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank">ISO 8601<span class="ulink-url"> (https://en.wikipedia.org/wiki/ISO_8601)</span></a>.
+		</p><p>
+			Optionally, the <code class="code">&lt;release/&gt;</code> tag may also have an <code class="literal">urgency</code> property, having one of the following values:
+		</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="literal">low</code></p></li><li class="listitem"><p><code class="literal">medium</code></p></li><li class="listitem"><p><code class="literal">high</code></p></li><li class="listitem"><p><code class="literal">critical</code></p></li></ul></div><p>
+			The <code class="literal">urgency</code> defines how important it is to install the new release as an update. This is especially important for <code class="literal">type=firmware</code>
+			components.
+			If no urgency is defined, a <code class="code">medium</code> urgency is implicitly assumed.
+			The urgency defines how the update will be presented to the user, and sometimes if it will be installed automatically and immediately, or delayed.
+		</p><p>
+			A <code class="literal">release</code> tag may have a <code class="literal">type</code> property
+			to classify releases with one of the following values:
+		</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem"><p><code class="literal">stable</code></p></li><li class="listitem"><p><code class="literal">development</code></p></li><li class="listitem"><p><code class="literal">snapshot</code></p></li></ul></div><p>
+			By default, if no release type is defined, <code class="code">stable</code> is assumed.
+			A software displaying a listing of releases should only show stable releases and
+			discard any development release if the current version is itself stable. It can
+			show both <code class="code">stable</code> and <code class="code">development</code> versions when
+			development versions of the software are also distributed.
+			Instead, a <code class="code">snapshot</code> release identifies an automated snapshot of
+			the current development status. It should not be shown unless instructed to.
+		</p><p>
+			The <code class="literal">release</code> itself may have the following children:
+		</p><div class="variablelist"><dl class="variablelist"><dt id="tag-release-description"><span class="term">&lt;description/&gt;</span> <a title="Permalink" class="permalink" href="sect-Metadata-Releases.html#tag-release-description">#</a></dt><dd><p>
+					A <code class="literal">description</code> tag contains a brief description of what is new in the release.
+					The intended audience of the description are the users of the component (who are typically not developers), and so the description should mention only the user visible changes in the release.
+					The <code class="literal">description</code> tag supports child tags as described in <a class="xref" href="chap-Metadata.html#tag-description">&lt;description/&gt;</a>.
+				</p><p>
+					Descriptions must not contain embedded web links to issue trackers or bug reports, as these typically make no sense to users.
+					If particular issues need to be highlighted (for example, CVEs fixed in this release), they should be listed in the <code class="literal">issues</code> tag.
+				</p></dd><dt id="tag-release-url"><span class="term">&lt;url/&gt;</span> <a title="Permalink" class="permalink" href="sect-Metadata-Releases.html#tag-release-url">#</a></dt><dd><p>
+					The <code class="literal">url</code> tag must point to a web location containing additional information (usually
+					detailed release notes) about this particular release.
+					The <code class="literal">url</code> tag may have a <code class="literal">type</code> property with <code class="code">details</code> as the only currently
+					allowed value. If the <code class="literal">type</code> is missing, a URL type of <code class="code">details</code> is implicitly assumed.
+				</p></dd><dt id="tag-release-issues"><span class="term">&lt;issues/&gt;</span> <a title="Permalink" class="permalink" href="sect-Metadata-Releases.html#tag-release-issues">#</a></dt><dd><p>
+					The <code class="literal">issues</code> tag contains <code class="literal">issue</code> children defining issues resolved by this release.
+					It is used most commonly to mention <a class="ulink" href="https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures" target="_blank">CVE<span class="ulink-url"> (https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures)</span></a> IDs.
+					Software which is interpreting the release notes for the component should present the list of issues separately from the release description. They should not be thought of as a bullet-point list of issues which follow straight on in prose from the <code class="literal">description</code> element’s value.
+				</p><p>
+					The value of an <code class="literal">issue</code> tag must be the bug number, ticket name, or CVE ID and is typically displayed to the user, but may also in case of CVE IDs be read by
+					machines. The content of an <code class="literal">issue</code> element is not translatable, but can be a string appropriate for the project's bug tracker.
+				</p><p>
+					The <code class="literal">issue</code> tag may have a <code class="literal">type</code> property, which should have a value of <code class="literal">generic</code> or <code class="literal">cve</code>.
+					If the <code class="literal">type</code> property is missing, a type of <code class="literal">generic</code> is assumed.
+				</p><p>
+					It may also have a <code class="literal">url</code> property, which should be a URL for a details page on the respective issue.
+				</p><p>
+					If <code class="literal">type</code> is <code class="literal">cve</code>, the element’s value must be a CVE ID in the <a class="ulink" href="https://www.cve.org/About/Process#cve-id" target="_blank">format defined by MITRE<span class="ulink-url"> (https://www.cve.org/About/Process#cve-id)</span></a>.
+					For example, <code class="literal">CVE-2023-12345</code>. Software consuming the release data of a component should be able to append the element’s value to <code class="literal">https://nvd.nist.gov/vuln/detail/</code> to get a page of information about the CVE.
+					If a <code class="literal">url</code> property is given, its value overrides any URL constructed from the CVE identifier.
+					The <code class="literal">url</code> property is optional if <code class="literal">type</code> is <code class="literal">cve</code>.
+				</p><p>
+					For example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;issue url="https://example.com/bugzilla/12345"&gt;bz#12345&lt;/issue&gt;</pre></div><p>
+					If <code class="literal">type</code> is <code class="literal">generic</code> or unspecified, the element’s value is a free-form issue identifier, and the <code class="literal">url</code> property must be specified.
+					The issue identifier should be shorthand for an issue in the project’s bug tracker, and it does not have to be globally unique. It should be human readable, but does not have to be appropriate for non-technical audiences.
+				</p><p>
+					For example:
+				</p><div class="verbatim-wrap highlight XML"><pre class="programlisting">&lt;issues&gt;
+  &lt;issue type="cve"&gt;CVE-2021-28153&lt;/issue&gt;
+  &lt;issue url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-27218"&gt;CVE-2021-27218&lt;/issue&gt;
+&lt;/issues&gt;</pre></div></dd><dt id="tag-release-artifacts"><span class="term">&lt;artifacts/&gt;</span> <a title="Permalink" class="permalink" href="sect-Metadata-Releases.html#tag-release-artifacts">#</a></dt><dd><p>
+					The <code class="literal">artifacts</code> child tag contains information about downloadable release artifacts.
+					It itself contains the artifacts as <code class="literal">artifact</code> children.
+					Each artifact tag must have a <code class="literal">type</code> property with the value of either <code class="code">binary</code> or <code class="code">source</code> to indicate whether the
+					artifact is the releases' source-code or a binary distribution.
+				</p><p>
+					In case of a <code class="code">binary</code> type, an optional <code class="literal">platform</code> property may
+					also be set, containing a platform triplet (also known as normalized GNU triplet), such as <code class="code">x86_64-linux-gnu</code>. Refer to
+					<a class="ulink" href="https://wiki.debian.org/Multiarch/Tuples#Used_solution" target="_blank">Debian multiarch tuples<span class="ulink-url"> (https://wiki.debian.org/Multiarch/Tuples#Used_solution)</span></a> for more information on normalized GNU triplets, and
+					<a class="ulink" href="https://github.com/ximion/appstream/blob/master/data/platforms.yml" target="_blank">AppStream's platforms.yml<span class="ulink-url"> (https://github.com/ximion/appstream/blob/master/data/platforms.yml)</span></a> for the triplet parts AppStream currently recognizes.
+					Note that AppStream only supports strictly three-part triplets in the form of <code class="code">arch-oskernel-osenvironment</code>. Parts of the triplets which do not apply can be
+					replaced with <code class="code">any</code>.
+				</p><p>
+					Binary artifacts may also have a <code class="literal">bundle</code> property to indicate the bundling system the binary distribution is made for. Refer to
+					the bundle types in <a class="xref" href="chap-CatalogData.html#tag-ct-bundle">&lt;bundle/&gt;</a> for a list of possible values.
+					Each <code class="literal">artifact</code> can have a number of children:
+				</p><div class="variablelist"><dl class="variablelist"><dt id="id-1.3.7.5.13.4.2.4.1"><span class="term">location</span></dt><dd><p>
+							Each artifact must have a <code class="literal">location</code> child, denoting the web location (HTTP or HTTPS) where it can be downloaded from.
+							Multiple location tags are allowed to make it possible to have mirror options to download the same artifact from.
+						</p></dd><dt id="id-1.3.7.5.13.4.2.4.2"><span class="term">checksum</span></dt><dd><p>
+							At least one <code class="literal">checksum</code> child must be present to contain the checksum of the released artifact.
+							The <code class="code">&lt;checksum/&gt;</code> tag has a <code class="code">type</code> attribute, containing the name of the hash function that was used to create it.
+							Currently aupported values (and hash sums) are: <code class="literal">sha1</code>, <code class="literal">sha256</code>, <code class="literal">sha512</code>,
+							<code class="literal">blake2b</code> and <code class="literal">blake3</code>.
+							For most purposes (on 64-bit machines), using <a class="ulink" href="https://blake2.net" target="_blank">BLAKE2b<span class="ulink-url"> (https://blake2.net)</span></a> via <code class="command">cksum -ablake2b [FILE]</code>
+							from GNU Coreutils is a good choice.
+						</p></dd><dt id="id-1.3.7.5.13.4.2.4.3"><span class="term">size</span></dt><dd><p>
+							One or multiple <code class="literal">size</code> tags may also be present, which define the installed and download size
+							of this component release artifact.
+							The size type is defined via a <code class="literal">type</code> property on the <code class="literal">size</code> tag, and may assume the value
+							<code class="code">download</code> or <code class="code">installed</code>.
+							The size itself is set as the value and must be given in bytes.
+						</p></dd><dt id="id-1.3.7.5.13.4.2.4.4"><span class="term">filename</span></dt><dd><p>
+							An artifact may have a <code class="literal">filename</code> child, containing a non-absolute filename that the artifact may be stored under. The file name is only a naming hint and
+							applications are not required to follow it when downloading the file. If no <code class="literal">filename</code> tag is present, a file name may be generated from the artifact
+							<code class="literal">location</code> URL.
+							This tag must only appear once.
+						</p></dd></dl></div></dd><dt id="tag-release-tags"><span class="term">&lt;tags/&gt;</span> <a title="Permalink" class="permalink" href="sect-Metadata-Releases.html#tag-release-tags">#</a></dt><dd><p>
+					The <code class="literal">tags</code> element can be used to tag releases with user-defined tags.
+					It follows the same semantics as the one for components, as described in <a class="xref" href="chap-Metadata.html#tag-tags">&lt;tags/&gt;</a>.
+				</p></dd></dl></div></div></div></div><div class="page-bottom"><div id="_bottom-navigation"><a class="nav-link" href="sect-Metadata-Application.html"><span class="next-icon">→</span><span class="nav-label">Desktop Applications</span></a><a class="nav-link" href="chap-Metadata.html"><span class="prev-icon">←</span><span class="nav-label"><span class="number">Chapter 2 </span>Upstream Metadata</span></a></div></div></div><div id="_inward"></div></div><div id="_footer-wrap"><div id="_footer"><p>©
+        2024 
+        Freedesktop.org, the AppStream Project</p></div></div></body></html>

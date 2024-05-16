@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -25,33 +25,33 @@
 
 G_BEGIN_DECLS
 
-gint			ascli_validate_files (gchar **argv,
-						gint argc,
-						gboolean explain,
-						gboolean pedantic,
-						gboolean validate_strict,
-						gboolean use_net,
-						const gchar *overrides_str);
-gint			ascli_validate_files_format (gchar **argv,
-							gint argc,
-							const gchar *format,
-							gboolean validate_strict,
-							gboolean use_net,
-							const gchar *overrides_str);
+gint ascli_validate_files (gchar      **argv,
+			   gint		argc,
+			   gboolean	explain,
+			   gboolean	pedantic,
+			   gboolean	validate_strict,
+			   gboolean	use_net,
+			   const gchar *overrides_str);
+gint ascli_validate_files_format (gchar	     **argv,
+				  gint	       argc,
+				  const gchar *format,
+				  gboolean     validate_strict,
+				  gboolean     use_net,
+				  const gchar *overrides_str);
 
-gint			ascli_validate_tree (const gchar *root_dir,
-						gboolean explain,
-						gboolean pedantic,
-						gboolean validate_strict,
-						gboolean use_net,
-						const gchar *overrides_str);
-gint			ascli_validate_tree_format (const gchar *root_dir,
-						    const gchar *format,
-						    gboolean validate_strict,
-						    gboolean use_net,
-						    const gchar *overrides_str);
+gint ascli_validate_tree (const gchar *root_dir,
+			  gboolean     explain,
+			  gboolean     pedantic,
+			  gboolean     validate_strict,
+			  gboolean     use_net,
+			  const gchar *overrides_str);
+gint ascli_validate_tree_format (const gchar *root_dir,
+				 const gchar *format,
+				 gboolean     validate_strict,
+				 gboolean     use_net,
+				 const gchar *overrides_str);
 
-gint			ascli_check_license (const gchar *license);
+gint ascli_check_license (const gchar *license);
 
 G_END_DECLS
 

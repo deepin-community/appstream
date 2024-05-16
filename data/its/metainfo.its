@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  Copyright (C) 2015-2022 Matthias Klumpp <matthias@tenstral.net>
+  Copyright (C) 2015-2024 Matthias Klumpp <matthias@tenstral.net>
   Copyright (C) 2019 Takao Fujiwara <takao.fujiwara1@gmail.com>
 
   SPDX-License-Identifier: FSFAP
@@ -13,6 +13,7 @@
                                /component/summary |
                                /component/description |
                                /component/developer_name |
+                               /component/developer/name |
                                /component/name_variant_suffix |
                                /component/keywords/keyword |
                                /component/screenshots/screenshot/caption |
@@ -28,11 +29,16 @@
                      translate="no"/>
   <its:translateRule selector="/component/developer_name[@translate = 'no']"
                      translate="no"/>
+  <its:translateRule selector="/component/developer/name[@translate = 'no']"
+                     translate="no"/>
   <its:translateRule selector="/component/name_variant_suffix[@translate = 'no']"
                      translate="no"/>
   <its:translateRule selector="/component/keywords/keyword[@translate = 'no']"
                      translate="no"/>
   <its:translateRule selector="/component/releases/release/description[@translate = 'no']"
+                     translate="no"/>
+  <its:translateRule selector="/component/agreement/agreement_section/name[@translate = 'no'] |
+                               /component/agreement/agreement_section/description[@translate = 'no']"
                      translate="no"/>
 
   <!-- Release metadata -->
@@ -42,11 +48,4 @@
   <its:translateRule selector="/releases/release/description[@translate = 'no']"
                      translate="no"/>
 
-  <!-- DEPRECATED -->
-  <its:translateRule selector="/component/name[@translatable = 'no']"
-                     translate="no"/>
-  <its:translateRule selector="/component/developer_name[@translatable = 'no']"
-                     translate="no"/>
-  <its:translateRule selector="/component/releases/release/description[@translatable = 'no']"
-                     translate="no"/>
 </its:rules>

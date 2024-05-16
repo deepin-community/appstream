@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -30,17 +30,19 @@
 
 #include "as-validator-issue.h"
 
-typedef struct
-{
-	gchar		*tag;
-	AsIssueSeverity	severity;
+#include "as-macros-private.h"
+#include "as-utils-private.h"
 
-	gchar		*hint;
-	gchar		*explanation;
+typedef struct {
+	gchar *tag;
+	AsIssueSeverity severity;
 
-	gchar		*fname;
-	gchar		*cid;
-	glong		line;
+	gchar *hint;
+	gchar *explanation;
+
+	gchar *fname;
+	gchar *cid;
+	glong line;
 } AsValidatorIssuePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AsValidatorIssue, as_validator_issue, G_TYPE_OBJECT)
@@ -78,7 +80,7 @@ as_issue_severity_from_string (const gchar *str)
  * Returns: string version of @severity
  *
  **/
-const gchar*
+const gchar *
 as_issue_severity_to_string (AsIssueSeverity severity)
 {
 	if (severity == AS_ISSUE_SEVERITY_ERROR)
@@ -142,7 +144,7 @@ as_validator_issue_class_init (AsValidatorIssueClass *klass)
  *
  * Since: 0.12.8
  **/
-const gchar*
+const gchar *
 as_validator_issue_get_tag (AsValidatorIssue *issue)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
@@ -162,8 +164,7 @@ void
 as_validator_issue_set_tag (AsValidatorIssue *issue, const gchar *tag)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
-	g_free (priv->tag);
-	priv->tag = g_strdup (tag);
+	as_assign_string_safe (priv->tag, tag);
 }
 
 /**
@@ -205,7 +206,7 @@ as_validator_issue_set_severity (AsValidatorIssue *issue, AsIssueSeverity severi
  *
  * Since: 0.12.8
  **/
-const gchar*
+const gchar *
 as_validator_issue_get_hint (AsValidatorIssue *issue)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
@@ -225,8 +226,7 @@ void
 as_validator_issue_set_hint (AsValidatorIssue *issue, const gchar *hint)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
-	g_free (priv->hint);
-	priv->hint = g_strdup (hint);
+	as_assign_string_safe (priv->hint, hint);
 }
 
 /**
@@ -240,7 +240,7 @@ as_validator_issue_set_hint (AsValidatorIssue *issue, const gchar *hint)
  *
  * Since: 0.12.8
  **/
-const gchar*
+const gchar *
 as_validator_issue_get_explanation (AsValidatorIssue *issue)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
@@ -260,8 +260,7 @@ void
 as_validator_issue_set_explanation (AsValidatorIssue *issue, const gchar *explanation)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
-	g_free (priv->explanation);
-	priv->explanation = g_strdup (explanation);
+	as_assign_string_safe (priv->explanation, explanation);
 }
 
 /**
@@ -272,7 +271,7 @@ as_validator_issue_set_explanation (AsValidatorIssue *issue, const gchar *explan
  *
  * Returns: a component-id.
  **/
-const gchar*
+const gchar *
 as_validator_issue_get_cid (AsValidatorIssue *issue)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
@@ -290,8 +289,7 @@ void
 as_validator_issue_set_cid (AsValidatorIssue *issue, const gchar *cid)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
-	g_free (priv->cid);
-	priv->cid = g_strdup (cid);
+	as_assign_string_safe (priv->cid, cid);
 }
 
 /**
@@ -331,7 +329,7 @@ as_validator_issue_set_line (AsValidatorIssue *issue, glong line)
  *
  * Returns: the filename
  **/
-const gchar*
+const gchar *
 as_validator_issue_get_filename (AsValidatorIssue *issue)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
@@ -349,8 +347,7 @@ void
 as_validator_issue_set_filename (AsValidatorIssue *issue, const gchar *fname)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
-	g_free (priv->fname);
-	priv->fname = g_strdup (fname);
+	as_assign_string_safe (priv->fname, fname);
 }
 
 /**
@@ -362,7 +359,7 @@ as_validator_issue_set_filename (AsValidatorIssue *issue, const gchar *fname)
  *
  * Returns: (transfer full): the location hint as string.
  **/
-gchar*
+gchar *
 as_validator_issue_get_location (AsValidatorIssue *issue)
 {
 	AsValidatorIssuePrivate *priv = GET_PRIVATE (issue);
@@ -370,12 +367,12 @@ as_validator_issue_get_location (AsValidatorIssue *issue)
 
 	location = g_string_new ("");
 
-	if (priv->fname == NULL)
+	if (as_is_empty (priv->fname))
 		g_string_append (location, "~");
 	else
 		g_string_append (location, priv->fname);
 
-	if (priv->cid == NULL)
+	if (as_is_empty (priv->cid))
 		g_string_append (location, ":~");
 	else
 		g_string_append_printf (location, ":%s", priv->cid);
@@ -385,60 +382,6 @@ as_validator_issue_get_location (AsValidatorIssue *issue)
 	}
 
 	return g_string_free (location, FALSE);
-}
-
-/**
- * as_validator_issue_get_importance:
- * @issue: a #AsValidatorIssue instance.
- *
- * This function is deprecated and should not be used in new code.
- *
- * Returns: a #AsIssueSeverity
- **/
-AsIssueSeverity
-as_validator_issue_get_importance (AsValidatorIssue *issue)
-{
-	return as_validator_issue_get_severity (issue);
-}
-
-/**
- * as_validator_issue_set_importance:
- * @issue: a #AsValidatorIssue instance.
- * @importance: the #AsIssueSeverity.
- *
- * This function is deprecated and should not be used in new code.
- **/
-void
-as_validator_issue_set_importance (AsValidatorIssue *issue, AsIssueSeverity importance)
-{
-	as_validator_issue_set_severity (issue, importance);
-}
-
-/**
- * as_validator_issue_get_message:
- * @issue: a #AsValidatorIssue instance.
- *
- * This function is deprecated.
- *
- * Returns: the message
- **/
-const gchar*
-as_validator_issue_get_message (AsValidatorIssue *issue)
-{
-	return as_validator_issue_get_hint (issue);
-}
-
-/**
- * as_validator_issue_set_message:
- * @issue: a #AsValidatorIssue instance.
- * @message: the message text.
- *
- * This function is deprecated.
- **/
-void
-as_validator_issue_set_message (AsValidatorIssue *issue, const gchar *message)
-{
-	as_validator_issue_set_hint (issue, message);
 }
 
 /**

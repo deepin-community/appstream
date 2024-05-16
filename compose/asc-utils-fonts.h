@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -23,21 +23,20 @@
 #include <glib-object.h>
 #include <appstream.h>
 
-#include "as-settings-private.h"
+#include "as-macros-private.h"
 #include "asc-result.h"
 #include "asc-unit.h"
 #include "asc-compose.h"
 
-G_BEGIN_DECLS
-#pragma GCC visibility push(hidden)
+AS_BEGIN_PRIVATE_DECLS
 
 AS_INTERNAL_VISIBLE
-void		asc_process_fonts (AscResult *cres,
-				   AscUnit *unit,
-				   const gchar *media_export_root,
-				   const gchar *icons_export_dir,
-				   AscIconPolicy *icon_policy,
-				   AscComposeFlags flags);
+void asc_process_fonts (AscResult      *cres,
+			AscUnit	       *unit,
+			const gchar    *prefix,
+			const gchar    *media_export_root,
+			const gchar    *icons_export_dir,
+			AscIconPolicy  *icon_policy,
+			AscComposeFlags flags);
 
-#pragma GCC visibility pop
-G_END_DECLS
+AS_END_PRIVATE_DECLS

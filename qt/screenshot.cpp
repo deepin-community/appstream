@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2014 Sune Vuorela <sune@vuorela.dk>
- * Copyright (C) 2016-2019 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -30,14 +30,16 @@
 
 using namespace AppStream;
 
-class AppStream::ScreenshotData : public QSharedData {
+class AppStream::ScreenshotData : public QSharedData
+{
 public:
     ScreenshotData()
     {
         m_scr = as_screenshot_new();
     }
 
-    ScreenshotData(AsScreenshot *scr) : m_scr(scr)
+    ScreenshotData(AsScreenshot *scr)
+        : m_scr(scr)
     {
         g_object_ref(m_scr);
     }
@@ -47,7 +49,7 @@ public:
         g_object_unref(m_scr);
     }
 
-    bool operator==(const ScreenshotData& rd) const
+    bool operator==(const ScreenshotData &rd) const
     {
         return rd.m_scr == m_scr;
     }
@@ -60,28 +62,30 @@ public:
     AsScreenshot *m_scr;
 };
 
-Screenshot::Screenshot(const Screenshot& other)
+Screenshot::Screenshot(const Screenshot &other)
     : d(other.d)
-{}
+{
+}
 
 Screenshot::Screenshot()
     : d(new ScreenshotData)
-{}
+{
+}
 
 Screenshot::Screenshot(_AsScreenshot *scr)
     : d(new ScreenshotData(scr))
-{}
+{
+}
 
-Screenshot::~Screenshot()
-{}
+Screenshot::~Screenshot() { }
 
-Screenshot& Screenshot::operator=(const Screenshot& other)
+Screenshot &Screenshot::operator=(const Screenshot &other)
 {
     d = other.d;
     return *this;
 }
 
-_AsScreenshot * AppStream::Screenshot::asScreenshot() const
+_AsScreenshot *AppStream::Screenshot::cPtr() const
 {
     return d->screenshot();
 }
@@ -101,38 +105,79 @@ QString Screenshot::caption() const
     return valueWrap(as_screenshot_get_caption(d->m_scr));
 }
 
-void Screenshot::setCaption(const QString& caption, const QString& lang)
+void Screenshot::setCaption(const QString &caption, const QString &lang)
 {
-    as_screenshot_set_caption(d->m_scr, qPrintable(caption), lang.isEmpty()? NULL : qPrintable(lang));
+    as_screenshot_set_caption(d->m_scr,
+                              qPrintable(caption),
+                              lang.isEmpty() ? NULL : qPrintable(lang));
+}
+
+QString Screenshot::environment() const
+{
+    return valueWrap(as_screenshot_get_environment(d->m_scr));
+}
+
+void Screenshot::setEnvironment(const QString &guiEnvId)
+{
+    as_screenshot_set_environment(d->m_scr, qPrintable(guiEnvId));
+}
+
+static QList<Image> imagesPtrArrayToList(GPtrArray *images)
+{
+    QList<Image> res;
+
+    res.reserve(images->len);
+    for (uint i = 0; i < images->len; i++) {
+        auto img = AS_IMAGE(g_ptr_array_index(images, i));
+        res.append(Image(img));
+    }
+    return res;
 }
 
 QList<Image> Screenshot::images() const
 {
-    QList<Image> res;
+    return imagesPtrArrayToList(as_screenshot_get_images(d->m_scr));
+}
 
-    auto images = as_screenshot_get_images(d->m_scr);
-    res.reserve(images->len);
-    for (uint i = 0; i < images->len; i++) {
-        auto img = AS_IMAGE (g_ptr_array_index (images, i));
-        res.append(Image(img));
+QList<Image> Screenshot::imagesAll() const
+{
+    return imagesPtrArrayToList(as_screenshot_get_images_all(d->m_scr));
+}
+
+std::optional<Image> Screenshot::image(uint width, uint height, uint scale) const
+{
+    std::optional<Image> res;
+    auto img = as_screenshot_get_image(d->m_scr, width, height, scale);
+    if (img == nullptr)
+        return res;
+    res = Image(img);
+    return res;
+}
+
+static QList<Video> videosPtrArrayToList(GPtrArray *videos)
+{
+    QList<Video> res;
+
+    res.reserve(videos->len);
+    for (uint i = 0; i < videos->len; i++) {
+        auto vid = AS_VIDEO(g_ptr_array_index(videos, i));
+        res.append(Video(vid));
     }
     return res;
 }
 
 QList<Video> Screenshot::videos() const
 {
-    QList<Video> res;
-
-    auto videos = as_screenshot_get_videos(d->m_scr);
-    res.reserve(videos->len);
-    for (uint i = 0; i < videos->len; i++) {
-        auto vid = AS_VIDEO (g_ptr_array_index (videos, i));
-        res.append(Video(vid));
-    }
-    return res;
+    return videosPtrArrayToList(as_screenshot_get_videos(d->m_scr));
 }
 
-QDebug operator<<(QDebug s, const AppStream::Screenshot& screenshot) {
+QList<Video> Screenshot::videosAll() const
+{
+    return videosPtrArrayToList(as_screenshot_get_videos_all(d->m_scr));
+}
+
+QDebug operator<<(QDebug s, const AppStream::Screenshot &screenshot)
+{
     s.nospace() << "AppStream::Screenshot(";
     if (!screenshot.caption().isEmpty())
         s.nospace() << screenshot.caption() << ":";

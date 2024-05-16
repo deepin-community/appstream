@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -24,7 +24,6 @@
 #include <config.h>
 #include <glib/gi18n-lib.h>
 #include <glib.h>
-#include <fnmatch.h>
 
 #include "as-utils.h"
 
@@ -40,10 +39,9 @@
  * See also: #AsComponent
  */
 
-typedef struct
-{
-	AsProvidedKind	kind;
-	GPtrArray	*items;
+typedef struct {
+	AsProvidedKind kind;
+	GPtrArray *items;
 } AsProvidedPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AsProvided, as_provided, G_TYPE_OBJECT)
@@ -58,7 +56,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (AsProvided, as_provided, G_TYPE_OBJECT)
  *
  * Returns: string version of @kind
  **/
-const gchar*
+const gchar *
 as_provided_kind_to_string (AsProvidedKind kind)
 {
 	if (kind == AS_PROVIDED_KIND_LIBRARY)
@@ -71,8 +69,6 @@ as_provided_kind_to_string (AsProvidedKind kind)
 		return "font";
 	if (kind == AS_PROVIDED_KIND_MODALIAS)
 		return "modalias";
-	if (kind == AS_PROVIDED_KIND_PYTHON_2)
-		return "python2";
 	if (kind == AS_PROVIDED_KIND_PYTHON)
 		return "python";
 	if (kind == AS_PROVIDED_KIND_DBUS_SYSTEM)
@@ -109,8 +105,6 @@ as_provided_kind_from_string (const gchar *kind_str)
 		return AS_PROVIDED_KIND_FONT;
 	if (g_strcmp0 (kind_str, "modalias") == 0)
 		return AS_PROVIDED_KIND_MODALIAS;
-	if (g_strcmp0 (kind_str, "python2") == 0)
-		return AS_PROVIDED_KIND_PYTHON_2;
 	if (g_strcmp0 (kind_str, "python") == 0)
 		return AS_PROVIDED_KIND_PYTHON;
 	if (g_strcmp0 (kind_str, "dbus:system") == 0)
@@ -137,7 +131,7 @@ as_provided_kind_from_string (const gchar *kind_str)
  *
  * Returns: Pluralized, l10n string version of @kind
  **/
-const gchar*
+const gchar *
 as_provided_kind_to_l10n_string (AsProvidedKind kind)
 {
 	if (kind == AS_PROVIDED_KIND_LIBRARY)
@@ -150,8 +144,6 @@ as_provided_kind_to_l10n_string (AsProvidedKind kind)
 		return _("Fonts");
 	if (kind == AS_PROVIDED_KIND_MODALIAS)
 		return _("Modaliases");
-	if (kind == AS_PROVIDED_KIND_PYTHON_2)
-		return _("Python (Version 2)");
 	if (kind == AS_PROVIDED_KIND_PYTHON)
 		return _("Python 3");
 	if (kind == AS_PROVIDED_KIND_DBUS_SYSTEM)
@@ -249,13 +241,13 @@ as_provided_has_item (AsProvided *prov, const gchar *item)
 	guint i;
 
 	for (i = 0; i < priv->items->len; i++) {
-		const gchar *pitem = (const gchar*) g_ptr_array_index (priv->items, i);
+		const gchar *pitem = (const gchar *) g_ptr_array_index (priv->items, i);
 		if (g_strcmp0 (pitem, item) == 0)
 			return TRUE;
 
 		/* modalias entries may provide wildcards, we match them by default */
 		if (priv->kind == AS_PROVIDED_KIND_MODALIAS) {
-			if (fnmatch (pitem, item, FNM_NOESCAPE) == 0)
+			if (g_pattern_match_simple (pitem, item))
 				return TRUE;
 		}
 	}
@@ -271,7 +263,7 @@ as_provided_has_item (AsProvided *prov, const gchar *item)
  *
  * Returns: (transfer none) (element-type utf8): An string list of provided items.
  */
-GPtrArray*
+GPtrArray *
 as_provided_get_items (AsProvided *prov)
 {
 	AsProvidedPrivate *priv = GET_PRIVATE (prov);
@@ -298,7 +290,7 @@ as_provided_add_item (AsProvided *prov, const gchar *item)
  *
  * Returns: (transfer full): a #AsProvided
  **/
-AsProvided*
+AsProvided *
 as_provided_new (void)
 {
 	AsProvided *prov;

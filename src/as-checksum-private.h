@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -28,21 +28,11 @@
 G_BEGIN_DECLS
 #pragma GCC visibility push(hidden)
 
-gboolean	as_checksum_load_from_xml (AsChecksum *cs,
-					AsContext *ctx,
-					xmlNode *node,
-					GError **error);
-void		as_checksum_to_xml_node (AsChecksum *cs,
-				       AsContext *ctx,
-				       xmlNode *root);
+gboolean as_checksum_load_from_xml (AsChecksum *cs, AsContext *ctx, xmlNode *node, GError **error);
+void	 as_checksum_to_xml_node (AsChecksum *cs, AsContext *ctx, xmlNode *root);
 
-gboolean	as_checksum_load_from_yaml (AsChecksum *cs,
-					    AsContext *ctx,
-					    GNode *node,
-					    GError **error);
-void		as_checksum_emit_yaml (AsChecksum *cs,
-					AsContext *ctx,
-					yaml_emitter_t *emitter);
+gboolean as_checksum_load_from_yaml (AsChecksum *cs, AsContext *ctx, GNode *node, GError **error);
+void	 as_checksum_emit_yaml (AsChecksum *cs, AsContext *ctx, yaml_emitter_t *emitter);
 
 #pragma GCC visibility pop
 G_END_DECLS

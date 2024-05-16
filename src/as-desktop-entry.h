@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -30,29 +30,29 @@
 G_BEGIN_DECLS
 #pragma GCC visibility push(hidden)
 
-typedef GPtrArray* (*AsTranslateDesktopTextFn)(const GKeyFile *de,
-					       const gchar *text,
-					       gpointer user_data);
+typedef GPtrArray *(*AsTranslateDesktopTextFn) (const GKeyFile *de,
+						const gchar    *text,
+						gpointer	user_data);
 
 AS_INTERNAL_VISIBLE
-gboolean	as_desktop_entry_parse_data (AsComponent *cpt,
-					     const gchar *data,
-					     gssize data_len,
-					     AsFormatVersion fversion,
-					     gboolean ignore_nodisplay,
-					     GPtrArray *issues,
-					     AsTranslateDesktopTextFn de_l10n_fn,
-					     gpointer user_data,
-					     GError **error);
+gboolean	       as_desktop_entry_parse_data (AsComponent		    *cpt,
+						    const gchar		    *data,
+						    gssize		     data_len,
+						    AsFormatVersion	     fversion,
+						    gboolean		     ignore_nodisplay,
+						    GPtrArray		    *issues,
+						    AsTranslateDesktopTextFn de_l10n_fn,
+						    gpointer		     user_data,
+						    GError		   **error);
 
-gboolean	as_desktop_entry_parse_file (AsComponent *cpt,
-					     GFile *file,
-					     AsFormatVersion fversion,
-					     gboolean ignore_nodisplay,
-					     GPtrArray *issues,
-					     AsTranslateDesktopTextFn de_l10n_fn,
-					     gpointer user_data,
-					     GError **error);
+gboolean	       as_desktop_entry_parse_file (AsComponent		    *cpt,
+						    GFile		    *file,
+						    AsFormatVersion	     fversion,
+						    gboolean		     ignore_nodisplay,
+						    GPtrArray		    *issues,
+						    AsTranslateDesktopTextFn de_l10n_fn,
+						    gpointer		     user_data,
+						    GError		   **error);
 
 #pragma GCC visibility pop
 G_END_DECLS

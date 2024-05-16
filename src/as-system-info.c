@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2022-2023 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2022-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -39,13 +39,17 @@
 
 #include <gio/gio.h>
 #include <errno.h>
+#ifdef G_OS_WIN32
+#include <windows.h>
+#else
 #include <sys/utsname.h>
+#endif
 #include <dirent.h>
-#include <fnmatch.h>
+#include <glib.h>
 
 #if defined(__linux__)
 #include <sys/sysinfo.h>
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #endif
@@ -58,31 +62,31 @@
 
 #define MB_IN_BYTES (1024 * 1024)
 
-typedef struct
-{
-	gchar		*os_id;
-	gchar		*os_cid;
-	gchar		*os_name;
-	gchar		*os_version;
-	gchar		*os_homepage;
+typedef struct {
+	gchar *os_id;
+	gchar *os_cid;
+	gchar *os_name;
+	gchar *os_version;
+	gchar *os_homepage;
 
-	gchar		*kernel_name;
-	gchar		*kernel_version;
+	gchar *kernel_name;
+	gchar *kernel_version;
 
-	gulong		memory_total;
+	gulong memory_total;
 
-	GPtrArray	*modaliases;
-	GHashTable	*modalias_to_sysfs;
+	GPtrArray *modaliases;
+	GHashTable *modalias_to_sysfs;
 
-	gboolean	inputs_scanned;
-	guint		input_controls;
-	guint		tested_input_controls;
+	gboolean inputs_scanned;
+	guint input_controls;
+	guint tested_input_controls;
 
-	gulong		display_length_shortest;
-	gulong		display_length_longest;
+	gboolean has_gui;
+	gulong display_length_shortest;
+	gulong display_length_longest;
 
 #ifdef HAVE_SYSTEMD
-	sd_hwdb		*hwdb;
+	sd_hwdb *hwdb;
 #endif
 } AsSystemInfoPrivate;
 
@@ -98,14 +102,70 @@ G_DEFINE_TYPE_WITH_PRIVATE (AsSystemInfo, as_system_info, G_TYPE_OBJECT)
  **/
 G_DEFINE_QUARK (as-system-info-error-quark, as_system_info_error)
 
+/**
+ * as_chassis_kind_to_string:
+ * @kind: the #AsChassisKind.
+ *
+ * Converts the enumerated value to a text representation.
+ *
+ * Returns: string version of @kind
+ *
+ * Since: 1.0.0
+ **/
+const gchar *
+as_chassis_kind_to_string (AsChassisKind kind)
+{
+	if (kind == AS_CHASSIS_KIND_DESKTOP)
+		return "desktop";
+	if (kind == AS_CHASSIS_KIND_LAPTOP)
+		return "laptop";
+	if (kind == AS_CHASSIS_KIND_SERVER)
+		return "server";
+	if (kind == AS_CHASSIS_KIND_TABLET)
+		return "tablet";
+	if (kind == AS_CHASSIS_KIND_HANDSET)
+		return "handset";
+
+	return "unknown";
+}
+
+/**
+ * as_chassis_kind_from_string:
+ * @kind_str: the string.
+ *
+ * Converts the text representation to an enumerated value.
+ *
+ * Returns: a #AsChassisKind or %AS_CHASSIS_KIND_UNKNOWN for unknown
+ *
+ * Since: 1.0.0
+ **/
+AsChassisKind
+as_chassis_kind_from_string (const gchar *kind_str)
+{
+	if (as_str_equal0 (kind_str, "desktop"))
+		return AS_CHASSIS_KIND_DESKTOP;
+	if (as_str_equal0 (kind_str, "laptop"))
+		return AS_CHASSIS_KIND_LAPTOP;
+	if (as_str_equal0 (kind_str, "server"))
+		return AS_CHASSIS_KIND_SERVER;
+	if (as_str_equal0 (kind_str, "tablet"))
+		return AS_CHASSIS_KIND_TABLET;
+	if (as_str_equal0 (kind_str, "handset"))
+		return AS_CHASSIS_KIND_HANDSET;
+
+	return AS_CHASSIS_KIND_UNKNOWN;
+}
+
 static void
 as_system_info_init (AsSystemInfo *sysinfo)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
 
 	priv->modaliases = g_ptr_array_new ();
-	priv->modalias_to_sysfs = g_hash_table_new_full (g_str_hash, g_str_equal,
-							 g_free, g_free);
+	priv->modalias_to_sysfs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+
+	/* we assume a GUI is present by default */
+	priv->has_gui = TRUE;
 }
 
 static void
@@ -172,17 +232,19 @@ as_system_info_load_os_release (AsSystemInfo *sysinfo, const gchar *os_release_f
 		fis = g_file_read (f, NULL, &error);
 		if (error != NULL) {
 			g_warning ("Unable to read file '%s': %s",
-				   os_release_fname, error->message);
+				   os_release_fname,
+				   error->message);
 			return;
 		}
-		dis = g_data_input_stream_new ((GInputStream*) fis);
+		dis = g_data_input_stream_new ((GInputStream *) fis);
 
 		while ((line = g_data_input_stream_read_line (dis, NULL, NULL, &error)) != NULL) {
 			g_auto(GStrv) data = NULL;
 			g_autofree gchar *dvalue = NULL;
 			if (error != NULL) {
 				g_warning ("Unable to read line in file '%s': %s",
-					   os_release_fname, error->message);
+					   os_release_fname,
+					   error->message);
 				g_free (line);
 				return;
 			}
@@ -196,7 +258,7 @@ as_system_info_load_os_release (AsSystemInfo *sysinfo, const gchar *os_release_f
 			dvalue = g_strdup (data[1]);
 			if (g_str_has_prefix (dvalue, "\"")) {
 				gchar *tmp;
-				tmp = g_strndup (dvalue + 1, strlen(dvalue) - 2);
+				tmp = g_strndup (dvalue + 1, strlen (dvalue) - 2);
 				g_free (dvalue);
 				dvalue = tmp;
 			}
@@ -231,7 +293,7 @@ as_system_info_load_os_release (AsSystemInfo *sysinfo, const gchar *os_release_f
  *
  * Returns: the current OS ID.
  */
-const gchar*
+const gchar *
 as_system_info_get_os_id (AsSystemInfo *sysinfo)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
@@ -247,7 +309,7 @@ as_system_info_get_os_id (AsSystemInfo *sysinfo)
  *
  * Returns: the component ID of the current OS.
  */
-const gchar*
+const gchar *
 as_system_info_get_os_cid (AsSystemInfo *sysinfo)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
@@ -274,7 +336,7 @@ as_system_info_get_os_cid (AsSystemInfo *sysinfo)
  *
  * Returns: the name of the current OS.
  */
-const gchar*
+const gchar *
 as_system_info_get_os_name (AsSystemInfo *sysinfo)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
@@ -290,7 +352,7 @@ as_system_info_get_os_name (AsSystemInfo *sysinfo)
  *
  * Returns: the version of the current OS.
  */
-const gchar*
+const gchar *
 as_system_info_get_os_version (AsSystemInfo *sysinfo)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
@@ -306,7 +368,7 @@ as_system_info_get_os_version (AsSystemInfo *sysinfo)
  *
  * Returns: the homepage of the current OS.
  */
-const gchar*
+const gchar *
 as_system_info_get_os_homepage (AsSystemInfo *sysinfo)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
@@ -320,6 +382,9 @@ as_system_info_get_os_homepage (AsSystemInfo *sysinfo)
 static void
 as_system_info_read_kernel_details (AsSystemInfo *sysinfo)
 {
+#ifdef G_OS_WIN32
+	g_warning ("Reading Windows version is not supported");
+#else
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
 	struct utsname utsbuf;
 	gchar *tmp;
@@ -328,8 +393,7 @@ as_system_info_read_kernel_details (AsSystemInfo *sysinfo)
 		return;
 
 	if (uname (&utsbuf) != 0) {
-		g_warning ("Unable to read kernel information via uname: %s",
-			   g_strerror (errno));
+		g_warning ("Unable to read kernel information via uname: %s", g_strerror (errno));
 		return;
 	}
 
@@ -341,6 +405,7 @@ as_system_info_read_kernel_details (AsSystemInfo *sysinfo)
 
 	g_free (priv->kernel_version);
 	priv->kernel_version = g_strdup (utsbuf.release);
+#endif
 }
 
 /**
@@ -351,7 +416,7 @@ as_system_info_read_kernel_details (AsSystemInfo *sysinfo)
  *
  * Returns: the current OS kernel name
  */
-const gchar*
+const gchar *
 as_system_info_get_kernel_name (AsSystemInfo *sysinfo)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
@@ -367,7 +432,7 @@ as_system_info_get_kernel_name (AsSystemInfo *sysinfo)
  *
  * Returns: the current kernel version
  */
-const gchar*
+const gchar *
 as_system_info_get_kernel_version (AsSystemInfo *sysinfo)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
@@ -405,10 +470,34 @@ as_get_physical_memory_total (void)
 	if (si.mem_unit > 0)
 		return (si.totalram * si.mem_unit) / MB_IN_BYTES;
 	return 0;
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
 	unsigned long physmem;
-	sysctl ((int[]){ CTL_HW, HW_PHYSMEM }, 2, &physmem, &(size_t){ sizeof (physmem) }, NULL, 0);
+	size_t len = sizeof (physmem);
+	int mib[2] = { CTL_HW, HW_PHYSMEM };
+
+	if (sysctl (mib, 2, &physmem, &len, NULL, 0) == -1) {
+		g_warning ("Unable to determine physical memory size: %s", g_strerror (errno));
+		return 0;
+	}
 	return physmem / MB_IN_BYTES;
+#elif defined(__APPLE__)
+	unsigned long physmem;
+	size_t len = sizeof (physmem);
+	/* macOS needs HW_MEMSIZE, as HW_PHYSMEM contrary to its name will not give
+	 * the physical memory size but available memory size */
+	int mib[2] = { CTL_HW, HW_MEMSIZE };
+
+	if (sysctl (mib, 2, &physmem, &len, NULL, 0) == -1) {
+		g_warning ("Unable to determine physical memory size: %s", g_strerror (errno));
+		return 0;
+	}
+	return physmem / MB_IN_BYTES;
+#elif defined(G_OS_WIN32)
+	MEMORYSTATUSEX statex;
+
+	statex.dwLength = sizeof (statex);
+	GlobalMemoryStatusEx (&statex);
+	return statex.ullTotalPhys / (1024 * 1024);
 #else
 #error "Implementation of as_get_physical_memory_total() missing for this OS."
 #endif
@@ -447,6 +536,7 @@ as_system_info_set_memory_total (AsSystemInfo *sysinfo, gulong size_mib)
 	priv->memory_total = size_mib;
 }
 
+#if defined(__linux__)
 /**
  * as_system_info_populate_modaliases_map_cb:
  */
@@ -463,34 +553,49 @@ as_system_info_populate_modaliases_map_cb (AsSystemInfo *sysinfo, const gchar *r
 				continue;
 
 			if (ent->d_type == DT_DIR) {
-				g_autofree gchar *subdir_path = g_build_filename (root_path, ent->d_name, NULL);
-				if (!as_str_equal0 (ent->d_name, ".") && !as_str_equal0 (ent->d_name, ".."))
-					as_system_info_populate_modaliases_map_cb (sysinfo, subdir_path);
+				g_autofree gchar *subdir_path = g_build_filename (root_path,
+										  ent->d_name,
+										  NULL);
+				if (!as_str_equal0 (ent->d_name, ".") &&
+				    !as_str_equal0 (ent->d_name, ".."))
+					as_system_info_populate_modaliases_map_cb (sysinfo,
+										   subdir_path);
 			} else {
 				if (as_str_equal0 (ent->d_name, "modalias")) {
 					gchar *contents = NULL;
 					g_autoptr(GError) read_error = NULL;
-					g_autofree gchar *path = g_build_filename (root_path, ent->d_name, NULL);
+					g_autofree gchar *path = g_build_filename (root_path,
+										   ent->d_name,
+										   NULL);
 
-					if (!g_file_get_contents (path, &contents, NULL, &read_error)) {
-						g_warning ("Error while reading modalias file %s: %s", path, read_error->message);
+					if (!g_file_get_contents (path,
+								  &contents,
+								  NULL,
+								  &read_error)) {
+						g_warning (
+						    "Error while reading modalias file %s: %s",
+						    path,
+						    read_error->message);
 						closedir (dir);
 						return FALSE;
 					}
 					contents = as_strstripnl (contents);
 					g_hash_table_insert (priv->modalias_to_sysfs,
-								contents,
-								g_path_get_dirname (path));
+							     contents,
+							     g_path_get_dirname (path));
 				}
 			}
 		}
 		closedir (dir);
 	} else {
-		g_warning ("Error while searching for modalias entries in %s: %s", root_path, g_strerror (errno));
+		g_warning ("Error while searching for modalias entries in %s: %s",
+			   root_path,
+			   g_strerror (errno));
 	}
 
 	return TRUE;
 }
+#endif
 
 /**
  * as_system_info_populate_modaliases:
@@ -498,6 +603,7 @@ as_system_info_populate_modaliases_map_cb (AsSystemInfo *sysinfo, const gchar *r
 static void
 as_system_info_populate_modaliases (AsSystemInfo *sysinfo)
 {
+#if defined(__linux__)
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
 	GHashTableIter ht_iter;
 	gpointer ht_key;
@@ -510,6 +616,7 @@ as_system_info_populate_modaliases (AsSystemInfo *sysinfo)
 	g_hash_table_iter_init (&ht_iter, priv->modalias_to_sysfs);
 	while (g_hash_table_iter_next (&ht_iter, &ht_key, NULL))
 		g_ptr_array_add (priv->modaliases, ht_key);
+#endif
 }
 
 /**
@@ -520,7 +627,7 @@ as_system_info_populate_modaliases (AsSystemInfo *sysinfo)
  *
  * Returns: (transfer none) (element-type utf8): a list of modaliases on the system.
  */
-GPtrArray*
+GPtrArray *
 as_system_info_get_modaliases (AsSystemInfo *sysinfo)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
@@ -537,7 +644,7 @@ as_system_info_get_modaliases (AsSystemInfo *sysinfo)
  *
  * Returns: the syspath, or %NULL if none was found.
  */
-const gchar*
+const gchar *
 as_system_info_modalias_to_syspath (AsSystemInfo *sysinfo, const gchar *modalias)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
@@ -561,11 +668,11 @@ as_system_info_has_device_matching_modalias (AsSystemInfo *sysinfo, const gchar 
 	as_system_info_populate_modaliases (sysinfo);
 
 	for (guint i = 0; i < priv->modaliases->len; i++) {
-		const gchar *modalias = (const gchar*) g_ptr_array_index (priv->modaliases, i);
+		const gchar *modalias = (const gchar *) g_ptr_array_index (priv->modaliases, i);
 		if (g_strcmp0 (modalias, modalias_glob) == 0)
 			return TRUE;
 
-		if (fnmatch (modalias, modalias_glob, FNM_NOESCAPE) == 0)
+		if (g_pattern_match_simple (modalias_glob, modalias))
 			return TRUE;
 	}
 
@@ -575,7 +682,7 @@ as_system_info_has_device_matching_modalias (AsSystemInfo *sysinfo, const gchar 
 /**
  * as_system_info_get_device_name_from_syspath:
  */
-static gchar*
+static gchar *
 as_system_info_get_device_name_from_syspath (AsSystemInfo *sysinfo,
 					     const gchar *syspath,
 					     const gchar *modalias,
@@ -593,23 +700,25 @@ as_system_info_get_device_name_from_syspath (AsSystemInfo *sysinfo,
 	gchar *result = NULL;
 
 	r = sd_device_new_from_syspath (&device, syspath);
-        if (r < 0) {
+	if (r < 0) {
 		g_set_error (error,
-				AS_SYSTEM_INFO_ERROR,
-				AS_SYSTEM_INFO_ERROR_FAILED,
-				"Failure to read device information for %s: %s",
-				syspath, g_strerror (errno));
+			     AS_SYSTEM_INFO_ERROR,
+			     AS_SYSTEM_INFO_ERROR_FAILED,
+			     "Failure to read device information for %s: %s",
+			     syspath,
+			     g_strerror (errno));
 		return NULL;
 	}
 
-	for (key = sd_device_get_property_first (device, &value);
-	     key;
-             key = sd_device_get_property_next (device, &value)) {
+	for (key = sd_device_get_property_first (device, &value); key;
+	     key = sd_device_get_property_next (device, &value)) {
 		if (g_strstr_len (key, -1, "_VENDOR") != NULL) {
-			if (g_strstr_len (key, -1, "VENDOR_ID") == NULL && !g_str_has_suffix (key, "_ENC"))
+			if (g_strstr_len (key, -1, "VENDOR_ID") == NULL &&
+			    !g_str_has_suffix (key, "_ENC"))
 				device_vendor = value;
 		} else if (g_strstr_len (key, -1, "_MODEL") != NULL) {
-			if (g_strstr_len (key, -1, "MODEL_ID") == NULL && !g_str_has_suffix (key, "_ENC"))
+			if (g_strstr_len (key, -1, "MODEL_ID") == NULL &&
+			    !g_str_has_suffix (key, "_ENC"))
 				device_model = value;
 		} else if (as_str_equal0 (key, "DRIVER"))
 			driver = value;
@@ -631,19 +740,20 @@ as_system_info_get_device_name_from_syspath (AsSystemInfo *sysinfo,
 				result = g_strdup (modalias);
 		} else {
 			g_set_error (error,
-					AS_SYSTEM_INFO_ERROR,
-					AS_SYSTEM_INFO_ERROR_NOT_FOUND,
-					"Unable to find good human-readable description for device %s",
-					modalias);
+				     AS_SYSTEM_INFO_ERROR,
+				     AS_SYSTEM_INFO_ERROR_NOT_FOUND,
+				     "Unable to find good human-readable description for device %s",
+				     modalias);
 		}
 	}
 
 	return result;
 #else
-	g_set_error_literal (error,
-				AS_SYSTEM_INFO_ERROR,
-				AS_SYSTEM_INFO_ERROR_FAILED,
-				"Unable to determine device name: AppStream was built without systemd-udevd support.");
+	g_set_error_literal (
+	    error,
+	    AS_SYSTEM_INFO_ERROR,
+	    AS_SYSTEM_INFO_ERROR_FAILED,
+	    "Unable to determine device name: AppStream was built without systemd-udevd support.");
 	return NULL;
 #endif
 }
@@ -651,46 +761,50 @@ as_system_info_get_device_name_from_syspath (AsSystemInfo *sysinfo,
 /**
  * as_system_info_get_device_name_from_hwdb:
  */
-static gchar*
-as_system_info_get_device_name_from_hwdb (AsSystemInfo *sysinfo, const gchar *modalias_glob, gboolean allow_fallback, GError **error)
+static gchar *
+as_system_info_get_device_name_from_hwdb (AsSystemInfo *sysinfo,
+					  const gchar *modalias_glob,
+					  gboolean allow_fallback,
+					  GError **error)
 {
 #ifdef HAVE_SYSTEMD
-		AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
-		gint ret = 0;
-		const gchar *device_vendor = NULL;
-		const gchar *device_model = NULL;
+	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
+	gint ret = 0;
+	const gchar *device_vendor = NULL;
+	const gchar *device_model = NULL;
 
-		if (priv->hwdb == NULL) {
-			ret = sd_hwdb_new(&priv->hwdb);
-			if (ret < 0) {
-				g_set_error (error,
-					     AS_SYSTEM_INFO_ERROR,
-					     AS_SYSTEM_INFO_ERROR_FAILED,
-					     "Unable to open hardware database: %s",
-					     g_strerror (ret));
-				return NULL;
-			}
+	if (priv->hwdb == NULL) {
+		ret = sd_hwdb_new (&priv->hwdb);
+		if (ret < 0) {
+			g_set_error (error,
+				     AS_SYSTEM_INFO_ERROR,
+				     AS_SYSTEM_INFO_ERROR_FAILED,
+				     "Unable to open hardware database: %s",
+				     g_strerror (ret));
+			return NULL;
 		}
+	}
 
-		sd_hwdb_get (priv->hwdb, modalias_glob, "ID_VENDOR_FROM_DATABASE", &device_vendor);
-		sd_hwdb_get (priv->hwdb, modalias_glob, "ID_MODEL_FROM_DATABASE", &device_model);
+	sd_hwdb_get (priv->hwdb, modalias_glob, "ID_VENDOR_FROM_DATABASE", &device_vendor);
+	sd_hwdb_get (priv->hwdb, modalias_glob, "ID_MODEL_FROM_DATABASE", &device_model);
 
-		if (device_vendor != NULL && device_model != NULL)
-			return g_strdup_printf ("%s - %s", device_vendor, device_model);
-		if (allow_fallback)
-			return g_strdup (modalias_glob);
+	if (device_vendor != NULL && device_model != NULL)
+		return g_strdup_printf ("%s - %s", device_vendor, device_model);
+	if (allow_fallback)
+		return g_strdup (modalias_glob);
 
-		g_set_error (error,
-				AS_SYSTEM_INFO_ERROR,
-				AS_SYSTEM_INFO_ERROR_NOT_FOUND,
-				"Unable to find good human-readable description for device %s",
-				modalias_glob);
-		return NULL;
+	g_set_error (error,
+		     AS_SYSTEM_INFO_ERROR,
+		     AS_SYSTEM_INFO_ERROR_NOT_FOUND,
+		     "Unable to find good human-readable description for device %s",
+		     modalias_glob);
+	return NULL;
 #else
-	g_set_error_literal (error,
-				AS_SYSTEM_INFO_ERROR,
-				AS_SYSTEM_INFO_ERROR_FAILED,
-				"Unable to determine device name: AppStream was built without systemd-hwdb support.");
+	g_set_error_literal (
+	    error,
+	    AS_SYSTEM_INFO_ERROR,
+	    AS_SYSTEM_INFO_ERROR_FAILED,
+	    "Unable to determine device name: AppStream was built without systemd-hwdb support.");
 	return NULL;
 #endif
 }
@@ -710,8 +824,11 @@ as_system_info_get_device_name_from_hwdb (AsSystemInfo *sysinfo, const gchar *mo
  *
  * Returns: a human-readable device name, or %NULL on error.
  */
-gchar*
-as_system_info_get_device_name_for_modalias (AsSystemInfo *sysinfo, const gchar *modalias, gboolean allow_fallback, GError **error)
+gchar *
+as_system_info_get_device_name_for_modalias (AsSystemInfo *sysinfo,
+					     const gchar *modalias,
+					     gboolean allow_fallback,
+					     GError **error)
 {
 	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
 	const gchar *syspath;
@@ -734,7 +851,10 @@ as_system_info_get_device_name_for_modalias (AsSystemInfo *sysinfo, const gchar 
  * as_system_info_has_device_with_property:
  */
 static AsCheckResult
-as_system_info_has_device_with_property (AsSystemInfo *sysinfo, const gchar *prop_key, const gchar *prop_value, GError **error)
+as_system_info_has_device_with_property (AsSystemInfo *sysinfo,
+					 const gchar *prop_key,
+					 const gchar *prop_value,
+					 GError **error)
 {
 #ifdef HAVE_SYSTEMD
 	__attribute__((cleanup (sd_device_enumerator_unrefp))) sd_device_enumerator *e = NULL;
@@ -743,37 +863,39 @@ as_system_info_has_device_with_property (AsSystemInfo *sysinfo, const gchar *pro
 	r = sd_device_enumerator_new (&e);
 	if (r < 0) {
 		g_set_error (error,
-				AS_SYSTEM_INFO_ERROR,
-				AS_SYSTEM_INFO_ERROR_FAILED,
-				"Unable to enumerate devices: %s",
-				g_strerror (r));
+			     AS_SYSTEM_INFO_ERROR,
+			     AS_SYSTEM_INFO_ERROR_FAILED,
+			     "Unable to enumerate devices: %s",
+			     g_strerror (r));
 		return AS_CHECK_RESULT_ERROR;
 	}
 	r = sd_device_enumerator_allow_uninitialized (e);
 	if (r < 0) {
 		g_set_error (error,
-				AS_SYSTEM_INFO_ERROR,
-				AS_SYSTEM_INFO_ERROR_FAILED,
-				"Unable to enumerate uninitialized devices: %s",
-				g_strerror (r));
+			     AS_SYSTEM_INFO_ERROR,
+			     AS_SYSTEM_INFO_ERROR_FAILED,
+			     "Unable to enumerate uninitialized devices: %s",
+			     g_strerror (r));
 		return AS_CHECK_RESULT_ERROR;
 	}
 	r = sd_device_enumerator_add_match_property (e, prop_key, prop_value);
 	if (r < 0) {
 		g_set_error (error,
-				AS_SYSTEM_INFO_ERROR,
-				AS_SYSTEM_INFO_ERROR_FAILED,
-				"Unable to enumerate devices by property: %s",
-				g_strerror (r));
+			     AS_SYSTEM_INFO_ERROR,
+			     AS_SYSTEM_INFO_ERROR_FAILED,
+			     "Unable to enumerate devices by property: %s",
+			     g_strerror (r));
 		return AS_CHECK_RESULT_ERROR;
 	}
 
-	return sd_device_enumerator_get_device_first (e) != NULL? AS_CHECK_RESULT_TRUE : AS_CHECK_RESULT_FALSE;
+	return sd_device_enumerator_get_device_first (e) != NULL ? AS_CHECK_RESULT_TRUE
+								 : AS_CHECK_RESULT_FALSE;
 #else
-	g_set_error_literal (error,
-				AS_SYSTEM_INFO_ERROR,
-				AS_SYSTEM_INFO_ERROR_FAILED,
-				"Unable to look for input device: AppStream was built without systemd-udevd support.");
+	g_set_error_literal (
+	    error,
+	    AS_SYSTEM_INFO_ERROR,
+	    AS_SYSTEM_INFO_ERROR_FAILED,
+	    "Unable to look for input device: AppStream was built without systemd-udevd support.");
 	return AS_CHECK_RESULT_ERROR;
 #endif
 }
@@ -814,33 +936,48 @@ as_system_info_find_input_controls (AsSystemInfo *sysinfo, GError **error)
 	res = as_system_info_has_device_with_property (sysinfo, "ID_INPUT_KEYBOARD", "1", error);
 	if (res == AS_CHECK_RESULT_ERROR)
 		return FALSE;
-	as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_KEYBOARD, res == AS_CHECK_RESULT_TRUE);
+	as_system_info_mark_input_control_status (sysinfo,
+						  AS_CONTROL_KIND_KEYBOARD,
+						  res == AS_CHECK_RESULT_TRUE);
 
 	res = as_system_info_has_device_with_property (sysinfo, "ID_INPUT_MOUSE", "1", error);
 	if (res == AS_CHECK_RESULT_ERROR)
 		return FALSE;
-	as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_POINTING, res == AS_CHECK_RESULT_TRUE);
+	as_system_info_mark_input_control_status (sysinfo,
+						  AS_CONTROL_KIND_POINTING,
+						  res == AS_CHECK_RESULT_TRUE);
 	if (res != AS_CHECK_RESULT_TRUE) {
-		res = as_system_info_has_device_with_property (sysinfo, "ID_INPUT_TOUCHPAD", "1", error);
+		res = as_system_info_has_device_with_property (sysinfo,
+							       "ID_INPUT_TOUCHPAD",
+							       "1",
+							       error);
 		if (res == AS_CHECK_RESULT_ERROR)
 			return FALSE;
-		as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_POINTING, res == AS_CHECK_RESULT_TRUE);
+		as_system_info_mark_input_control_status (sysinfo,
+							  AS_CONTROL_KIND_POINTING,
+							  res == AS_CHECK_RESULT_TRUE);
 	}
 
 	res = as_system_info_has_device_with_property (sysinfo, "ID_INPUT_JOYSTICK", "1", error);
 	if (res == AS_CHECK_RESULT_ERROR)
 		return FALSE;
-	as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_GAMEPAD, res == AS_CHECK_RESULT_TRUE);
+	as_system_info_mark_input_control_status (sysinfo,
+						  AS_CONTROL_KIND_GAMEPAD,
+						  res == AS_CHECK_RESULT_TRUE);
 
 	res = as_system_info_has_device_with_property (sysinfo, "ID_INPUT_TABLET", "1", error);
 	if (res == AS_CHECK_RESULT_ERROR)
 		return FALSE;
-	as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_TABLET, res == AS_CHECK_RESULT_TRUE);
+	as_system_info_mark_input_control_status (sysinfo,
+						  AS_CONTROL_KIND_TABLET,
+						  res == AS_CHECK_RESULT_TRUE);
 
 	res = as_system_info_has_device_with_property (sysinfo, "ID_INPUT_TOUCHSCREEN", "1", error);
 	if (res == AS_CHECK_RESULT_ERROR)
 		return FALSE;
-	as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_TOUCH, res == AS_CHECK_RESULT_TRUE);
+	as_system_info_mark_input_control_status (sysinfo,
+						  AS_CONTROL_KIND_TOUCH,
+						  res == AS_CHECK_RESULT_TRUE);
 
 	return TRUE;
 }
@@ -892,6 +1029,35 @@ as_system_info_set_input_control (AsSystemInfo *sysinfo, AsControlKind kind, gbo
 	g_return_if_fail (kind != AS_CONTROL_KIND_UNKNOWN);
 	as_system_info_find_input_controls (sysinfo, NULL);
 	as_system_info_mark_input_control_status (sysinfo, kind, found);
+}
+
+/**
+ * as_system_info_get_gui_available:
+ * @sysinfo: a #AsSystemInfo instance.
+ *
+ * Check whether graphical applications can be displayed via X11 or Wayland.
+ *
+ * Returns: %TRUE if graphical applications can be displayed.
+ */
+gboolean
+as_system_info_get_gui_available (AsSystemInfo *sysinfo)
+{
+	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
+	return priv->has_gui;
+}
+
+/**
+ * as_system_info_set_gui_available:
+ * @sysinfo: a #AsSystemInfo instance.
+ * @available: %TRUE if GUI is available.
+ *
+ * Set whether this system has a GUI / desktop environment available.
+ */
+void
+as_system_info_set_gui_available (AsSystemInfo *sysinfo, gboolean available)
+{
+	AsSystemInfoPrivate *priv = GET_PRIVATE (sysinfo);
+	priv->has_gui = available;
 }
 
 /**
@@ -948,12 +1114,97 @@ as_system_info_set_display_length (AsSystemInfo *sysinfo, AsDisplaySideKind side
  *
  * Since: 0.10
  **/
-AsSystemInfo*
+AsSystemInfo *
 as_system_info_new (void)
 {
 	AsSystemInfo *sysinfo;
 	sysinfo = g_object_new (AS_TYPE_SYSTEM_INFO, NULL);
 	return AS_SYSTEM_INFO (sysinfo);
+}
+
+/**
+ * as_system_info_new_template_for_chassis:
+ * @chassis: the #AsChassisKind to generate a template for
+ * @error: a #GError
+ *
+ * Creates a new #AsSystemInfo that can be used as a mock system
+ * for the given chassis type, reading (mostly) no information
+ * from the current system.
+ *
+ * This function will try to generate a device most representative of
+ * the given chassis class. This can be useful when testing compatibility
+ * for other devices on a different device that is not of the same chassis
+ * type as the one to be tested.
+ *
+ * Returns: (transfer full): an #AsSystemInfo template
+ *
+ * Since: 1.0.0
+ **/
+AsSystemInfo *
+as_system_info_new_template_for_chassis (AsChassisKind chassis, GError **error)
+{
+	AsSystemInfoPrivate *priv = NULL;
+	AsSystemInfo *sysinfo = as_system_info_new ();
+	priv = GET_PRIVATE (sysinfo);
+
+	/* the template sysinfo is not supposed to scan the curent system's devices */
+	priv->inputs_scanned = TRUE;
+
+	/* we assume all input controls have been tested */
+	priv->tested_input_controls = G_MAXUINT;
+	priv->input_controls = 0;
+
+	/* just assume 8GiB memory by default */
+	as_system_info_set_memory_total (sysinfo, 8192);
+
+	/* assume X11/Wayland is available by default */
+	as_system_info_set_gui_available (sysinfo, TRUE);
+
+	/* set default for the individual chassis types */
+	if (chassis == AS_CHASSIS_KIND_DESKTOP || chassis == AS_CHASSIS_KIND_LAPTOP) {
+		as_system_info_set_display_length (sysinfo, AS_DISPLAY_SIDE_KIND_SHORTEST, 800);
+		as_system_info_set_display_length (sysinfo, AS_DISPLAY_SIDE_KIND_LONGEST, 1280);
+		as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_POINTING, TRUE);
+		as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_KEYBOARD, TRUE);
+		as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_CONSOLE, TRUE);
+
+		return sysinfo;
+	}
+
+	if (chassis == AS_CHASSIS_KIND_SERVER) {
+		as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_KEYBOARD, TRUE);
+		as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_CONSOLE, TRUE);
+		as_system_info_set_gui_available (sysinfo, FALSE);
+
+		return sysinfo;
+	}
+
+	if (chassis == AS_CHASSIS_KIND_TABLET) {
+		as_system_info_set_memory_total (sysinfo, 4096);
+		as_system_info_set_display_length (sysinfo, AS_DISPLAY_SIDE_KIND_SHORTEST, 600);
+		as_system_info_set_display_length (sysinfo, AS_DISPLAY_SIDE_KIND_LONGEST, 1024);
+		as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_TOUCH, TRUE);
+
+		return sysinfo;
+	}
+
+	if (chassis == AS_CHASSIS_KIND_HANDSET) {
+		as_system_info_set_memory_total (sysinfo, 4096);
+		as_system_info_set_display_length (sysinfo, AS_DISPLAY_SIDE_KIND_SHORTEST, 320);
+		as_system_info_set_display_length (sysinfo, AS_DISPLAY_SIDE_KIND_LONGEST, 480);
+		as_system_info_mark_input_control_status (sysinfo, AS_CONTROL_KIND_TOUCH, TRUE);
+
+		return sysinfo;
+	}
+
+	g_set_error (error,
+		     AS_SYSTEM_INFO_ERROR,
+		     AS_SYSTEM_INFO_ERROR_FAILED,
+		     "Unable to generate system info template for chassis type: %s",
+		     as_chassis_kind_to_string (chassis));
+
+	g_object_unref (sysinfo);
+	return NULL;
 }
 
 /**
@@ -963,10 +1214,9 @@ as_system_info_new (void)
  * of the `/etc/os-release` file.
  * This function is a shorthand for %as_distro_details_get_cid
  */
-gchar*
+gchar *
 as_get_current_distro_component_id (void)
 {
 	g_autoptr(AsSystemInfo) sysinfo = as_system_info_new ();
 	return g_strdup (as_system_info_get_os_cid (sysinfo));
-
 }

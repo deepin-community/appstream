@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2019-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -23,20 +23,15 @@
 #include <QStringList>
 #include "appstreamqt_export.h"
 
-namespace AppStream {
+namespace AppStream
+{
 
-namespace Utils {
-
-APPSTREAMQT_EXPORT QString currentDistroComponentId();
+namespace Utils
+{
 
 APPSTREAMQT_EXPORT QString currentAppStreamVersion();
 
 APPSTREAMQT_EXPORT int vercmpSimple(const QString &a, const QString &b);
-
-/* DEPRECATED */
-
-Q_DECL_DEPRECATED
-APPSTREAMQT_EXPORT int compareVersions(const QString &a, const QString &b);
 
 }
 

@@ -33,8 +33,8 @@
 	<section id="spec-dep11-filenaming">
 		<title>File naming and location</title>
 		<para>
-			Take a look at <xref linkend="spec-asxml-filenaming"/> for AppStream XML files. While the XML data belongs into the <filename>xml</filename> subdirectory in
-			<filename>/usr/share/swcatalog</filename> (or <filename>/var/cache/swcatalog</filename>), the YAML data is stored in the <filename>yaml</filename> subdirectory.
+			Take a look at <xref linkend="spec-asxml-filenaming"/> for AppStream XML files for reference. While the XML data belongs into the <filename>xml</filename> subdirectory in
+			<filename>/usr/share/swcatalog</filename> (or <filename>/var/(lib|cache)/swcatalog</filename>), the YAML data is stored in the <filename>yaml</filename> subdirectory.
 			All other rules affecting the XML apply the DEP-11 YAML as well, including the recommendation to compress the files with gzip and the icon search logic.
 		</para>
 	</section>
@@ -636,16 +636,6 @@
 						</varlistentry>
 
 						<varlistentry>
-						<term>python2</term>
-						<listitem>
-							<para>
-								A list of Python 2 modules this component provides.
-							</para>
-							<literallayout>Field info: <property>value-type</property>:<emphasis>list(str)</emphasis></literallayout>
-						</listitem>
-						</varlistentry>
-
-						<varlistentry>
 						<term>python3</term>
 						<listitem>
 							<para>
@@ -685,11 +675,11 @@
 				</listitem>
 			</varlistentry>
 
-			<varlistentry id="field-dep11-developername">
+			<varlistentry id="field-dep11-developer">
 			<term>DeveloperName</term>
 			<listitem>
-				<para>See <xref linkend="tag-ct-developer_name"/>.</para>
-				<literallayout>Field info: <property>value-type</property>:<emphasis>localized</emphasis></literallayout>
+				<para>See <xref linkend="tag-ct-developer"/>.</para>
+				<literallayout>Field info: <property>value-type</property>:<emphasis>dict</emphasis></literallayout>
 			</listitem>
 			</varlistentry>
 
@@ -1022,6 +1012,23 @@ Requires:
   tag: vendor-2021q1
 - namespace: plasma
   tag: featured]]></programlisting>
+				</listitem>
+			</varlistentry>
+
+			<varlistentry id="field-dep11-references">
+				<term>References</term>
+				<listitem>
+					<para>See <xref linkend="tag-references"/>.</para>
+					<literallayout>Field info: <property>value-type</property>:<emphasis>list(dict)</emphasis></literallayout>
+					<para>Example:</para>
+					<programlisting language="YAML"><![CDATA[References:
+- type: doi
+  value: 10.1000/182
+- type: citation_cff
+  value: https://example.org/CITATION.cff
+- type: registry
+  value: SCR_000000
+  registry: SciCrunch]]></programlisting>
 				</listitem>
 			</varlistentry>
 

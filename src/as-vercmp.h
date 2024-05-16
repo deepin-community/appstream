@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -18,7 +18,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined (__APPSTREAM_H) && !defined (AS_COMPILATION)
+#if !defined(__APPSTREAM_H) && !defined(AS_COMPILATION)
 #error "Only <appstream.h> can be included directly."
 #endif
 #pragma once
@@ -36,28 +36,18 @@ G_BEGIN_DECLS
  * The flags used when matching unique IDs.
  **/
 typedef enum {
-	AS_VERCMP_FLAG_NONE		= 0,
-	AS_VERCMP_FLAG_IGNORE_EPOCH	= 1 << 0,
+	AS_VERCMP_FLAG_NONE	    = 0,
+	AS_VERCMP_FLAG_IGNORE_EPOCH = 1 << 0,
 	/*< private >*/
 	AS_VERCMP_FLAG_LAST
 } AsVercmpFlags;
 
+gint	 as_vercmp (const gchar *a, const gchar *b, AsVercmpFlags flags);
+gint	 as_vercmp_simple (const gchar *a, const gchar *b);
 
-gint			as_vercmp (const gchar* a,
-				   const gchar *b,
-				   AsVercmpFlags flags);
-gint			as_vercmp_simple (const gchar* a,
-					  const gchar *b);
-
-gboolean		as_vercmp_test_match (const gchar *ver1,
-						AsRelationCompare compare,
-						const gchar *ver2,
-						AsVercmpFlags flags);
-
-/* DEPRECATED */
-
-G_DEPRECATED_FOR(as_vercmp_simple)
-gint			as_utils_compare_versions (const gchar* a,
-						   const gchar *b);
+gboolean as_vercmp_test_match (const gchar	*ver1,
+			       AsRelationCompare compare,
+			       const gchar	*ver2,
+			       AsVercmpFlags	 flags);
 
 G_END_DECLS

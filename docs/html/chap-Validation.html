@@ -1,0 +1,682 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Data Validation | AppStream | AppStream 1.0</title><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" /><link rel="stylesheet" type="text/css" href="static/css/style.css" /><link rel="stylesheet" type="text/css" href="static/css/highlight.css" /><meta name="generator" content="DAPS 3.3.2" /><meta name="product-name" content="AppStream" /><meta name="product-number" content="1.0" /><meta name="book-title" content="AppStream" /><meta name="chapter-title" content="Chapter 6. Data Validation" /><meta name="description" content="These pages contain various information on AppStream metadata validation. 6.1 Validator Issues #6.1.1 Introduction # The AppStream utility appstreamcli validate can validate all kinds of AppSteeam XML metadata. It will emit a variety of hints with different priority: Error hints render the data unus…" /><link rel="home" href="index.html" title="AppStream" /><link rel="up" href="index.html" title="AppStream" /><link rel="prev" href="sect-Quickstart-Translation.html" title="5.4. Translating Metadata" /><link rel="next" href="chap-AppStream-ManualPages.html" title="Chapter 7. Manual pages" />
+<script src="static/js/highlight.min.js" type="text/javascript"></script><script>
+
+document.addEventListener('DOMContentLoaded', (event) => {
+  document.querySelectorAll('.verbatim-wrap.highlight').forEach((block) => {
+    hljs.highlightBlock(block);
+  });
+});
+hljs.configure({
+  useBR: false
+});
+
+</script></head><body class="offline js-off"><div class="bypass-block"><a href="#_content">Jump to content</a><a href="#_bottom-navigation">Jump to page navigation: previous page [access key p]/next page [access key n]</a></div><div id="_outer-wrap"><div id="_white-bg"><div id="_header"><div id="_logo"><a href="https://www.freedesktop.org/software/appstream/docs/"><img src="static/images/logo.png" alt="Logo" /><span>AppStream</span></a></div><div class="crumbs"><a class="book-link" href="index.html" title="AppStream"><span class="book-icon">AppStream</span></a><span> › </span><a class="crumb" href="chap-Validation.html">Data Validation</a></div><div class="clearme"></div></div></div><div id="_toolbar-wrap"><div id="_toolbar"><div id="_toc-area" class="inactive"><a id="_toc-area-button" class="tool" title="Contents" accesskey="c" href="index.html"><span class="tool-spacer"><span class="toc-icon">Contents</span><span class="clearme"></span></span><span class="tool-label">Contents</span></a><div class="active-contents bubble-corner"></div><div class="active-contents bubble"><div class="bubble-container"><h6>AppStream</h6><div id="_bubble-toc"><ol><li class="inactive"><a href="chap-AppStream-About.html"><span class="number">1 </span><span class="name">About AppStream</span></a></li><li class="inactive"><a href="chap-Metadata.html"><span class="number">2 </span><span class="name">Upstream Metadata</span></a></li><li class="inactive"><a href="chap-CatalogData.html"><span class="number">3 </span><span class="name">Catalog Metadata</span></a></li><li class="inactive"><a href="chap-AppStream-Misc.html"><span class="number">4 </span><span class="name">Miscellaneous</span></a></li><li class="inactive"><a href="chap-Quickstart.html"><span class="number">5 </span><span class="name">Metadata Quickstart</span></a></li><li class="inactive"><a href="chap-Validation.html"><span class="number">6 </span><span class="name">Data Validation</span></a></li><li class="inactive"><a href="chap-AppStream-ManualPages.html"><span class="number">7 </span><span class="name">Manual pages</span></a><ol>
+	<a href="re01.html#id-1.8.3.1">appstreamcli</a>
+	2012-2024Matthias Klumpp
+	AppStream
+	26 July,2012
+	appstreamcli1appstreamcliHandle AppStream metadata formats and query AppStream dataappstreamcliCOMMAND<a href="re01.html#id-1.8.3.5">Description</a>
+			This manual page documents briefly the appstreamcli command.
+		
+			appstreamcli is a small helper tool to work with AppStream metadata and
+			access the AppStream component index from the command-line. The AppStream component
+			index contains a list of all available software components for your distribution, matched to their
+			package names.
+			It is generated using AppStream XML or Debian DEP-11 data, which is provided by your distributor.
+		
+			For more information about the AppStream project and the other components which are part of it, take a look at
+			the AppStream pages at Freedesktop.org.
+		<a href="re01.html#id-1.8.3.6">Options</a>get IDGet a component from the metadata pool by its identifier.ssearch TERMSearch the AppStream component pool for a given search term.what-provides TYPE TERM
+						Return components which provide a given item. An item type can be specified using the
+						TYPE parameter, a value to search for has to be
+						supplied using the TERM parameter.
+					Examples:
+						Get components which handle the "text/xml" mediatype.
+					
+						appstreamcli what-provides mediatype "text/xml"
+					
+						Get component which provides the "libfoo.so.2" library.
+					
+						appstreamcli what-provides lib libfoo.so.2
+					refreshrefresh-cache
+						Trigger a database refresh, if necessary.
+						In case you want to force the database to be rebuilt, supply the --force flag.
+					This command must be executed with root permission.status
+						Display various information about the installed metadata and
+						the metadata cache.
+					os-info
+						Show information about the current operating system from the metadata
+						index.
+						This requires the operating system to provide a operating-system
+						component for itself.
+					dump ID
+						Dump the complete XML descriptions of components with the given ID that were found in the
+						metadata pool.
+					validate FILES
+						Validate AppStream XML metadata for compliance with the specification.
+					
+						Both XML metadata types, upstream and distro XML, are handled.
+						The format type which should be validated is determined automatically.
+					
+						The --pedantic flag triggers a more pedantic
+						validation of the file, including minor and style issues in the report.
+					validate-tree DIRECTORY
+						Validate AppStream XML metadata found in a file-tree.
+					
+						This performs a standard validation of all found metadata, but also checks for additional
+						errors, like the presence of .desktop files and validity of other additional metadata.
+					check-license LICENSE
+						Test a license string or license expression for validity and display details about it.
+					
+						This will check whether the license string is considered to be valid for AppStream, and return
+						a non-zero exit code if it is not. The command will also display useful information like the
+						canonical ID of a license, whether it is suitable as license for AppStream metadata,
+						and whether the license is considered to be for Free and Open Source software or proprietary software.
+					
+						AppStream will consider any license as Free and Open Source that is marked as suitable by either the
+						Free Software Foundation (FSF), Open Source Initiative (OSI) or explicit license list
+						of the Debian Free Software Guidelines (DFSG).
+					install ID
+						Install a software component by its ID using the package manager or Flatpak.
+					
+						This resolves the AppStream component ID to an installation candidate and then
+						calls either the native package manager or Flatpak (if available) to install
+						the component.
+					remove ID
+						Uninstall a software component by its ID using the package manager or Flatpak.
+					
+						This will uninstall software matching the selected ID using either the native
+						package manager or Flatpak (if available).
+					put FILE
+						Install a metadata file into the right directory on the current machine.
+					compare-versionsvercmp VER1 [CMP] VER2
+						Compare two version numbers. If two version numbers are given as parameters, the versions will be compared and the
+						comparison result will be printed to stdout.
+					
+						If a version number, a comparison operator and another version number are passed in as parameter, the result of the comparison
+						operation will be printed to stdout, and appstreamcli will exit with a non-zero exit status in case the comparison
+						failed.
+						The comparison operator can be one of the following:
+					eq - Equal tone - Not equal tolt - Less thangt - Greater thanle - Less than or equal toge - Greater than or equal tonew-template TYPE FILE
+						Create a metainfo file template to be used by software projects. The --from-desktop option can be used
+						to use a .desktop file as template for generating the example file.
+					
+						The generated files contain example entries which need to be filed in with the actual desired values by the project author.
+					
+						The first TYPE parameter is the name of an AppStream component type. For a complete list check out
+						the documentation or the help output
+						of appstreamcli for this subcommand.
+					make-desktop-file MI_FILE DESKTOP_FILE
+						Create a XDG desktop-entry file from a metainfo file.
+						If the desktop-entry file specified in DESKTOP_FILE already exists, it will get extended with
+						the new information extracted from the metainfo file. Otherwise a new file will be created.
+					
+						This command will use the first binary mentioned in a provides tag of the component
+						for the Exec= field of the new desktop-entry file.
+						If this is not the desired behavior, the --exec flag can be used
+						to explicitly define a binary to launch. Other methods of launching the application are currently not supported.
+					
+						In order to generate a proper desktop-entry, this command assumes that not only the minimally required tags for an
+						AppStream component are set, but also that it has an &lt;icon/&gt; tag of type "stock" to describe
+						the stock icon that should be used as well as a &lt;categories/&gt; tag containing the categories the application should
+						be placed in.
+					news-to-metainfo NEWS_FILE MI_FILE [OUT_FILE]
+						This command converts a NEWS file as used by many open source projects into the XML used by AppStream. Since NEWS files are free text,
+						a lot of heuristics will be applied to get reasonable results. The converter can also read a YAML version of the AppStream release
+						description and convert it to XML as well.
+						If the metainfo file MI_FILE already exists, it will be augmented with the new release entries, otherwise the release entries
+						will be written without any wrapping component.
+						If [OUT_FILE] is specified, instead of acting on MI_FILE the changed data will
+						be written to the particular file. If any of the output filenames is set to "-", the output will instead be written to stdout.
+					
+						The --format option can be used to enforce reading the input file in a specific format ("text" or "yaml") in case the format autodetection fails.
+						The --limit option is used to limit the amount of release entries written (the newest entries will always be first).
+					metainfo-to-news MI_FILE NEWS_FILE
+						This command reverses the news-to-metainfo command and writes a NEWS file as text or YAML using the XML
+						contained in a metainfo file. If NEWS_FILE is set to "-", the resulting data
+						will be written to stdout instead of to a file.
+					
+						The --format option can be used to explicitly specify the output format ("yaml" or "text"). If it is not set,
+						appstreamcli will guess which format is most suitable.
+					convert FILE1 FILE1
+						Converts AppStream XML metadata into its YAML representation and vice versa.
+					compose
+						Composes an AppStream metadata catalog from a directory tree with metainfo files.
+						This command is only available if the org.freedesktop.appstream.compose
+						component is installed.
+						See appstreamcli-compose1
+						for more information.
+					--detailsPrint out more information about a found component.--no-colorDon't print colored output.--no-netDo not access the network when validating metadata.
+						The same effect can be achieved by setting the AS_VALIDATE_NONET environment variable
+						before running appstreamcli.
+					--versionDisplay the version number of appstreamcli<a href="re01.html#id-1.8.3.7">See Also</a>pkcon1.<a href="re01.html#id-1.8.3.8">AUTHOR</a>
+	This manual page was written by Matthias Klumpp matthias@tenstral.net.
+
+	<a href="re02.html#id-1.8.4.1">appstreamcli compose</a>
+	2020-2024Matthias Klumpp
+	AppStream
+	28 Aug,2020
+	appstreamcli compose1appstreamcli-composeCompose AppStream metadata catalog from directory treesappstreamcli composeCOMMAND<a href="re02.html#id-1.8.4.5">Description</a>
+			This manual page documents briefly the appstreamcli compose command.
+		
+			The appstreamcli compose tool is used to construct AppStream metadata catalogs from directory trees.
+			The tool will also perform many related metadata generation actions, like resizing icons and
+			screenshots and merging in data from referenced desktop-entry files as well as translation status
+			information.
+			Therefore, the tool provides a fast way to test how the final processed metadata for an application
+			that is shipped to users may look like.
+			It also provides a way to easily generate AppStream data for projects which do not need a more complex data
+			generator like appstream-generator.
+		
+			In order for the appstreamcli compose command to be available, you may need to install the
+			optional compose module for appstreamcli first.
+		
+			For more information about the AppStream project and the other components which are part of it, take a look at
+			the AppStream pages at Freedesktop.org.
+		<a href="re02.html#id-1.8.4.6">Options</a>SOURCE-DIRECTORIES
+						A list of directories to process needs to be provided as positional parameters.
+						Data from all directories will be combined into one output namespace.
+					--origin NAME
+						Set the AppStream data origin identifier. This can be a value like
+						"debian-unstable-main" or "flathub".
+					--result-root DIR
+						Sets the directory where all generated output that is deployed to a user's
+						machine is exported to. If this parameter is not set and we only have one
+						directory to process, we use that directory as default output path.
+					
+						If both --data-dir and --icons-dir are
+						set, --result-root is not necessary and no data will be
+						written to that directory.
+					--data-dir DIR
+						Override the directory where the generated AppStream metadata catalog
+						will be written to. Data will be written directly to this directory, and
+						no supdirectories will be created (unlike when using --result-root
+						to set an output location).
+					--icons-dir DIR
+						Override the directory where the cached icons are exported to.
+					--hints-dir DIR
+						Set a directory where hints reported generated during metadata processing
+						are saved to. If this parameter is not set, no HTML/YAML hint reports
+						will be saved.
+					--media-dir DIR
+						If set, creates a directory with media content (icons, screenshots, ...) that
+						can be served via a webserver. The metadata will be extended to include information
+						about these remote media.
+					--media-baseurl URL
+						The URL under which the contents of a directory set via --media-dir
+						will be served. This value must be set if a media directory is created.
+					--prefix DIR
+						Set the default prefix that is used in the processed directories. If
+						none is set explicitly, /usr is assumed.
+					--print-report MODE
+						Print the issue hints report (that gets exported as HTML and YAML
+						document when --hints-dir was set) to the console
+						in text form.
+					
+						Various print modes are supported: on-error only prints a
+						short report if the run failed (default), short generates
+						an abridged report that is always printed and full results
+						in a detailed report to be printed.
+					--no-partial-urls
+						If set, all URLs in the generated data will be absolute and media_baseurl will not be used.
+						This makes changing the media mirror harder without regenerating all data and is generally not recommended,
+						to increase flexibility.
+					--icon-policy POLICY-STRING
+						Override the existing icon policy with a custom one. The icon policy sets how icons of
+						different sizes should be dealt with. They can be in the icon cache only, be a remote icon in
+						the media location or be both cached and available in the remote location.
+					
+						The icon-policy string is comprised of comma-separated %{size}x%{size}@%{scale}=%{state} statements.
+						The size and scale are that of the respective icon, with the scale being allowed to be
+						omitted if it is 1. The state can be one of remote, cached or
+						cached-remote.
+					
+						By default, a policy of 48x48=cached,48x48@2=cached,64x64=cached,64x64@2=cached,128x128=cached-remote,128x128@2=cached-remote
+						is selected.
+					--allow-custom CUSTOM-KEY-NAMES
+						By default, all custom entries set in MetaInfo input data are removed.
+						This flag allows to whitelist custom keys to be propagated to the final catalog output data.
+						The custom-key names should be provided as a comma-separated list.
+					--components COMPONENT-IDs
+						Set a comma-separated list of AppStream component IDs that should be
+						considered for the generated metadata. All components that exist in
+						the input data but are not mentioned in this list will be ignored
+						for the generated output.
+					--no-colorDon't print colored output.--verboseDisplay extra debugging information--versionDisplay the version number of appstreamcli compose<a href="re02.html#id-1.8.4.7">See Also</a>
+			appstreamcli1,
+			appstream-generator1.
+		<a href="re02.html#id-1.8.4.8">AUTHOR</a>
+	This manual page was written by Matthias Klumpp matthias@tenstral.net.
+</ol></li><li class="inactive"><a href="chap-AppStream-API.html"><span class="number">8 </span><span class="name">AppStream API Reference</span></a></li><li class="inactive"><a href="ix01.html"><span class="number"> </span><span class="name">Index</span></a></li></ol></div><div class="clearme"></div></div></div></div><div id="_nav-area" class="inactive"><div class="tool"><span class="nav-inner"><span class="tool-label">Navigation</span><a accesskey="p" class="tool-spacer" title="5.4. Translating Metadata" href="sect-Quickstart-Translation.html"><span class="prev-icon">←</span></a><a accesskey="n" class="tool-spacer" title="Chapter 7. Manual pages" href="chap-AppStream-ManualPages.html"><span class="next-icon">→</span></a></span></div></div></div></div><div id="_fixed-header-wrap" class="inactive"><div id="_fixed-header"><div class="crumbs"><a class="book-link" href="index.html" title="AppStream"><span class="book-icon">AppStream</span></a><span> › </span><a class="crumb" href="chap-Validation.html">Data Validation</a></div><div class="buttons"><a class="top-button button" href="#">Top</a><div class="button"><a accesskey="p" class="tool-spacer" title="5.4. Translating Metadata" href="sect-Quickstart-Translation.html"><span class="prev-icon">←</span></a><a accesskey="n" class="tool-spacer" title="Chapter 7. Manual pages" href="chap-AppStream-ManualPages.html"><span class="next-icon">→</span></a></div><div class="clearme"></div></div><div class="clearme"></div></div></div><div id="_content" class=""><div class="documentation"><div class="chapter" id="chap-Validation"><div class="titlepage"><div><div class="version-info">Applies to  <span class="productname">AppStream</span> <span class="productnumber">1.0</span></div><div><h1 class="title"><span class="number">6 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Data Validation</span> <a title="Permalink" class="permalink" href="chap-Validation.html">#</a></h1></div></div></div><div class="line"><div class="toc"><dl><dt><span class="section"><a href="chap-Validation.html#sect-ValidatorIssues"><span class="number">6.1 </span><span class="name">Validator Issues</span></a></span></dt></dl></div></div><p>
+		These pages contain various information on AppStream metadata validation.
+	</p><div class="sect1" id="sect-ValidatorIssues"><div class="titlepage"><div><div><h2 class="title" id="sect-ValidatorIssues"><span class="number">6.1 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Validator Issues</span> <a title="Permalink" class="permalink" href="chap-Validation.html#sect-ValidatorIssues">#</a></h2></div></div></div><div class="sect2" id="validator-issues-intro"><div class="titlepage"><div><div><h3 class="title" id="validator-issues-intro"><span class="number">6.1.1 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Introduction</span> <a title="Permalink" class="permalink" href="chap-Validation.html#validator-issues-intro">#</a></h3></div></div></div><p>
+			The AppStream utility <code class="command">appstreamcli validate</code> can validate all kinds of AppSteeam XML metadata.
+			It will emit a variety of hints with different priority:
+		</p><p>
+			<span class="emphasis"><em>Error</em></span> hints render the data unusable
+			or severely limit its usefulness and make it fail validation. <span class="emphasis"><em>Warnings</em></span> warn about likely unintended
+			behavior, typing errors or issues which might cause data to not be displayed or improperly read. They fail validation,
+			but may be ignored in some circumstances. <span class="emphasis"><em>Info</em></span> hints are optional recommendations to make the
+			data better, while <span class="emphasis"><em>pedantic</em></span> hints are nice-to-have. The latter are not displayed by default
+			unless the tool is in pedantic mode.
+		</p><p>
+			This document contains a list of all issues checked for by <code class="code">appstreamcli validate</code>.
+		</p></div><div class="sect2" id="validator-issues-list"><div class="titlepage"><div><div><h3 class="title" id="validator-issues-list"><span class="number">6.1.2 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Validator Issue Tags</span> <a title="Permalink" class="permalink" href="chap-Validation.html#validator-issues-list">#</a></h3></div></div></div><p>
+			This is a list of all possible validation issues that <code class="code">appstreamcli</code> can detect.
+		</p><div class="variablelist"><dl class="variablelist"><dt id="asv-type-property-required"><span class="term">type-property-required</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-type-property-required">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This tag requires a type property.
+				</p></dd><dt id="asv-invalid-child-tag-name"><span class="term">invalid-child-tag-name</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-invalid-child-tag-name">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				Tags of this name are not permitted in this section.
+				</p></dd><dt id="asv-metainfo-localized-description-tag"><span class="term">metainfo-localized-description-tag</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metainfo-localized-description-tag">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A &lt;description/&gt; tag must not be localized in metainfo files (upstream metadata). Localize the individual paragraphs instead.
+				</p></dd><dt id="asv-catalog-localized-description-section"><span class="term">catalog-localized-description-section</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-catalog-localized-description-section">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This element (paragraph, list, etc.) of a &lt;description/&gt; tag must not be localized individually in catalog metadata. Localize the whole &lt;description/&gt; tag instead. The AppStream metadata catalog generator (e.g. `appstream-generator`) will already do the right thing when compiling the data.
+				</p></dd><dt id="asv-description-markup-invalid"><span class="term">description-markup-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-markup-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				AppStream descriptions support only a limited set of tags to format text: Paragraphs (&lt;p/&gt;) and lists (&lt;ul/&gt;, &lt;ol/&gt;). This description markup contains an invalid XML tag that would not be rendered correctly in applications supporting the metainfo specification.
+				</p></dd><dt id="asv-description-para-markup-invalid"><span class="term">description-para-markup-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-para-markup-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This description paragraph contains invalid markup. Currently, only &lt;em/&gt; and &lt;code/&gt; are permitted.
+				</p></dd><dt id="asv-description-enum-item-invalid"><span class="term">description-enum-item-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-enum-item-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				Enumerations must only have list items (&lt;li/&gt;) as children.
+				</p></dd><dt id="asv-description-enum-group-translated"><span class="term">description-enum-group-translated</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-enum-group-translated">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The enumeration must not be translated as a whole. In MetaInfo files, translate indivdual items (&lt;li/&gt; elements) instead.
+				</p></dd><dt id="asv-description-first-para-too-short"><span class="term">description-first-para-too-short</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-first-para-too-short">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The first `description/p` paragraph of this component might be too short (&lt; 80 characters). Please consider starting with a longer paragraph to improve how the description looks like in software centers and to provide more detailed information on this component immediately in the first paragraph.
+				</p></dd><dt id="asv-description-first-word-not-capitalized"><span class="term">description-first-word-not-capitalized</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-first-word-not-capitalized">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The description line does not start with a capitalized word, project name or number.
+				</p></dd><dt id="asv-description-has-plaintext-url"><span class="term">description-has-plaintext-url</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-has-plaintext-url">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The description contains a web URL in plain text. This is not allowed, please use the &lt;url/&gt; tag instead to share links.
+				</p></dd><dt id="asv-tag-not-translatable"><span class="term">tag-not-translatable</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-tag-not-translatable">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This tag is not translatable.
+				</p></dd><dt id="asv-tag-duplicated"><span class="term">tag-duplicated</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-tag-duplicated">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This tag must only appear once in this context. Having multiple tags of this kind is not valid.
+				</p></dd><dt id="asv-tag-empty"><span class="term">tag-empty</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-tag-empty">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The mentioned tag is empty, which is highly likely not intended as it should have content.
+				</p></dd><dt id="asv-tag-invalid-text-content"><span class="term">tag-invalid-text-content</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-tag-invalid-text-content">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The mentioned tag has text content, even though it must not contain text.
+				</p></dd><dt id="asv-cid-is-not-rdns"><span class="term">cid-is-not-rdns</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-is-not-rdns">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The component ID is required to follow a reverse domain-name scheme for its name. See the AppStream specification for details.
+				</p></dd><dt id="asv-cid-desktopapp-is-not-rdns"><span class="term">cid-desktopapp-is-not-rdns</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-desktopapp-is-not-rdns">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The component ID is not a reverse domain-name. Please update the ID to avoid future issues and be compatible with all AppStream implementations.
+You may also consider to update the name of the accompanying .desktop file to follow the latest version of the Desktop-Entry specification and use a rDNS name for it as well. In any case, do not forget to mention the new desktop-entry in a &lt;launchable/&gt; tag for this component to keep the application launchable from software centers and the .desktop file data associated with the metainfo data.
+				</p></dd><dt id="asv-cid-maybe-not-rdns"><span class="term">cid-maybe-not-rdns</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-maybe-not-rdns">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The component ID might not follow the reverse domain-name schema (the TLD used by it is not known to the validator).
+				</p></dd><dt id="asv-cid-invalid-character"><span class="term">cid-invalid-character</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-invalid-character">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The component ID contains an invalid character. Only ASCII characters, dots and numbers are permitted.
+				</p></dd><dt id="asv-cid-punctuation-prefix"><span class="term">cid-punctuation-prefix</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-punctuation-prefix">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The component ID starts with punctuation. This is not allowed.
+				</p></dd><dt id="asv-cid-rdns-contains-hyphen"><span class="term">cid-rdns-contains-hyphen</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-rdns-contains-hyphen">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The component ID contains a hyphen/minus in its domain part. Using a hyphen is strongly discouraged to improve interoperability with other tools such as D-Bus. A good option is to replace any hyphens with underscores (`_`). Hyphens are only allowed in the last segment of a component ID.
+				</p></dd><dt id="asv-cid-has-number-prefix"><span class="term">cid-has-number-prefix</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-has-number-prefix">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The component ID contains a segment starting with a number. Starting a segment of the reverse-DNS ID with a number is strongly discouraged, to keep interoperability with other tools such as D-Bus. Ideally, prefix these segments with an underscore.
+				</p></dd><dt id="asv-cid-contains-uppercase-letter"><span class="term">cid-contains-uppercase-letter</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-contains-uppercase-letter">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
+				The component ID should only contain lowercase characters.
+				</p></dd><dt id="asv-cid-domain-not-lowercase"><span class="term">cid-domain-not-lowercase</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-domain-not-lowercase">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The domain part of the rDNS component ID (first two parts) must only contain lowercase characters.
+				</p></dd><dt id="asv-cid-missing-affiliation-freedesktop"><span class="term">cid-missing-affiliation-freedesktop</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-missing-affiliation-freedesktop">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The component is part of the Freedesktop project, but its ID does not start with fd.o's reverse-DNS name ("org.freedesktop").
+				</p></dd><dt id="asv-cid-missing-affiliation-kde"><span class="term">cid-missing-affiliation-kde</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-missing-affiliation-kde">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The component is part of the KDE project, but its ID does not start with KDE's reverse-DNS name ("org.kde").
+				</p></dd><dt id="asv-cid-missing-affiliation-gnome"><span class="term">cid-missing-affiliation-gnome</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-cid-missing-affiliation-gnome">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The component is part of the GNOME project, but its ID does not start with GNOME's reverse-DNS name ("org.gnome").
+				</p></dd><dt id="asv-spdx-expression-invalid"><span class="term">spdx-expression-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-spdx-expression-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The SPDX license expression is invalid and could not be parsed.
+				</p></dd><dt id="asv-spdx-license-unknown"><span class="term">spdx-license-unknown</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-spdx-license-unknown">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The license ID was not found in the SPDX database. Please check that the license ID is written in an SPDX-conformant way and is a valid free software license.
+				</p></dd><dt id="asv-metadata-license-too-complex"><span class="term">metadata-license-too-complex</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metadata-license-too-complex">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The metadata itself seems to be licensed under a complex collection of licenses. Please license the data under a simple permissive license, like FSFAP, MIT or CC0-1.0 to allow distributors to include it in mixed data collections without the risk of license violations due to mutually incompatible licenses.
+				</p></dd><dt id="asv-metadata-license-invalid"><span class="term">metadata-license-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metadata-license-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The metadata itself does not seem to be licensed under a permissive license. Please license the data under a permissive license, like FSFAP, CC0-1.0 or 0BSD to allow distributors to include it in mixed data collections without the risk of license violations due to mutually incompatible licenses.
+				</p></dd><dt id="asv-update-contact-no-mail"><span class="term">update-contact-no-mail</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-update-contact-no-mail">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The update-contact does not appear to be a valid email address (escaping of `@` is only allowed as `_at_` or `_AT_`).
+				</p></dd><dt id="asv-screenshot-invalid-env-style"><span class="term">screenshot-invalid-env-style</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-invalid-env-style">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The `environment` property is set to an unrecognized graphical environment/style combination.
+				</p></dd><dt id="asv-screenshot-invalid-width"><span class="term">screenshot-invalid-width</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-invalid-width">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The `width` property must be a positive integer.
+				</p></dd><dt id="asv-screenshot-invalid-height"><span class="term">screenshot-invalid-height</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-invalid-height">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The `height` property must be a positive integer.
+				</p></dd><dt id="asv-screenshot-invalid-scale"><span class="term">screenshot-invalid-scale</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-invalid-scale">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The `scale` property must be a positive integer.
+				</p></dd><dt id="asv-screenshot-image-invalid-type"><span class="term">screenshot-image-invalid-type</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-image-invalid-type">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The image type must be either `source` or `thumbnail`.
+				</p></dd><dt id="asv-screenshot-image-missing-width"><span class="term">screenshot-image-missing-width</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-image-missing-width">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The `width` property must be present if the image type is `thumbnail`.
+				</p></dd><dt id="asv-screenshot-image-missing-height"><span class="term">screenshot-image-missing-height</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-image-missing-height">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The `height` property must be present if the image type is `thumbnail`.
+				</p></dd><dt id="asv-screenshot-image-source-duplicated"><span class="term">screenshot-image-source-duplicated</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-image-source-duplicated">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				There can only be one `source` image per screenshot and language.
+				</p></dd><dt id="asv-screenshot-image-no-source"><span class="term">screenshot-image-no-source</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-image-no-source">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A screenshot must have at least one untranslated image of type `source`.
+				</p></dd><dt id="asv-screenshot-image-no-source-but-en-locale"><span class="term">screenshot-image-no-source-but-en-locale</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-image-no-source-but-en-locale">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A screenshot must have at least one untranslated image of type `source`, which could not be found. Instead, a tag with an `en` locale (`xml:lang=en`) was found, which is likely intended to be the translatable image. Please remove the XML localization attribute in this case.
+				</p></dd><dt id="asv-screenshot-image-not-found"><span class="term">screenshot-image-not-found</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-image-not-found">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Unable to reach the screenshot image on its remote location - does the image exist?
+				</p></dd><dt id="asv-screenshot-video-not-found"><span class="term">screenshot-video-not-found</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-video-not-found">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Unable to reach the screenshot video on its remote location - does the video file exist?
+				</p></dd><dt id="asv-screenshot-media-url-not-secure"><span class="term">screenshot-media-url-not-secure</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-media-url-not-secure">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				Consider using a secure (HTTPS) URL to reference this screenshot image or video.
+				</p></dd><dt id="asv-screenshot-no-unscaled-image"><span class="term">screenshot-no-unscaled-image</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-no-unscaled-image">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				A screenshot must have at least one image that has a scaling factor of 1.
+				</p></dd><dt id="asv-screenshot-no-media"><span class="term">screenshot-no-media</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-no-media">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A screenshot must contain at least one image or video in order to be useful. Please add an &lt;image/&gt; to it.
+				</p></dd><dt id="asv-screenshot-mixed-images-videos"><span class="term">screenshot-mixed-images-videos</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-mixed-images-videos">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A screenshot must contain either images or videos, but not both at the same time. Please use this screenshot exclusively for either static images or for videos.
+				</p></dd><dt id="asv-screenshot-no-caption"><span class="term">screenshot-no-caption</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-no-caption">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
+				The screenshot does not have a caption text. Consider adding one.
+				</p></dd><dt id="asv-screenshot-video-codec-missing"><span class="term">screenshot-video-codec-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-video-codec-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The screenshot video does not specify which video codec was used in a `codec` property.
+				</p></dd><dt id="asv-screenshot-video-container-missing"><span class="term">screenshot-video-container-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-video-container-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
+				The screenshot video does not specify which container format was used in a `container` property.
+				</p></dd><dt id="asv-screenshot-video-codec-invalid"><span class="term">screenshot-video-codec-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-video-codec-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The selected video codec is not supported by AppStream and software centers may not be able to play the video. Only the AV1 and VP9 codecs are currently supported, using `av1` and `vp9` as values for the `codec` property.
+				</p></dd><dt id="asv-screenshot-video-container-invalid"><span class="term">screenshot-video-container-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-video-container-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The selected video container format is not supported by AppStream and software centers may not be able to play the video. Only the WebM and Matroska video containers are currently supported, using `webm` and `mkv` as values for the `container` property.
+				</p></dd><dt id="asv-screenshot-video-file-wrong-container"><span class="term">screenshot-video-file-wrong-container</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-video-file-wrong-container">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				For videos, only the WebM and Matroska (.mkv) container formats are currently supported. The file extension of the referenced video does not belong to either of these formats.
+				</p></dd><dt id="asv-screenshot-default-contains-video"><span class="term">screenshot-default-contains-video</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-default-contains-video">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The default screenshot of a software component must not be a video. Use a static image as default screenshot and set the video as a secondary screenshot.
+				</p></dd><dt id="asv-screenshot-default-missing"><span class="term">screenshot-default-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-default-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				No screenshot is marked as default.
+				</p></dd><dt id="asv-relation-invalid-tag"><span class="term">relation-invalid-tag</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-invalid-tag">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Found an unknown tag in a requires/recommends group. This is likely an error, because a component relation of this type is unknown.
+				</p></dd><dt id="asv-relation-item-no-value"><span class="term">relation-item-no-value</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-item-no-value">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A `requires` or `recommends` item requires a value to denote a valid relation.
+				</p></dd><dt id="asv-relation-item-has-version"><span class="term">relation-item-has-version</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-item-has-version">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Found `version` property on required/recommended item of a type that should not have or require a version.
+				</p></dd><dt id="asv-relation-item-missing-compare"><span class="term">relation-item-missing-compare</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-item-missing-compare">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				Found `version` property on this required/recommended item, but not `compare` property. It is recommended to explicitly define a comparison operation.
+				</p></dd><dt id="asv-relation-item-invalid-vercmp"><span class="term">relation-item-invalid-vercmp</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-item-invalid-vercmp">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				Invalid comparison operation on relation item. Only one of `eq/ne/lt/gt/le/ge` is permitted.
+				</p></dd><dt id="asv-relation-item-has-vercmp"><span class="term">relation-item-has-vercmp</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-item-has-vercmp">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The relation item has a comparison operation set, but does not support any comparisons.
+				</p></dd><dt id="asv-relation-item-redefined"><span class="term">relation-item-redefined</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-item-redefined">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This relation item has already been defined once for this or a different relation type. Please do not redefine relations.
+				</p></dd><dt id="asv-relation-memory-in-requires"><span class="term">relation-memory-in-requires</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-memory-in-requires">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				Found a memory size relation in a `requires` tag. This means users will not be able to even install the component without having enough RAM. This is usually not intended and you want to use `memory` in the `recommends` tag instead.
+				</p></dd><dt id="asv-relation-control-in-requires"><span class="term">relation-control-in-requires</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-control-in-requires">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				Found a user input control relation in a `requires` tag. This means users will not be able to even install the component without having the defined input control available on the system. This is usually not intended and you want to use `control` in the `recommends` tag instead.
+				</p></dd><dt id="asv-relation-control-value-invalid"><span class="term">relation-control-value-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-control-value-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This `control` item defines an unknown input method and is invalid. Check the specification for a list of permitted values.
+				</p></dd><dt id="asv-relation-display-length-value-invalid"><span class="term">relation-display-length-value-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-display-length-value-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This `display_length` item contains an invalid display length. Its value must be a positive integer value denoting logical pixels. Please refer to the AppStream specification for more information on this tag.
+				</p></dd><dt id="asv-relation-display-length-side-property-invalid"><span class="term">relation-display-length-side-property-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-display-length-side-property-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This `side` property of this `display_length` item contains an invalid value. It must either be `shortest` or `longest`, or unset to imply `shortest` to make the item value refer to either the shortest or longest side of the display.
+				</p></dd><dt id="asv-relation-hardware-value-invalid"><span class="term">relation-hardware-value-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-hardware-value-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This `hardware` item contains an invalid value. It should be a Computer Hardware ID (CHID) UUID without braces.
+				</p></dd><dt id="asv-relation-memory-value-invalid"><span class="term">relation-memory-value-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-memory-value-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				A `memory` item must only contain a non-zero integer value, depicting a system memory size in mebibyte (MiB)
+				</p></dd><dt id="asv-relation-internet-value-invalid"><span class="term">relation-internet-value-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-internet-value-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The set tag value is not valid for an `internet` relation.
+				</p></dd><dt id="asv-relation-internet-bandwidth-offline"><span class="term">relation-internet-bandwidth-offline</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-internet-bandwidth-offline">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The `bandwidth_mbitps` property is not allowed when using `offline-only` as value.
+				</p></dd><dt id="asv-relation-internet-bandwidth-value-invalid"><span class="term">relation-internet-bandwidth-value-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-relation-internet-bandwidth-value-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The value of this property must be a positive integer value, describing the minimum required bandwidth in mbit/s.
+				</p></dd><dt id="asv-component-type-invalid"><span class="term">component-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-component-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The set component type is not a recognized, valid AppStream component type.
+				</p></dd><dt id="asv-component-priority-in-metainfo"><span class="term">component-priority-in-metainfo</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-component-priority-in-metainfo">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The component has a priority value set. This is not allowed in metainfo files.
+				</p></dd><dt id="asv-component-merge-in-metainfo"><span class="term">component-merge-in-metainfo</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-component-merge-in-metainfo">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The component has a `merge` method defined. This is not allowed in metainfo files.
+				</p></dd><dt id="asv-component-id-missing"><span class="term">component-id-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-component-id-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The component is missing an ID (&lt;id/&gt; tag).
+				</p></dd><dt id="asv-component-name-missing"><span class="term">component-name-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-component-name-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The component is missing a name (&lt;name/&gt; tag).
+				</p></dd><dt id="asv-component-name-too-long"><span class="term">component-name-too-long</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-component-name-too-long">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The name of this component is excessively long and can likely not be displayed properly in most layouts.
+				</p></dd><dt id="asv-component-summary-missing"><span class="term">component-summary-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-component-summary-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The component is missing a summary (&lt;summary/&gt; tag).
+				</p></dd><dt id="asv-id-tag-has-type"><span class="term">id-tag-has-type</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-id-tag-has-type">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The &lt;id/&gt; tag still contains a `type` property, probably from an old conversion to the recent metainfo format.
+				</p></dd><dt id="asv-multiple-pkgname"><span class="term">multiple-pkgname</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-multiple-pkgname">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
+				The `pkgname` tag appears multiple times. You should evaluate creating a metapackage containing the metainfo and .desktop files in order to avoid defining multiple package names per component.
+				</p></dd><dt id="asv-name-has-dot-suffix"><span class="term">name-has-dot-suffix</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-name-has-dot-suffix">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
+				The component name should (likely) not end with a dot (`.`).
+				</p></dd><dt id="asv-summary-has-dot-suffix"><span class="term">summary-has-dot-suffix</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-summary-has-dot-suffix">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The component summary should not end with a dot (`.`).
+				</p></dd><dt id="asv-summary-has-tabs-or-linebreaks"><span class="term">summary-has-tabs-or-linebreaks</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-summary-has-tabs-or-linebreaks">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The component summary must not contain tabs or linebreaks.
+				</p></dd><dt id="asv-summary-has-url"><span class="term">summary-has-url</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-summary-has-url">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The summary must not contain any URL. Use the `&lt;url/&gt;` tags for links.
+				</p></dd><dt id="asv-summary-first-word-not-capitalized"><span class="term">summary-first-word-not-capitalized</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-summary-first-word-not-capitalized">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The summary text does not start with a capitalized word, project name or number.
+				</p></dd><dt id="asv-summary-too-long"><span class="term">summary-too-long</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-summary-too-long">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The summary text is very long, and will likely not be displayed properly everywhere.
+				</p></dd><dt id="asv-icon-stock-cached-has-url"><span class="term">icon-stock-cached-has-url</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-icon-stock-cached-has-url">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				Icons of type `stock` or `cached` must not contain an URL, a full or an relative path to the icon. Only file basenames or stock names are allowed.
+				</p></dd><dt id="asv-icon-remote-no-url"><span class="term">icon-remote-no-url</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-icon-remote-no-url">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				Icons of type `remote` must contain an URL to the referenced icon.
+				</p></dd><dt id="asv-icon-remote-not-found"><span class="term">icon-remote-not-found</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-icon-remote-not-found">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Unable to reach remote icon at the given web location - does it exist?
+				</p></dd><dt id="asv-icon-remote-not-secure"><span class="term">icon-remote-not-secure</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-icon-remote-not-secure">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				Consider using a secure (HTTPS) URL for the remote icon link.
+				</p></dd><dt id="asv-metainfo-invalid-icon-type"><span class="term">metainfo-invalid-icon-type</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metainfo-invalid-icon-type">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				Metainfo files may only contain icons of type `stock` or `remote`, the set type is not allowed.
+				</p></dd><dt id="asv-url-invalid-type"><span class="term">url-invalid-type</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-url-invalid-type">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Invalid `type` property for this `url` tag. URLs of this type are not known in the AppStream specification.
+				</p></dd><dt id="asv-url-not-reachable"><span class="term">url-not-reachable</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-url-not-reachable">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Unable to reach remote location that this URL references - does it exist?
+				</p></dd><dt id="asv-url-not-secure"><span class="term">url-not-secure</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-url-not-secure">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				Consider using a secure (HTTPS) URL for this web link.
+				</p></dd><dt id="asv-web-url-expected"><span class="term">web-url-expected</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-web-url-expected">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A web URL was expected for this value.
+				</p></dd><dt id="asv-url-uses-ftp"><span class="term">url-uses-ftp</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-url-uses-ftp">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This web link uses the FTP protocol. Consider switching to HTTP(S) instead.
+				</p></dd><dt id="asv-url-redefined"><span class="term">url-redefined</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-url-redefined">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				An URL of this type has already been defined.
+				</p></dd><dt id="asv-url-homepage-missing"><span class="term">url-homepage-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-url-homepage-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This component is missing an `url` element of type `homepage` to link to the project's homepage.
+				</p></dd><dt id="asv-developer-name-tag-deprecated"><span class="term">developer-name-tag-deprecated</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-developer-name-tag-deprecated">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The toplevel `developer_name` element is deprecated. Please use the `name` element in a `developer` block instead.
+				</p></dd><dt id="asv-developer-info-missing"><span class="term">developer-info-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-developer-info-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				This component contains no `developer` element with information about its author.
+				</p></dd><dt id="asv-developer-id-missing"><span class="term">developer-id-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-developer-id-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The `developer` element is missing an `id` property, containing a unique string ID for the developer. Consider adding a unique ID.
+				</p></dd><dt id="asv-developer-id-invalid"><span class="term">developer-id-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-developer-id-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The developer-ID is invalid. It should be an rDNS string identifying the developer, or a Fediverse handle. It must also only contain lowercase ASCII letters, numbers and punctuation.
+				</p></dd><dt id="asv-developer-name-missing"><span class="term">developer-name-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-developer-name-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The `developer` block does not have a `name` element with a human-readable project author name.
+				</p></dd><dt id="asv-developer-name-has-url"><span class="term">developer-name-has-url</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-developer-name-has-url">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The `name` child of a `developer` block must not contain a hyperlink.
+				</p></dd><dt id="asv-unknown-desktop-id"><span class="term">unknown-desktop-id</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-unknown-desktop-id">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The set value is not an identifier for a desktop environment as registered with Freedesktop.org.
+				</p></dd><dt id="asv-launchable-unknown-type"><span class="term">launchable-unknown-type</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-launchable-unknown-type">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This `launchable` tag has an unknown type and can not be used.
+				</p></dd><dt id="asv-bundle-unknown-type"><span class="term">bundle-unknown-type</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-bundle-unknown-type">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This `bundle` tag has an unknown type and can not be used.
+				</p></dd><dt id="asv-update-contact-in-catalog-data"><span class="term">update-contact-in-catalog-data</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-update-contact-in-catalog-data">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The `update_contact` tag should not be included in catalog AppStream XML.
+				</p></dd><dt id="asv-nonstandard-gnome-extension"><span class="term">nonstandard-gnome-extension</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-nonstandard-gnome-extension">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				This tag is a GNOME-specific extension to AppStream and not part of the official specification. Do not expect it to work in all implementations and in all software centers.
+				</p></dd><dt id="asv-unknown-tag"><span class="term">unknown-tag</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-unknown-tag">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				Found invalid tag. Non-standard tags should be prefixed with `x-`. AppStream also provides the &lt;custom/&gt; tag to add arbitrary custom data to metainfo files. This tag is read by AppStream libraries and may be useful instead of defining new custom toplevel or `x-`-prefixed tags if you just want to add custom data to a metainfo file.
+				</p></dd><dt id="asv-metadata-license-missing"><span class="term">metadata-license-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metadata-license-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The essential tag `metadata_license` is missing. A license for the metadata itself always has to be defined.
+				</p></dd><dt id="asv-app-description-required"><span class="term">app-description-required</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-app-description-required">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The component is missing a long description. Components of this type must have a long description.
+				</p></dd><dt id="asv-font-description-missing"><span class="term">font-description-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-font-description-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				It would be useful to add a long description to this font to present it better to users.
+				</p></dd><dt id="asv-driver-firmware-description-missing"><span class="term">driver-firmware-description-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-driver-firmware-description-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				It is recommended to add a long description to this component to present it better to users.
+				</p></dd><dt id="asv-generic-description-missing"><span class="term">generic-description-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-generic-description-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
+				This generic component is missing a long description. It may be useful to add one.
+				</p></dd><dt id="asv-desktop-app-launchable-missing"><span class="term">desktop-app-launchable-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-app-launchable-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This `desktop-application` component is missing a `desktop-id` launchable tag. This means that this application can not be launched and has no association with its desktop-entry file. It also means no icon data or category information from the desktop-entry file will be available, which will result in this application being ignored entirely.
+				</p></dd><dt id="asv-desktop-app-launchable-omitted"><span class="term">desktop-app-launchable-omitted</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-app-launchable-omitted">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				This `desktop-application` component has no `desktop-id` launchable tag, however it contains all the necessary information to display the application. The omission of the launchable entry means that this application can not be launched directly from installers or software centers. If this is intended, this information can be ignored, otherwise it is strongly recommended to add a launchable tag as well.
+				</p></dd><dt id="asv-console-app-no-binary"><span class="term">console-app-no-binary</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-console-app-no-binary">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Type `console-application` component, but no information about binaries in $PATH was provided via a `provides/binary` tag.
+				</p></dd><dt id="asv-web-app-no-url-launchable"><span class="term">web-app-no-url-launchable</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-web-app-no-url-launchable">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This `web-application` component is missing a `launchable` tag of type `url`.
+				</p></dd><dt id="asv-web-app-no-icon"><span class="term">web-app-no-icon</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-web-app-no-icon">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This `web-application` component is missing a `icon` tag to specify a valid icon.
+				</p></dd><dt id="asv-web-app-no-category"><span class="term">web-app-no-category</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-web-app-no-category">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This `web-application` component is missing categorizations. A `categories` block is likely missing.
+				</p></dd><dt id="asv-font-no-font-data"><span class="term">font-no-font-data</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-font-no-font-data">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				Type `font` component, but no font information was provided via a `provides/font` tag.
+				</p></dd><dt id="asv-driver-no-modalias"><span class="term">driver-no-modalias</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-driver-no-modalias">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Type `driver` component, but no modalias information was provided via a `provides/modalias` tag.
+				</p></dd><dt id="asv-extends-not-allowed"><span class="term">extends-not-allowed</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-extends-not-allowed">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				An `extends` tag is specified, but the component is not of type `addon`, `localization` or `repository`.
+				</p></dd><dt id="asv-addon-extends-missing"><span class="term">addon-extends-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-addon-extends-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The component is an addon, but no `extends` tag was specified.
+				</p></dd><dt id="asv-localization-extends-missing"><span class="term">localization-extends-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-localization-extends-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				This `localization` component is missing an `extends` tag, to specify the components it adds localization to.
+				</p></dd><dt id="asv-localization-no-languages"><span class="term">localization-no-languages</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-localization-no-languages">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This `localization` component does not define any languages this localization is for.
+				</p></dd><dt id="asv-service-no-service-launchable"><span class="term">service-no-service-launchable</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-service-no-service-launchable">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This `service` component is missing a `launchable` tag of type `service`.
+				</p></dd><dt id="asv-metainfo-suggestion-type-invalid"><span class="term">metainfo-suggestion-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metainfo-suggestion-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Suggestions of any type other than `upstream` are not allowed in metainfo files.
+				</p></dd><dt id="asv-category-invalid"><span class="term">category-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-category-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The category name is not valid. Refer to the XDG Menu Specification for a list of valid category names.
+				</p></dd><dt id="asv-all-categories-ignored"><span class="term">all-categories-ignored</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-all-categories-ignored">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				All categories for this component have been ignored, either because they were invalid or because they are of low quality (e.g. custom 'X-' prefixed or toolkit ones like 'GTK' or 'Qt'). Please fix your category names, or add more categories.
+				</p></dd><dt id="asv-app-categories-missing"><span class="term">app-categories-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-app-categories-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This component is in no valid categories, even though it should be. Please check its metainfo file and desktop-entry file.
+				</p></dd><dt id="asv-screenshot-caption-too-long"><span class="term">screenshot-caption-too-long</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-screenshot-caption-too-long">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The screenshot caption is too long (should be &lt;= 100 characters)
+				</p></dd><dt id="asv-file-read-failed"><span class="term">file-read-failed</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-file-read-failed">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				Unable to read file.
+				</p></dd><dt id="asv-xml-markup-invalid"><span class="term">xml-markup-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-xml-markup-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The XML of this file is malformed.
+				</p></dd><dt id="asv-component-catalog-tag-invalid"><span class="term">component-catalog-tag-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-component-catalog-tag-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				Invalid tag found in catalog metadata. Only `component` tags are permitted.
+				</p></dd><dt id="asv-metainfo-ancient"><span class="term">metainfo-ancient</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metainfo-ancient">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The metainfo file uses an ancient version of the AppStream specification, which can not be validated. Please migrate it to version 0.6 (or higher). Modern files use the `component` root tag and include many other differences, so check for changes carefully when modernizing the data.
+				</p></dd><dt id="asv-root-tag-unknown"><span class="term">root-tag-unknown</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-root-tag-unknown">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This XML document has an unknown root tag. Maybe this file is not a metainfo document?
+				</p></dd><dt id="asv-metainfo-filename-cid-mismatch"><span class="term">metainfo-filename-cid-mismatch</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metainfo-filename-cid-mismatch">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The metainfo filename does not match the component ID.
+				</p></dd><dt id="asv-desktop-file-load-failed"><span class="term">desktop-file-load-failed</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-file-load-failed">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				Unable to load the desktop-entry file associated with this component.
+				</p></dd><dt id="asv-desktop-file-not-found"><span class="term">desktop-file-not-found</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-file-not-found">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This component metadata refers to a non-existing .desktop file.
+				</p></dd><dt id="asv-desktop-entry-category-invalid"><span class="term">desktop-entry-category-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-entry-category-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				A category defined in the desktop-entry file is not valid. Refer to the XDG Menu Specification for a list of valid categories.
+				</p></dd><dt id="asv-desktop-entry-bad-data"><span class="term">desktop-entry-bad-data</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-entry-bad-data">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				Error while reading some data from the desktop-entry file.
+				</p></dd><dt id="asv-desktop-entry-value-invalid-chars"><span class="term">desktop-entry-value-invalid-chars</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-entry-value-invalid-chars">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The value of this desktop-entry field contains invalid or non-printable UTF-8 characters, which can not be displayed properly.
+				</p></dd><dt id="asv-desktop-entry-value-quoted"><span class="term">desktop-entry-value-quoted</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-entry-value-quoted">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This desktop-entry field value is quoted, which is likely unintentional.
+				</p></dd><dt id="asv-desktop-entry-hidden-set"><span class="term">desktop-entry-hidden-set</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-entry-hidden-set">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This desktop-entry file has the 'Hidden' property set. This is wrong for vendor-installed .desktop files, and nullifies all effects this .desktop file has (including MIME associations), which most certainly is not intentional.
+				</p></dd><dt id="asv-desktop-entry-empty-onlyshowin"><span class="term">desktop-entry-empty-onlyshowin</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-entry-empty-onlyshowin">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This desktop-entry file has the 'OnlyShowIn' property set with an empty value. This might not be intended, as this will hide the application from all desktops. If you do want to hide the application from all desktops, using 'NoDisplay=true' is more explicit.
+				</p></dd><dt id="asv-dir-no-metadata-found"><span class="term">dir-no-metadata-found</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-dir-no-metadata-found">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				No AppStream metadata was found in this directory or directory tree.
+				</p></dd><dt id="asv-dir-applications-not-found"><span class="term">dir-applications-not-found</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-dir-applications-not-found">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
+				No XDG applications directory found.
+				</p></dd><dt id="asv-metainfo-legacy-path"><span class="term">metainfo-legacy-path</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metainfo-legacy-path">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The metainfo file is stored in a legacy path. Please place it in `/usr/share/metainfo/`.
+				</p></dd><dt id="asv-metainfo-multiple-components"><span class="term">metainfo-multiple-components</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metainfo-multiple-components">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The metainfo file specifies multiple components. This is not allowed.
+				</p></dd><dt id="asv-releases-not-in-order"><span class="term">releases-not-in-order</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-releases-not-in-order">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The releases are not sorted in a latest to oldest version order. This is required as some tools will assume that the latest version is always at the top. Sorting releases also increases overall readability of the metainfo file.
+				</p></dd><dt id="asv-releases-type-invalid"><span class="term">releases-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-releases-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The type of the releases block is invalid. It needs to either `embedded` (the default) or `external`.
+				</p></dd><dt id="asv-releases-url-insecure"><span class="term">releases-url-insecure</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-releases-url-insecure">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The URL to an external release metadata file is insecure. This is not allowed, please use HTTPS URLs only.
+				</p></dd><dt id="asv-releases-download-failed"><span class="term">releases-download-failed</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-releases-download-failed">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				Failed to download release metadata.
+				</p></dd><dt id="asv-releases-external-not-found"><span class="term">releases-external-not-found</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-releases-external-not-found">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				A local release metadata file was not found. It is strongly recommended to validate this metadata together with the main MetaInfo file.
+				</p></dd><dt id="asv-release-urgency-invalid"><span class="term">release-urgency-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-urgency-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The value set as release urgency is not a known urgency value.
+				</p></dd><dt id="asv-release-type-invalid"><span class="term">release-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The value set as release type is invalid.
+				</p></dd><dt id="asv-release-version-missing"><span class="term">release-version-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-version-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The release is missing the `version` property.
+				</p></dd><dt id="asv-release-time-missing"><span class="term">release-time-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-time-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The release is missing either the `date` (preferred) or the `timestamp` property.
+				</p></dd><dt id="asv-release-timestamp-invalid"><span class="term">release-timestamp-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-timestamp-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The release timestamp is invalid.
+				</p></dd><dt id="asv-release-description-outside-tag"><span class="term">release-description-outside-tag</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-description-outside-tag">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The release description must be put inside a `description` tag
+				</p></dd><dt id="asv-artifact-type-invalid"><span class="term">artifact-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-artifact-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The value set as artifact type is invalid. Must be either `source` or `binary`.
+				</p></dd><dt id="asv-artifact-bundle-type-invalid"><span class="term">artifact-bundle-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-artifact-bundle-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The value set as artifact bundle type is invalid.
+				</p></dd><dt id="asv-artifact-invalid-platform-triplet"><span class="term">artifact-invalid-platform-triplet</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-artifact-invalid-platform-triplet">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The platform triplet for this release is invalid. It must be in the form of `architecture-oskernel-osenv` - refer to the AppStream documentation or information on normalized GNU triplets for more information and valid fields.
+				</p></dd><dt id="asv-artifact-checksum-type-invalid"><span class="term">artifact-checksum-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-artifact-checksum-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The selected checksumming algorithm is unsupported or unknown.
+				</p></dd><dt id="asv-artifact-size-type-invalid"><span class="term">artifact-size-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-artifact-size-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The size type is unknown. Must be `download` or `installed`.
+				</p></dd><dt id="asv-artifact-filename-not-basename"><span class="term">artifact-filename-not-basename</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-artifact-filename-not-basename">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The artifact filename must be a file basename, not a (relative or absolute) path.
+				</p></dd><dt id="asv-release-issue-type-invalid"><span class="term">release-issue-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-issue-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The value set as release issue type is invalid.
+				</p></dd><dt id="asv-release-issue-is-cve-but-no-cve-id"><span class="term">release-issue-is-cve-but-no-cve-id</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-issue-is-cve-but-no-cve-id">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The issue is tagged at security vulnerability with a CVE number, but its value does not look like a valid CVE identifier.
+				</p></dd><dt id="asv-releases-info-missing"><span class="term">releases-info-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-releases-info-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
+				This component is missing information about releases. Consider adding a `releases` tag to describe releases and their changes.
+				</p></dd><dt id="asv-invalid-iso8601-date"><span class="term">invalid-iso8601-date</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-invalid-iso8601-date">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The AppStream specification requires a complete, ISO 8601 date string with at least day-granularity to denote dates. Please ensure the date string is valid.
+				</p></dd><dt id="asv-circular-component-relation"><span class="term">circular-component-relation</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-circular-component-relation">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				This component extends, provides, requires or recommends itself, which is certainly not intended and may confuse users or machines dealing with this metadata.
+				</p></dd><dt id="asv-runtime-project-license-no-ref"><span class="term">runtime-project-license-no-ref</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-runtime-project-license-no-ref">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				Licenses for `runtime` components are usually too complex to reflect them in a simple SPDX expression. Consider using a `LicenseRef` and a web URL as value for this component's `project_license`. E.g. `LicenseRef-free=https://example.com/licenses.html`
+				</p></dd><dt id="asv-runtime-no-provides"><span class="term">runtime-no-provides</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-runtime-no-provides">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
+				Since a `runtime` component is comprised of multiple other software components, their component-IDs may be listed in a `&lt;provides/&gt;` section for this runtime.
+				</p></dd><dt id="asv-unknown-provides-item-type"><span class="term">unknown-provides-item-type</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-unknown-provides-item-type">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The type of the item that the component provides is not known to AppStream.
+				</p></dd><dt id="asv-mimetypes-tag-deprecated"><span class="term">mimetypes-tag-deprecated</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-mimetypes-tag-deprecated">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The toplevel `mimetypes` tag is deprecated. Please use `mediatype` tags in a `provides` block instead to indicate that your software provides a media handler for the given types.
+				</p></dd><dt id="asv-content-rating-missing"><span class="term">content-rating-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-content-rating-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				This component has no `content_rating` tag to provide age rating information. You can generate the tag data online by answering a few questions at https://hughsie.github.io/oars/
+				</p></dd><dt id="asv-content-rating-type-missing"><span class="term">content-rating-type-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-content-rating-type-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The `type` attribute of this `content_rating` element is missing or empty.
+				</p></dd><dt id="asv-content-rating-type-invalid"><span class="term">content-rating-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-content-rating-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The `type` attribute of the `content_rating` element has an invalid value.
+				</p></dd><dt id="asv-content-rating-invalid-tag"><span class="term">content-rating-invalid-tag</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-content-rating-invalid-tag">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The `content_rating` tag can only contain `content_attribute` children.
+				</p></dd><dt id="asv-content-attribute-id-missing"><span class="term">content-attribute-id-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-content-attribute-id-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The `id` attribute of the `content_attribute` element is missing or empty.
+				</p></dd><dt id="asv-content-attribute-id-invalid"><span class="term">content-attribute-id-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-content-attribute-id-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The `id` attribute of the `content_attribute` element has an invalid value.
+				</p></dd><dt id="asv-content-attribute-value-empty"><span class="term">content-attribute-value-empty</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-content-attribute-value-empty">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The `content_attribute` tag needs a value.
+				</p></dd><dt id="asv-content-attribute-value-unknown"><span class="term">content-attribute-value-unknown</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-content-attribute-value-unknown">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The `content_attribute` tag value is unknown.
+				</p></dd><dt id="asv-content-attribute-value-invalid"><span class="term">content-attribute-value-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-content-attribute-value-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The `content_attribute` tag value is invalid for the given id.
+				</p></dd><dt id="asv-content-attribute-id-duplicated"><span class="term">content-attribute-id-duplicated</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-content-attribute-id-duplicated">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A `content_attribute` tag with this ID has already been defined.
+				</p></dd><dt id="asv-usertag-missing-namespace"><span class="term">usertag-missing-namespace</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-usertag-missing-namespace">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				This `tag` is missing a `namespace` attribute.
+				</p></dd><dt id="asv-usertag-invalid"><span class="term">usertag-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-usertag-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This tag or its namespace contains invalid characters. Only lower-cased ASCII letters, numbers, dots, hyphens and underscores are permitted.
+				</p></dd><dt id="asv-branding-color-type-invalid"><span class="term">branding-color-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-branding-color-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The type of this color is not valid.
+				</p></dd><dt id="asv-branding-color-scheme-type-invalid"><span class="term">branding-color-scheme-type-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-branding-color-scheme-type-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The value of this color scheme preference is not valid.
+				</p></dd><dt id="asv-branding-color-scheme-wrong-property"><span class="term">branding-color-scheme-wrong-property</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-branding-color-scheme-wrong-property">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The name of the color scheme property is wrong. It should be `scheme_preference`.
+				</p></dd><dt id="asv-branding-color-invalid"><span class="term">branding-color-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-branding-color-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This color is not a valid HTML color code.
+				</p></dd><dt id="asv-branding-color-duplicated"><span class="term">branding-color-duplicated</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-branding-color-duplicated">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A color for this type/scheme combination was already set. Colors must be unique per type/scheme.
+				</p></dd><dt id="asv-reference-doi-invalid"><span class="term">reference-doi-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-reference-doi-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The given DOI (Digital Object Identifier) for this reference item is not valid.
+				</p></dd><dt id="asv-reference-citation-url-invalid"><span class="term">reference-citation-url-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-reference-citation-url-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The value for this citation reference item must be an URL to a CFF (Citation File Format) file.
+				</p></dd><dt id="asv-reference-registry-name-missing"><span class="term">reference-registry-name-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-reference-registry-name-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This registry reference item is missing the `name` property to denote the name of the registry it is about.
+				</p></dd><dt id="asv-reference-registry-name-unknown"><span class="term">reference-registry-name-unknown</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-reference-registry-name-unknown">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The registry for this reference item is unknown. This may be due to a typing error, or the registry needs to be registered with AppStream.
+				</p></dd><dt id="asv-reference-value-missing"><span class="term">reference-value-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-reference-value-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The reference item is missing a value.
+				</p></dd><dt id="asv-custom-invalid-tag"><span class="term">custom-invalid-tag</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-custom-invalid-tag">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The `custom` tag can only contain `value` children.
+				</p></dd><dt id="asv-custom-key-missing"><span class="term">custom-key-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-custom-key-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				This `custom` tag value is missing a `key` attribute.
+				</p></dd><dt id="asv-custom-key-duplicated"><span class="term">custom-key-duplicated</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-custom-key-duplicated">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A key can only be used once.
+				</p></dd><dt id="asv-custom-value-empty"><span class="term">custom-value-empty</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-custom-value-empty">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				This custom value is empty.
+				</p></dd><dt id="asv-metainfo-localized-keywords-tag"><span class="term">metainfo-localized-keywords-tag</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metainfo-localized-keywords-tag">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				A `keywords` tag must not be localized in metainfo files (upstream metadata). Localize the individual keyword entries instead.
+				</p></dd></dl></div></div></div></div></div><div class="page-bottom"><div id="_bottom-navigation"><a class="nav-link" href="chap-AppStream-ManualPages.html"><span class="next-icon">→</span><span class="nav-label"><span class="number">Chapter 7 </span>Manual pages</span></a><a class="nav-link" href="sect-Quickstart-Translation.html"><span class="prev-icon">←</span><span class="nav-label">Translating Metadata</span></a></div></div></div><div id="_inward"></div></div><div id="_footer-wrap"><div id="_footer"><p>©
+        2024 
+        Freedesktop.org, the AppStream Project</p></div></div></body></html>

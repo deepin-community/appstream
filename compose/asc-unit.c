@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -29,15 +29,14 @@
 
 #include "as-utils-private.h"
 
-typedef struct
-{
-	AsBundleKind	bundle_kind;
-	gchar		*bundle_id;
-	gchar		*bundle_id_safe;
-	GPtrArray	*contents;
-	GPtrArray	*relevant_paths;
+typedef struct {
+	AsBundleKind bundle_kind;
+	gchar *bundle_id;
+	gchar *bundle_id_safe;
+	GPtrArray *contents;
+	GPtrArray *relevant_paths;
 
-	gpointer	user_data;
+	gpointer user_data;
 } AscUnitPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AscUnit, asc_unit, G_TYPE_OBJECT)
@@ -107,7 +106,7 @@ asc_unit_set_bundle_kind (AscUnit *unit, AsBundleKind kind)
  * Gets the ID name of the bundle (a package / Flatpak / any entity containing metadata)
  * that this unit represents.
  **/
-const gchar*
+const gchar *
 asc_unit_get_bundle_id (AscUnit *unit)
 {
 	AscUnitPrivate *priv = GET_PRIVATE (unit);
@@ -121,7 +120,7 @@ asc_unit_get_bundle_id (AscUnit *unit)
  * Gets the ID name of the bundle, normalized to be safe to use
  * in filenames. This may *not* be the same name as set via asc_unit_get_bundle_id()
  **/
-const gchar*
+const gchar *
 asc_unit_get_bundle_id_safe (AscUnit *unit)
 {
 	AscUnitPrivate *priv = GET_PRIVATE (unit);
@@ -147,9 +146,9 @@ asc_unit_set_bundle_id (AscUnit *unit, const gchar *id)
 		g_string_truncate (tmp, 0);
 		g_string_append (tmp, "root");
 	} else {
-		as_gstring_replace (tmp, "/", "-");
-		as_gstring_replace (tmp, "\\", "-");
-		as_gstring_replace (tmp, ":", "_");
+		as_gstring_replace (tmp, "/", "-", 0);
+		as_gstring_replace (tmp, "\\", "-", 0);
+		as_gstring_replace (tmp, ":", "_", 0);
 
 		if (g_str_has_prefix (tmp->str, "-") || g_str_has_prefix (tmp->str, "."))
 			g_string_erase (tmp, 0, 1);
@@ -169,7 +168,7 @@ asc_unit_set_bundle_id (AscUnit *unit, const gchar *id)
  *
  * Returns: (transfer none) (element-type utf8) : A file listing
  **/
-GPtrArray*
+GPtrArray *
 asc_unit_get_contents (AscUnit *unit)
 {
 	AscUnitPrivate *priv = GET_PRIVATE (unit);
@@ -201,7 +200,7 @@ asc_unit_set_contents (AscUnit *unit, GPtrArray *contents)
  *
  * Returns: (transfer none) (element-type utf8) : A list of paths
  **/
-GPtrArray*
+GPtrArray *
 asc_unit_get_relevant_paths (AscUnit *unit)
 {
 	AscUnitPrivate *priv = GET_PRIVATE (unit);
@@ -322,7 +321,7 @@ asc_unit_dir_exists (AscUnit *unit, const gchar *dirname)
  *
  * Read the contents of the selected file into memory and return them.
  **/
-GBytes*
+GBytes *
 asc_unit_read_data (AscUnit *unit, const gchar *filename, GError **error)
 {
 	AscUnitClass *klass;
@@ -368,7 +367,7 @@ asc_unit_set_user_data (AscUnit *unit, gpointer user_data)
  *
  * Creates a new #AscUnit.
  **/
-AscUnit*
+AscUnit *
 asc_unit_new (void)
 {
 	AscUnit *unit;

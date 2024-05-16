@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -25,11 +25,12 @@
 #include <QString>
 #include <QList>
 #include <QStringList>
-#include "component.h"
+#include "component-box.h"
 #include "metadata.h"
 
 struct _AsPool;
-namespace AppStream {
+namespace AppStream
+{
 
 /**
  * Access the AppStream metadata pool.
@@ -48,10 +49,10 @@ public:
     /**
      * \returns the internally stored AsPool
      */
-    _AsPool *asPool() const;
+    _AsPool *cPtr() const;
 
     /**
-     * Pool::Flags:
+     * Pool::Flag:
      * FlagNone:               No flags.
      * FlagLoadOsCatalog:      Add AppStream catalog metadata to the pool.
      * FlagLoadOsMetainfo:     Add data from AppStream metainfo files to the pool.
@@ -64,37 +65,18 @@ public:
      *
      * Flags controlling the metadata pool behavior.
      **/
-    enum Flags {
+    enum Flag {
         FlagNone = 0,
-        FlagLoadOsCatalog   = 1 << 0,
-        FlagLoadOsMetainfo     = 1 << 1,
+        FlagLoadOsCatalog = 1 << 0,
+        FlagLoadOsMetainfo = 1 << 1,
         FlagLoadOsDesktopFiles = 1 << 2,
-        FlagLoadFlatpak        = 1 << 3,
-        FlagIgnoreCacheAge     = 1 << 4,
-        FlagResolveAddons      = 1 << 5,
-        FlagPreferOsMetainfo   = 1 << 6,
-        FlagMonitor            = 1 << 7,
-
-        // DEPRECATED
-        FlagLoadOsCollection   [[deprecated]] = FlagLoadOsCatalog,
-        FlagReadCollection   [[deprecated]] = FlagLoadOsCatalog,
-        FlagReadMetainfo     [[deprecated]] = FlagLoadOsMetainfo,
-        FlagReadDesktopFiles [[deprecated]] = FlagLoadOsDesktopFiles,
+        FlagLoadFlatpak = 1 << 3,
+        FlagIgnoreCacheAge = 1 << 4,
+        FlagResolveAddons = 1 << 5,
+        FlagPreferOsMetainfo = 1 << 6,
+        FlagMonitor = 1 << 7,
     };
-
-    /**
-     * Pool::CacheFlags:
-     * None:      No flags.
-     * UseUser:   Create an user-specific metadata cache.
-     * UseSystem: Use and - if possible - update the global metadata cache.
-     *
-     * Flags on how caching should be used.
-     **/
-    enum CacheFlags {
-        CacheFlagNone      [[deprecated]] = 0,
-        CacheFlagUseUser   [[deprecated]] = 1 << 0,
-        CacheFlagUseSystem [[deprecated]] = 1 << 1,
-    };
+    Q_DECLARE_FLAGS(Flags, Flag)
 
     /**
      * \return true on success. False on failure
@@ -105,11 +87,11 @@ public:
     bool load();
 
     /**
-     * \return true on success. False on failure
-     *
-     * In case of failure, @p error will be initialized with the error message
+     * Loads all available metadata and opens the cache asynchronously.
+     * Once finished, the \sa loaded() signal will be emitted, with
+     * its bool argument indicating whether it was successful.
      */
-    Q_DECL_DEPRECATED bool load(QString* error);
+    void loadAsync();
 
     /**
      * Remove all software component information from the pool.
@@ -124,54 +106,52 @@ public:
     /**
      * Add a component to the pool.
      */
-    bool addComponents(const QList<AppStream::Component>& cpts);
+    bool addComponents(const ComponentBox &cbox);
 
-    QList<AppStream::Component> components() const;
+    ComponentBox components() const;
 
-    QList<AppStream::Component> componentsById(const QString& cid) const;
+    ComponentBox componentsById(const QString &cid) const;
 
-    QList<AppStream::Component> componentsByProvided(Provided::Kind kind, const QString& item) const;
+    ComponentBox componentsByProvided(Provided::Kind kind, const QString &item) const;
 
-    QList<AppStream::Component> componentsByKind(Component::Kind kind) const;
+    ComponentBox componentsByKind(Component::Kind kind) const;
 
-    QList<AppStream::Component> componentsByCategories(const QStringList& categories) const;
+    ComponentBox componentsByCategories(const QStringList &categories) const;
 
-    QList<AppStream::Component> componentsByLaunchable(Launchable::Kind kind, const QString& value) const;
+    ComponentBox componentsByLaunchable(Launchable::Kind kind, const QString &value) const;
 
-    QList<AppStream::Component> componentsByExtends(const QString& extendedId) const;
+    ComponentBox componentsByExtends(const QString &extendedId) const;
 
-    QList<AppStream::Component> componentsByBundleId(Bundle::Kind kind, const QString& bundleId, bool matchPrefix) const;
+    ComponentBox
+    componentsByBundleId(Bundle::Kind kind, const QString &bundleId, bool matchPrefix) const;
 
-    QList<AppStream::Component> search(const QString& term) const;
+    ComponentBox search(const QString &term) const;
 
+    void setLocale(const QString &locale);
 
-    void setLocale(const QString& locale);
-
-    uint flags() const;
-    void setFlags(uint flags);
-    void addFlags(uint flags);
-    void removeFlags(uint flags);
+    Pool::Flags flags() const;
+    void setFlags(Pool::Flags flags);
+    void addFlags(Pool::Flags flags);
+    void removeFlags(Pool::Flags flags);
 
     void resetExtraDataLocations();
     void addExtraDataLocation(const QString &directory, Metadata::FormatStyle formatStyle);
 
     void setLoadStdDataLocations(bool enabled);
-    void overrideCacheLocations(const QString &sysDir,
-                                const QString &userDir);
+    void overrideCacheLocations(const QString &sysDir, const QString &userDir);
 
-    Q_DECL_DEPRECATED bool addComponent(const AppStream::Component& cpt);
-
-    Q_DECL_DEPRECATED uint cacheFlags() const;
-    Q_DECL_DEPRECATED void setCacheFlags(uint flags);
-
-    Q_DECL_DEPRECATED void setCacheLocation(const QString &path);
-    Q_DECL_DEPRECATED QString cacheLocation() const;
-
-    Q_DECL_DEPRECATED void clearMetadataLocations();
-    Q_DECL_DEPRECATED void addMetadataLocation(const QString& directory);
+    bool isEmpty() const;
 
 Q_SIGNALS:
     void changed();
+
+    /**
+     * Emitted when the pool has been loaded asynchronously.
+     * \param success Whether loading was successful.
+     * \sa lastError() will contain the error message.
+     * \sa loadAsync()
+     */
+    void loadFinished(bool success);
 
 private:
     Q_DISABLE_COPY(Pool);

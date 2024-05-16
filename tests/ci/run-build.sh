@@ -13,6 +13,7 @@ apt_support=false
 build_compose=true
 build_docs=false
 build_qt=true
+systemd=true
 maintainer_mode=true
 static_analysis=false
 
@@ -21,6 +22,10 @@ if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
     apt_support=true
     # daps is available to build docs
     build_docs=true
+fi;
+
+if [ "$ID" = "freebsd" ]; then
+    systemd=false
 fi;
 
 build_type=debugoptimized
@@ -52,7 +57,7 @@ $CC --version
 #
 
 mkdir $build_dir && cd $build_dir
-meson --buildtype=$build_type \
+meson setup --buildtype=$build_type \
       $sanitize_flags \
       -Dmaintainer=$maintainer_mode \
       -Dstatic-analysis=$static_analysis \
@@ -60,6 +65,7 @@ meson --buildtype=$build_type \
       -Dqt=$build_qt \
       -Dcompose=$build_compose \
       -Dapt-support=$apt_support \
+      -Dsystemd=$systemd \
       -Dvapi=true \
       ..
 
