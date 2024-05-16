@@ -1,7 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  * Copyright (C) 2016 Richard Hughes <richard@hughsie.com>
- * Copyright (C) 2020-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2020-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -21,7 +21,7 @@
 
 #pragma once
 
-#if !defined (__APPSTREAM_PRIVATE_H) && !defined (AS_COMPILATION)
+#if !defined(__APPSTREAM_PRIVATE_H) && !defined(AS_COMPILATION)
 #error "Only <appstream.h> can be included directly."
 #endif
 
@@ -32,21 +32,11 @@
 G_BEGIN_DECLS
 #pragma GCC visibility push(hidden)
 
-gboolean	as_review_load_from_xml (AsReview *review,
-					 AsContext *ctx,
-					 xmlNode *node,
-					 GError **error);
-void		as_review_to_xml_node (AsReview *review,
-				       AsContext *ctx,
-				       xmlNode *root);
+gboolean as_review_load_from_xml (AsReview *review, AsContext *ctx, xmlNode *node, GError **error);
+void	 as_review_to_xml_node (AsReview *review, AsContext *ctx, xmlNode *root);
 
-gboolean	as_review_load_from_yaml (AsReview *review,
-					  AsContext *ctx,
-					  GNode *node,
-					  GError **error);
-void		as_review_emit_yaml (AsReview *review,
-				     AsContext *ctx,
-				     yaml_emitter_t *emitter);
+gboolean as_review_load_from_yaml (AsReview *review, AsContext *ctx, GNode *node, GError **error);
+void	 as_review_emit_yaml (AsReview *review, AsContext *ctx, yaml_emitter_t *emitter);
 
 #pragma GCC visibility pop
 G_END_DECLS

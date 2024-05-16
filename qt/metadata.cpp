@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  * Copyright (C) 2017 Jan Grulich <jgrulich@redhat.com>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
@@ -26,7 +26,8 @@
 
 using namespace AppStream;
 
-class AppStream::MetadataData : public QSharedData {
+class AppStream::MetadataData : public QSharedData
+{
 public:
     MetadataData()
     {
@@ -44,7 +45,7 @@ public:
         g_object_unref(m_metadata);
     }
 
-    bool operator==(const MetadataData& rd) const
+    bool operator==(const MetadataData &rd) const
     {
         return rd.m_metadata == m_metadata;
     }
@@ -55,10 +56,10 @@ public:
     }
 
     QString lastError;
-    AsMetadata* m_metadata;
+    AsMetadata *m_metadata;
 };
 
-AppStream::Metadata::FormatKind AppStream::Metadata::stringToFormatKind(const QString& kindString)
+AppStream::Metadata::FormatKind AppStream::Metadata::stringToFormatKind(const QString &kindString)
 {
     if (kindString == QLatin1String("xml")) {
         return FormatKind::FormatKindXml;
@@ -78,9 +79,11 @@ QString AppStream::Metadata::formatKindToString(AppStream::Metadata::FormatKind 
     return QLatin1String("unknown");
 }
 
-AppStream::Metadata::FormatVersion AppStream::Metadata::stringToFormatVersion(const QString& formatVersionString)
+AppStream::Metadata::FormatVersion
+AppStream::Metadata::stringToFormatVersion(const QString &formatVersionString)
 {
-    return static_cast<Metadata::FormatVersion>(as_format_version_from_string(qPrintable(formatVersionString)));
+    return static_cast<Metadata::FormatVersion>(
+        as_format_version_from_string(qPrintable(formatVersionString)));
 }
 
 QString AppStream::Metadata::formatVersionToString(AppStream::Metadata::FormatVersion version)
@@ -90,17 +93,19 @@ QString AppStream::Metadata::formatVersionToString(AppStream::Metadata::FormatVe
 
 Metadata::Metadata()
     : d(new MetadataData())
-{}
+{
+}
 
-Metadata::Metadata(_AsMetadata* metadata)
+Metadata::Metadata(_AsMetadata *metadata)
     : d(new MetadataData(metadata))
-{}
+{
+}
 
 Metadata::Metadata(const Metadata &metadata) = default;
 
 Metadata::~Metadata() = default;
 
-Metadata& Metadata::operator=(const Metadata &metadata) = default;
+Metadata &Metadata::operator=(const Metadata &metadata) = default;
 
 bool Metadata::operator==(const Metadata &other) const
 {
@@ -113,12 +118,13 @@ bool Metadata::operator==(const Metadata &other) const
     return false;
 }
 
-_AsMetadata * AppStream::Metadata::asMetadata() const
+_AsMetadata *AppStream::Metadata::cPtr() const
 {
     return d->metadata();
 }
 
-AppStream::Metadata::MetadataError AppStream::Metadata::parseFile(const QString& file, AppStream::Metadata::FormatKind format)
+AppStream::Metadata::MetadataError
+AppStream::Metadata::parseFile(const QString &file, AppStream::Metadata::FormatKind format)
 {
     g_autoptr(GError) error = nullptr;
     g_autoptr(GFile) gFile = g_file_new_for_path(qPrintable(file));
@@ -135,10 +141,11 @@ AppStream::Metadata::MetadataError AppStream::Metadata::parseFile(const QString&
     return AppStream::Metadata::MetadataErrorNoError;
 }
 
-AppStream::Metadata::MetadataError AppStream::Metadata::parse(const QString& data, AppStream::Metadata::FormatKind format)
+AppStream::Metadata::MetadataError
+AppStream::Metadata::parse(const QString &data, AppStream::Metadata::FormatKind format)
 {
     g_autoptr(GError) error = nullptr;
-    as_metadata_parse(d->m_metadata, qPrintable(data), (AsFormatKind) format, &error);
+    as_metadata_parse_data(d->m_metadata, qPrintable(data), -1, (AsFormatKind) format, &error);
 
     if (error != nullptr) {
         d->lastError = QString::fromUtf8(error->message);
@@ -151,10 +158,11 @@ AppStream::Metadata::MetadataError AppStream::Metadata::parse(const QString& dat
     return AppStream::Metadata::MetadataErrorNoError;
 }
 
-AppStream::Metadata::MetadataError AppStream::Metadata::parseDesktopData(const QString& data, const QString& cid)
+AppStream::Metadata::MetadataError AppStream::Metadata::parseDesktopData(const QString &cid,
+                                                                         const QString &data)
 {
     g_autoptr(GError) error = nullptr;
-    as_metadata_parse_desktop_data(d->m_metadata, qPrintable(data), qPrintable(cid), &error);
+    as_metadata_parse_desktop_data(d->m_metadata, qPrintable(cid), qPrintable(data), -1, &error);
 
     if (error != nullptr) {
         d->lastError = QString::fromUtf8(error->message);
@@ -175,17 +183,9 @@ AppStream::Component AppStream::Metadata::component() const
     return AppStream::Component(component);
 }
 
-QList<AppStream::Component> AppStream::Metadata::components() const
+ComponentBox AppStream::Metadata::components() const
 {
-    QList<Component> res;
-
-    auto components = as_metadata_get_components(d->m_metadata);
-    res.reserve(components->len);
-    for (uint i = 0; i < components->len; i++) {
-        auto component = AS_COMPONENT (g_ptr_array_index (components, i));
-        res.append(Component(component));
-    }
-    return res;
+    return ComponentBox(as_metadata_get_components(d->m_metadata));
 }
 
 void AppStream::Metadata::clearComponents()
@@ -193,17 +193,19 @@ void AppStream::Metadata::clearComponents()
     as_metadata_clear_components(d->m_metadata);
 }
 
-void AppStream::Metadata::addComponent(const AppStream::Component& component)
+void AppStream::Metadata::addComponent(const AppStream::Component &component)
 {
-    as_metadata_add_component(d->m_metadata, component.asComponent());
+    as_metadata_add_component(d->m_metadata, component.cPtr());
 }
 
 QString AppStream::Metadata::componentToMetainfo(AppStream::Metadata::FormatKind format) const
 {
-    return valueWrap(as_metadata_component_to_metainfo(d->m_metadata, (AsFormatKind) format, nullptr));
+    return valueWrap(
+        as_metadata_component_to_metainfo(d->m_metadata, (AsFormatKind) format, nullptr));
 }
 
-AppStream::Metadata::MetadataError AppStream::Metadata::saveMetainfo(const QString& fname, AppStream::Metadata::FormatKind format)
+AppStream::Metadata::MetadataError
+AppStream::Metadata::saveMetainfo(const QString &fname, AppStream::Metadata::FormatKind format)
 {
     g_autoptr(GError) error = nullptr;
     as_metadata_save_metainfo(d->m_metadata, qPrintable(fname), (AsFormatKind) format, &error);
@@ -221,15 +223,12 @@ AppStream::Metadata::MetadataError AppStream::Metadata::saveMetainfo(const QStri
 
 QString AppStream::Metadata::componentsToCatalog(AppStream::Metadata::FormatKind format) const
 {
-    return valueWrap(as_metadata_components_to_catalog(d->m_metadata, (AsFormatKind) format, nullptr));
+    return valueWrap(
+        as_metadata_components_to_catalog(d->m_metadata, (AsFormatKind) format, nullptr));
 }
 
-QString AppStream::Metadata::componentsToCollection(AppStream::Metadata::FormatKind format) const
-{
-    return componentsToCatalog(format);
-}
-
-AppStream::Metadata::MetadataError AppStream::Metadata::saveCatalog(const QString& filename, AppStream::Metadata::FormatKind format)
+AppStream::Metadata::MetadataError
+AppStream::Metadata::saveCatalog(const QString &filename, AppStream::Metadata::FormatKind format)
 {
     g_autoptr(GError) error = nullptr;
     as_metadata_save_catalog(d->m_metadata, qPrintable(filename), (AsFormatKind) format, &error);
@@ -245,14 +244,10 @@ AppStream::Metadata::MetadataError AppStream::Metadata::saveCatalog(const QStrin
     return AppStream::Metadata::MetadataErrorNoError;
 }
 
-AppStream::Metadata::MetadataError AppStream::Metadata::saveCollection(const QString& collection, AppStream::Metadata::FormatKind format)
-{
-    return saveCatalog(collection, format);
-}
-
 AppStream::Metadata::FormatVersion AppStream::Metadata::formatVersion() const
 {
-    return static_cast<AppStream::Metadata::FormatVersion>(as_metadata_get_format_version(d->m_metadata));
+    return static_cast<AppStream::Metadata::FormatVersion>(
+        as_metadata_get_format_version(d->m_metadata));
 }
 
 void AppStream::Metadata::setFormatVersion(AppStream::Metadata::FormatVersion formatVersion)
@@ -262,7 +257,8 @@ void AppStream::Metadata::setFormatVersion(AppStream::Metadata::FormatVersion fo
 
 AppStream::Metadata::FormatStyle AppStream::Metadata::formatStyle() const
 {
-    return static_cast<AppStream::Metadata::FormatStyle>(as_metadata_get_format_style(d->m_metadata));
+    return static_cast<AppStream::Metadata::FormatStyle>(
+        as_metadata_get_format_style(d->m_metadata));
 }
 
 void AppStream::Metadata::setFormatStyle(AppStream::Metadata::FormatStyle format)
@@ -275,7 +271,7 @@ QString AppStream::Metadata::locale() const
     return valueWrap(as_metadata_get_locale(d->m_metadata));
 }
 
-void AppStream::Metadata::setLocale(const QString& locale)
+void AppStream::Metadata::setLocale(const QString &locale)
 {
     as_metadata_set_locale(d->m_metadata, qPrintable(locale));
 }
@@ -285,7 +281,7 @@ QString AppStream::Metadata::origin() const
     return valueWrap(as_metadata_get_origin(d->m_metadata));
 }
 
-void AppStream::Metadata::setOrigin(const QString& origin)
+void AppStream::Metadata::setOrigin(const QString &origin)
 {
     as_metadata_set_origin(d->m_metadata, qPrintable(origin));
 }
@@ -315,7 +311,7 @@ QString AppStream::Metadata::architecture() const
     return valueWrap(as_metadata_get_architecture(d->m_metadata));
 }
 
-void AppStream::Metadata::setArchitecture(const QString& architecture)
+void AppStream::Metadata::setArchitecture(const QString &architecture)
 {
     as_metadata_set_architecture(d->m_metadata, qPrintable(architecture));
 }
@@ -325,11 +321,11 @@ QString Metadata::lastError() const
     return d->lastError;
 }
 
-QDebug operator<<(QDebug s, const AppStream::Metadata& metadata)
+QDebug operator<<(QDebug s, const AppStream::Metadata &metadata)
 {
     QStringList list;
-    const auto components = metadata.components();
-    for (const AppStream::Component& component : components) {
+    const auto components = metadata.components().toList();
+    for (const AppStream::Component &component : components) {
         list << component.id();
     }
     s.nospace() << "AppStream::Metadata(" << list << ")";

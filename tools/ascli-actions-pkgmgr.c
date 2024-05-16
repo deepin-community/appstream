@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2015-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2015-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -49,16 +49,17 @@ exec_pm_action (const gchar *action, gchar **pkgnames)
 		if (g_file_test ("/usr/bin/pkcon", G_FILE_TEST_EXISTS)) {
 			exe = "/usr/bin/pkcon";
 		} else {
-			g_printerr ("%s\n", _("No suitable package manager CLI found. Please make sure that e.g. \"pkcon\" (part of PackageKit) is available."));
+			g_printerr ("%s\n",
+				    _("No suitable package manager CLI found. Please make sure that e.g. \"pkcon\" (part of PackageKit) is available."));
 			return ASCLI_EXIT_CODE_FAILED;
 		}
 	}
 
-	cmd = g_new0 (gchar*, 3 + g_strv_length (pkgnames) + 1);
+	cmd = g_new0 (gchar *, 3 + g_strv_length (pkgnames) + 1);
 	cmd[0] = g_strdup (exe);
 	cmd[1] = g_strdup (action);
 	for (guint i = 0; pkgnames[i] != NULL; i++) {
-		cmd[2+i] = g_strdup (pkgnames[i]);
+		cmd[2 + i] = g_strdup (pkgnames[i]);
 	}
 
 	ret = execv (exe, cmd);
@@ -85,15 +86,14 @@ exec_flatpak_action (const gchar *action, const gchar *bundle_id)
 		return ASCLI_EXIT_CODE_FAILED;
 	}
 
-	cmd = g_new0 (gchar*, 4 + 1);
+	cmd = g_new0 (gchar *, 4 + 1);
 	cmd[0] = g_strdup (exe);
 	cmd[1] = g_strdup (action);
 	cmd[2] = g_strdup (bundle_id);
 
 	ret = execv (exe, cmd);
 	if (ret != 0)
-		ascli_print_stderr (_("Unable to spawn Flatpak process: %s"),
-				    g_strerror (errno));
+		ascli_print_stderr (_("Unable to spawn Flatpak process: %s"), g_strerror (errno));
 	return ret;
 }
 
@@ -106,8 +106,8 @@ ascli_get_component_instrm_candidate (const gchar *identifier,
 {
 	g_autoptr(GError) error = NULL;
 	g_autoptr(AsPool) pool = NULL;
-	g_autoptr(GPtrArray) result = NULL;
-	g_autoptr(GPtrArray) result_filtered = NULL;
+	g_autoptr(AsComponentBox) result = NULL;
+	g_autoptr(AsComponentBox) result_filtered = NULL;
 	AsComponent *r_cpt;
 
 	if (identifier == NULL) {
@@ -123,41 +123,41 @@ ascli_get_component_instrm_candidate (const gchar *identifier,
 	}
 
 	result = as_pool_get_components_by_id (pool, identifier);
-	if (result->len == 0) {
+	if (as_component_box_is_empty (result)) {
 		ascli_print_stderr (_("Unable to find component with ID '%s'!"), identifier);
 		return ASCLI_EXIT_CODE_NO_RESULT;
 	}
 
 	if (bundle_kind == AS_BUNDLE_KIND_UNKNOWN) {
-		result_filtered = g_ptr_array_ref (result);
+		result_filtered = g_object_ref (result);
 	} else {
-		result_filtered = g_ptr_array_new_with_free_func (g_object_unref);
-		for (guint i = 0; i < result->len; i++) {
-			AsComponent *cpt = AS_COMPONENT (g_ptr_array_index (result, i));
+		result_filtered = as_component_box_new (AS_COMPONENT_BOX_FLAG_NO_CHECKS);
+		for (guint i = 0; i < as_component_box_len (result); i++) {
+			AsComponent *cpt = as_component_box_index (result, i);
 
 			if (bundle_kind == AS_BUNDLE_KIND_PACKAGE &&
-			   as_component_get_pkgname (cpt) != NULL) {
-				g_ptr_array_add (result_filtered, g_object_ref (cpt));
+			    as_component_get_pkgname (cpt) != NULL) {
+				as_component_box_add (result_filtered, cpt, NULL);
 				continue;
 			}
 
 			if (bundle_kind == AS_BUNDLE_KIND_FLATPAK &&
 			    as_component_get_bundle (cpt, AS_BUNDLE_KIND_FLATPAK) != NULL) {
-				g_ptr_array_add (result_filtered, g_object_ref (cpt));
+				as_component_box_add (result_filtered, cpt, NULL);
 				continue;
 			}
-
 		}
 	}
 
-	if (result_filtered->len == 0) {
-		ascli_print_stderr (_("Unable to find component with ID '%s' and the selected filter criteria!"),
-				    identifier);
+	if (as_component_box_is_empty (result_filtered)) {
+		ascli_print_stderr (
+		    _("Unable to find component with ID '%s' and the selected filter criteria!"),
+		       identifier);
 		return ASCLI_EXIT_CODE_NO_RESULT;
 	}
 
-	if (choose_first || result_filtered->len == 1) {
-		r_cpt = AS_COMPONENT (g_ptr_array_index (result_filtered, 0));
+	if (choose_first || as_component_box_len (result_filtered) == 1) {
+		r_cpt = as_component_box_index (result_filtered, 0);
 	} else {
 		gint selection;
 		if (is_removal)
@@ -167,13 +167,15 @@ ascli_get_component_instrm_candidate (const gchar *identifier,
 			/* TRANSLATORS: We found multiple components to install, a list of them is printed below this text. */
 			g_print ("%s\n", _("Multiple candidates were found for installation:"));
 
-		for (guint i = 0; i < result_filtered->len; i++) {
+		for (guint i = 0; i < as_component_box_len (result_filtered); i++) {
 			AsBundle *bundle = NULL;
-			AsComponent *cpt = AS_COMPONENT (g_ptr_array_index (result_filtered, i));
+			AsComponent *cpt = as_component_box_index (result_filtered, i);
 
 			bundle = as_component_get_bundle (cpt, AS_BUNDLE_KIND_FLATPAK);
 			if (bundle == NULL)
-				g_print (" [%d] package:%s ", i + 1, as_component_get_pkgname (cpt));
+				g_print (" [%d] package:%s ",
+					 i + 1,
+					 as_component_get_pkgname (cpt));
 			else
 				g_print (" [%d] bundle:flatpak ", i + 1);
 			g_print ("- %s (%s)\n",
@@ -183,13 +185,15 @@ ascli_get_component_instrm_candidate (const gchar *identifier,
 
 		if (is_removal)
 			/* TRANSLATORS: A list of components is displayed with number prefixes. This is a prompt for the user to select one. */
-			selection = ascli_prompt_numer (_("Please enter the number of the component to remove:"),
-							result_filtered->len);
+			selection = ascli_prompt_numer (
+			    _("Please enter the number of the component to remove:"),
+			       as_component_box_len (result_filtered));
 		else
 			/* TRANSLATORS: A list of components is displayed with number prefixes. This is a prompt for the user to select one. */
-			selection = ascli_prompt_numer (_("Please enter the number of the component to install:"),
-							result_filtered->len);
-		r_cpt = AS_COMPONENT (g_ptr_array_index (result_filtered, selection - 1));
+			selection = ascli_prompt_numer (
+			    _("Please enter the number of the component to install:"),
+			       as_component_box_len (result_filtered));
+		r_cpt = as_component_box_index (result_filtered, selection - 1);
 	}
 
 	g_assert (result_cpt != NULL);
@@ -197,7 +201,8 @@ ascli_get_component_instrm_candidate (const gchar *identifier,
 
 	if (as_component_get_bundle (r_cpt, AS_BUNDLE_KIND_FLATPAK) == NULL &&
 	    as_component_get_pkgname (r_cpt) == NULL) {
-		ascli_print_stderr (_("Component '%s' has no installation candidate."), identifier);
+		ascli_print_stderr (_("Component '%s' has no installation candidate."),
+				       identifier);
 		return ASCLI_EXIT_CODE_FAILED;
 	}
 
@@ -215,10 +220,10 @@ ascli_install_component (const gchar *identifier, AsBundleKind bundle_kind, gboo
 	gint exit_code = 0;
 	g_autoptr(AsComponent) cpt = NULL;
 
-	if (bundle_kind != AS_BUNDLE_KIND_UNKNOWN &&
-	    bundle_kind != AS_BUNDLE_KIND_PACKAGE &&
+	if (bundle_kind != AS_BUNDLE_KIND_UNKNOWN && bundle_kind != AS_BUNDLE_KIND_PACKAGE &&
 	    bundle_kind != AS_BUNDLE_KIND_FLATPAK) {
-		g_warning ("Can not handle bundle kind %s, falling back to none.", as_bundle_kind_to_string (bundle_kind));
+		g_warning ("Can not handle bundle kind %s, falling back to none.",
+			   as_bundle_kind_to_string (bundle_kind));
 		bundle_kind = AS_BUNDLE_KIND_UNKNOWN;
 	}
 
@@ -233,21 +238,20 @@ ascli_install_component (const gchar *identifier, AsBundleKind bundle_kind, gboo
 	if (bundle_kind != AS_BUNDLE_KIND_PACKAGE) {
 		AsBundle *bundle = as_component_get_bundle (cpt, AS_BUNDLE_KIND_FLATPAK);
 		if (bundle != NULL) {
-			exit_code = exec_flatpak_action ("install",
-							 as_bundle_get_id (bundle));
+			exit_code = exec_flatpak_action ("install", as_bundle_get_id (bundle));
 			return exit_code;
 		}
 	}
 
 	if (bundle_kind != AS_BUNDLE_KIND_FLATPAK) {
 		if (as_component_get_pkgname (cpt) != NULL) {
-			exit_code = exec_pm_action ("install",
-						    as_component_get_pkgnames (cpt));
+			exit_code = exec_pm_action ("install", as_component_get_pkgnames (cpt));
 			return exit_code;
 		}
 	}
 
-	g_critical ("Did not install anything even though packages were found. This should not happen.");
+	g_critical (
+	    "Did not install anything even though packages were found. This should not happen.");
 	return ASCLI_EXIT_CODE_FATAL;
 }
 
@@ -262,10 +266,10 @@ ascli_remove_component (const gchar *identifier, AsBundleKind bundle_kind, gbool
 	gint exit_code = 0;
 	g_autoptr(AsComponent) cpt = NULL;
 
-	if (bundle_kind != AS_BUNDLE_KIND_UNKNOWN &&
-	    bundle_kind != AS_BUNDLE_KIND_PACKAGE &&
+	if (bundle_kind != AS_BUNDLE_KIND_UNKNOWN && bundle_kind != AS_BUNDLE_KIND_PACKAGE &&
 	    bundle_kind != AS_BUNDLE_KIND_FLATPAK) {
-		g_warning ("Can not handle bundle kind %s, falling back to none.", as_bundle_kind_to_string (bundle_kind));
+		g_warning ("Can not handle bundle kind %s, falling back to none.",
+			   as_bundle_kind_to_string (bundle_kind));
 		bundle_kind = AS_BUNDLE_KIND_UNKNOWN;
 	}
 
@@ -280,21 +284,19 @@ ascli_remove_component (const gchar *identifier, AsBundleKind bundle_kind, gbool
 	if (bundle_kind != AS_BUNDLE_KIND_PACKAGE) {
 		AsBundle *bundle = as_component_get_bundle (cpt, AS_BUNDLE_KIND_FLATPAK);
 		if (bundle != NULL) {
-			exit_code = exec_flatpak_action ("remove",
-							 as_bundle_get_id (bundle));
+			exit_code = exec_flatpak_action ("remove", as_bundle_get_id (bundle));
 			return exit_code;
 		}
 	}
 
 	if (bundle_kind != AS_BUNDLE_KIND_FLATPAK) {
 		if (as_component_get_pkgname (cpt) != NULL) {
-			exit_code = exec_pm_action ("remove",
-						    as_component_get_pkgnames (cpt));
+			exit_code = exec_pm_action ("remove", as_component_get_pkgnames (cpt));
 			return exit_code;
 		}
 	}
 
-	g_critical ("Did not remove anything even though packages were found. This should not happen.");
+	g_critical (
+	    "Did not remove anything even though packages were found. This should not happen.");
 	return ASCLI_EXIT_CODE_FATAL;
-
 }

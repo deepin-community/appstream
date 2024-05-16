@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -24,6 +24,9 @@
 #include <glib/gi18n-lib.h>
 #include <locale.h>
 #include <stdio.h>
+#ifdef G_OS_WIN32
+#include <io.h>
+#endif
 
 #include "as-profile.h"
 #include "as-utils-private.h"
@@ -53,22 +56,24 @@ static gboolean optn_no_cache = FALSE;
  * metadata catalogs and the cache.
  */
 const GOptionEntry data_catalog_options[] = {
-	{ "cachepath", 0, 0,
-		G_OPTION_ARG_STRING,
-		&optn_cachepath,
-		/* TRANSLATORS: ascli flag description for: --cachepath */
-		N_("Manually selected location of AppStream cache."), NULL },
-	{ "datapath", 0, 0,
-		G_OPTION_ARG_STRING,
-		&optn_datapath,
-		/* TRANSLATORS: ascli flag description for: --datapath */
-		N_("Manually selected location of AppStream metadata to scan."), NULL },
-	{ "no-cache", 0, 0,
-		G_OPTION_ARG_NONE,
-		&optn_no_cache,
-		/* TRANSLATORS: ascli flag description for: --no-cache */
-		N_("Ignore cache age and build a fresh cache before performing the query."),
-		NULL },
+	{ "cachepath",
+	  0, 0,
+	  G_OPTION_ARG_STRING, &optn_cachepath,
+	  /* TRANSLATORS: ascli flag description for: --cachepath */
+	  N_ ("Manually selected location of AppStream cache."),
+	  NULL },
+	{ "datapath",
+	  0, 0,
+	  G_OPTION_ARG_STRING, &optn_datapath,
+	  /* TRANSLATORS: ascli flag description for: --datapath */
+	  N_ ("Manually selected location of AppStream metadata to scan."),
+	  NULL },
+	{ "no-cache",
+	  0, 0,
+	  G_OPTION_ARG_NONE, &optn_no_cache,
+	  /* TRANSLATORS: ascli flag description for: --no-cache */
+	  N_ ("Ignore cache age and build a fresh cache before performing the query."),
+	  NULL },
 	{ NULL }
 };
 
@@ -79,11 +84,12 @@ static gchar *optn_format = NULL;
  * The format option.
  */
 const GOptionEntry format_options[] = {
-	{ "format", 0, 0,
-		G_OPTION_ARG_STRING,
-		&optn_format,
-		/* TRANSLATORS: ascli flag description for: --format */
-		N_("Default metadata format (valid values are 'xml' and 'yaml')."), NULL },
+	{ "format",
+	  0, 0,
+	  G_OPTION_ARG_STRING, &optn_format,
+	  /* TRANSLATORS: ascli flag description for: --format */
+	  N_ ("Default metadata format (valid values are 'xml' and 'yaml')."),
+	  NULL },
 	{ NULL }
 };
 
@@ -94,12 +100,12 @@ static gboolean optn_details = FALSE;
  * General options for finding & displaying data.
  */
 const GOptionEntry find_options[] = {
-	{ "details", 0, 0,
-		G_OPTION_ARG_NONE,
-		&optn_details,
-		/* TRANSLATORS: ascli flag description for: --details */
-		N_("Print detailed output about found components."),
-		NULL },
+	{ "details",
+	  0, 0,
+	  G_OPTION_ARG_NONE, &optn_details,
+	  /* TRANSLATORS: ascli flag description for: --details */
+	  N_ ("Print detailed output about found components."),
+	  NULL },
 	{ NULL }
 };
 
@@ -114,42 +120,47 @@ static gchar *optn_issue_overrides = NULL;
  * General options for validation.
  */
 const GOptionEntry validate_options[] = {
-	{ "pedantic", (gchar) 0, 0,
-		G_OPTION_ARG_NONE,
-		&optn_pedantic,
-		/* TRANSLATORS: ascli flag description for: --pedantic (used by the "validate" command) */
-		N_("Also show pedantic hints."), NULL },
-	{ "explain", (gchar) 0, 0,
-		G_OPTION_ARG_NONE,
-		&optn_explain,
-		/* TRANSLATORS: ascli flag description for: --explain (used by the "validate" command) */
-		N_("Print detailed explanation for found issues."), NULL },
-	{ "no-net", (gchar) 0, 0,
-		G_OPTION_ARG_NONE,
-		&optn_no_net,
-		/* TRANSLATORS: ascli flag description for: --no-net (used by the "validate" command) */
-		N_("Do not use network access."), NULL },
-	{ "strict", (gchar) 0, 0,
-		G_OPTION_ARG_NONE,
-		&optn_validate_strict,
-		/* TRANSLATORS: ascli flag description for: --strict (used by the "validate" command) */
-		N_("Fail validation if any issue is emitted that is not of pedantic severity."), NULL },
-	{ "format", 0, 0,
-		G_OPTION_ARG_STRING,
-		&optn_format,
-		/* TRANSLATORS: ascli flag description for: --format  when validating XML files */
-		N_("Format of the generated report (valid values are 'text' and 'yaml')."), NULL },
-	{ "override", 0, 0,
-		G_OPTION_ARG_STRING,
-		&optn_issue_overrides,
-		/* TRANSLATORS: ascli flag description for: --override  when validating XML files */
-		N_("Override the severities of selected issue tags."), NULL },
+	{ "pedantic",
+	  (gchar) 0,
+	  0, G_OPTION_ARG_NONE,
+	  &optn_pedantic,
+	  /* TRANSLATORS: ascli flag description for: --pedantic (used by the "validate" command) */
+	  N_ ("Also show pedantic hints."),
+	  NULL },
+	{ "explain",
+	  (gchar) 0,
+	  0, G_OPTION_ARG_NONE,
+	  &optn_explain,
+	  /* TRANSLATORS: ascli flag description for: --explain (used by the "validate" command) */
+	  N_ ("Print detailed explanation for found issues."),
+	  NULL },
+	{ "no-net",
+	  (gchar) 0,
+	  0, G_OPTION_ARG_NONE,
+	  &optn_no_net,
+	  /* TRANSLATORS: ascli flag description for: --no-net (used by the "validate" command) */
+	  N_ ("Do not use network access."),
+	  NULL },
+	{ "strict",
+	  (gchar) 0,
+	  0, G_OPTION_ARG_NONE,
+	  &optn_validate_strict,
+	  /* TRANSLATORS: ascli flag description for: --strict (used by the "validate" command) */
+	  N_ ("Fail validation if any issue is emitted that is not of pedantic severity."),
+	  NULL },
+	{ "format",
+	  0, 0,
+	  G_OPTION_ARG_STRING, &optn_format,
+	  /* TRANSLATORS: ascli flag description for: --format  when validating XML files */
+	  N_ ("Format of the generated report (valid values are 'text' and 'yaml')."),
+	  NULL },
+	{ "override",
+	  0, 0,
+	  G_OPTION_ARG_STRING, &optn_issue_overrides,
+	  /* TRANSLATORS: ascli flag description for: --override  when validating XML files */
+	  N_ ("Override the severities of selected issue tags."),
+	  NULL },
 
-	/* DEPRECATED */
-	{ "nonet", (gchar) 0, G_OPTION_FLAG_HIDDEN,
-		G_OPTION_ARG_NONE,
-		&optn_no_net,
-		NULL, NULL },
 	{ NULL }
 };
 
@@ -158,7 +169,7 @@ const GOptionEntry validate_options[] = {
 /**
  * as_client_get_summary_for:
  **/
-static gchar*
+static gchar *
 as_client_get_summary_for (const gchar *command)
 {
 	GString *string;
@@ -178,7 +189,7 @@ as_client_get_summary_for (const gchar *command)
  *
  * Create a new option context for an ascli subcommand.
  */
-static GOptionContext*
+static GOptionContext *
 as_client_new_subcommand_option_context (const gchar *command, const GOptionEntry *entries)
 {
 	GOptionContext *opt_context = NULL;
@@ -208,10 +219,15 @@ as_client_print_help_hint (const gchar *subcommand, const gchar *unknown_option)
 	}
 
 	if (subcommand == NULL)
-		ascli_print_stderr (_("Run '%s --help' to see a full list of available command line options."), ASCLI_BIN_NAME);
+		ascli_print_stderr (
+		    _("Run '%s --help' to see a full list of available command line options."),
+		       ASCLI_BIN_NAME);
 	else
-		ascli_print_stderr (_("Run '%s --help' to see a list of available commands and options, and '%s %s --help' to see a list of options specific for this subcommand."),
-				    ASCLI_BIN_NAME, ASCLI_BIN_NAME, subcommand);
+		ascli_print_stderr (
+		    _("Run '%s --help' to see a list of available commands and options, and '%s %s --help' to see a list of options specific for this subcommand."),
+		       ASCLI_BIN_NAME,
+		       ASCLI_BIN_NAME,
+		       subcommand);
 }
 
 /**
@@ -220,7 +236,10 @@ as_client_print_help_hint (const gchar *subcommand, const gchar *unknown_option)
  * Parse the options, print errors.
  */
 static int
-as_client_option_context_parse (GOptionContext *opt_context, const gchar *subcommand, int *argc, char ***argv)
+as_client_option_context_parse (GOptionContext *opt_context,
+				const gchar *subcommand,
+				int *argc,
+				char ***argv)
 {
 	g_autoptr(GError) error = NULL;
 
@@ -255,26 +274,26 @@ as_client_run_refresh_cache (const gchar *command, char **argv, int argc)
 	g_auto(GStrv) optn_sources_real = NULL;
 
 	const GOptionEntry refresh_options[] = {
-		{ "force", (gchar) 0, 0,
-			G_OPTION_ARG_NONE,
-			&optn_force,
-			/* TRANSLATORS: ascli flag description for: --force */
-			_("Enforce a cache refresh."),
-			NULL },
-		{ "source", (gchar) 0, 0,
-			G_OPTION_ARG_STRING_ARRAY,
-			&optn_sources,
-			/* TRANSLATORS: ascli flag description for: --source in a refresh action. Don't translate strings in backticks: `name` */
-			_("Limit cache refresh to data from a specific source, e.g. `os` or `flatpak`. May be specified multiple times."),
-			NULL },
-		{ NULL }
-	};
+		{ "force",
+		  (gchar) 0,
+		  0, G_OPTION_ARG_NONE,
+		  &optn_force,
+		  /* TRANSLATORS: ascli flag description for: --force */
+		  _("Enforce a cache refresh."), NULL },
+		  { "source",
+		    (gchar) 0,
+		    0, G_OPTION_ARG_STRING_ARRAY,
+		    &optn_sources,
+		    /* TRANSLATORS: ascli flag description for: --source in a refresh action. Don't translate strings in backticks: `name` */
+		    _("Limit cache refresh to data from a specific source, e.g. `os` or `flatpak`. May be specified multiple times."),
+		       NULL },
+		    { NULL }
+	     };
 
 	opt_context = as_client_new_subcommand_option_context (command, refresh_options);
 	g_option_context_add_main_entries (opt_context, data_catalog_options, NULL);
 
-	ret = as_client_option_context_parse (opt_context,
-					      command, &argc, &argv);
+	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
 	if (ret != 0)
 		return ret;
 
@@ -287,7 +306,7 @@ as_client_run_refresh_cache (const gchar *command, char **argv, int argc)
 
 	return ascli_refresh_cache (optn_cachepath,
 				    optn_datapath,
-				    (const gchar * const*) optn_sources_real,
+				    (const gchar *const *) optn_sources_real,
 				    optn_force);
 }
 
@@ -322,9 +341,9 @@ as_client_run_search (const gchar *command, char **argv, int argc)
 	}
 
 	return ascli_search_component (optn_cachepath,
-					(search->len == 0)? NULL : search->str,
-					optn_details,
-					optn_no_cache);
+				       (search->len == 0) ? NULL : search->str,
+				       optn_details,
+				       optn_no_cache);
 }
 
 /**
@@ -349,10 +368,7 @@ as_client_run_get (const gchar *command, char **argv, int argc)
 	if (argc > 2)
 		value = argv[2];
 
-	return ascli_get_component (optn_cachepath,
-					value,
-					optn_details,
-					optn_no_cache);
+	return ascli_get_component (optn_cachepath, value, optn_details, optn_no_cache);
 }
 
 /**
@@ -379,10 +395,7 @@ as_client_run_dump (const gchar *command, char **argv, int argc)
 		value = argv[2];
 
 	mformat = as_format_kind_from_string (optn_format);
-	return ascli_dump_component (optn_cachepath,
-					value,
-					mformat,
-					optn_no_cache);
+	return ascli_dump_component (optn_cachepath, value, mformat, optn_no_cache);
 }
 
 /**
@@ -410,10 +423,7 @@ as_client_run_what_provides (const gchar *command, char **argv, int argc)
 	if (argc > 3)
 		vvalue = argv[3];
 
-	return ascli_what_provides (optn_cachepath,
-				    vtype,
-				    vvalue,
-				    optn_details);
+	return ascli_what_provides (optn_cachepath, vtype, vvalue, optn_details);
 }
 
 /**
@@ -436,15 +446,12 @@ as_client_run_list_categories (const gchar *command, char **argv, int argc)
 		return ret;
 
 	if (argc > 2) {
-		categories = g_new0 (gchar*, argc - 1);
+		categories = g_new0 (gchar *, argc - 1);
 		for (gint i = 0; i < (argc - 2); i++)
 			categories[i] = g_strdup (argv[i + 2]);
 	}
 
-	return ascli_list_categories (optn_cachepath,
-					categories,
-					optn_details,
-					optn_no_cache);
+	return ascli_list_categories (optn_cachepath, categories, optn_details, optn_no_cache);
 }
 
 /**
@@ -465,7 +472,7 @@ as_client_run_validate (const gchar *command, char **argv, int argc)
 
 	if (optn_format == NULL) {
 		return ascli_validate_files (&argv[2],
-					     argc-2,
+					     argc - 2,
 					     optn_pedantic,
 					     optn_explain,
 					     optn_validate_strict,
@@ -473,7 +480,7 @@ as_client_run_validate (const gchar *command, char **argv, int argc)
 					     optn_issue_overrides);
 	} else {
 		return ascli_validate_files_format (&argv[2],
-						    argc-2,
+						    argc - 2,
 						    optn_format,
 						    optn_validate_strict,
 						    !optn_no_net,
@@ -536,7 +543,8 @@ as_client_run_check_license (const gchar *command, char **argv, int argc)
 
 	if (argc != 3) {
 		/* TRANSLATORS: ascli check-license is missing its parameter */
-		ascli_print_stderr (_("No license, license expression or license exception string was provided."));
+		ascli_print_stderr (
+		    _("No license, license expression or license exception string was provided."));
 		return 4;
 	}
 	return ascli_check_license (argv[2]);
@@ -564,9 +572,43 @@ as_client_run_is_satisfied (const gchar *command, char **argv, int argc)
 	if (argc > 2)
 		fname_or_cid = argv[2];
 
-	return ascli_check_is_satisfied (fname_or_cid,
-					 optn_cachepath,
-					 optn_no_cache);
+	return ascli_check_is_satisfied (fname_or_cid, optn_cachepath, optn_no_cache);
+}
+
+/**
+ * as_client_run_check_syscompat:
+ *
+ * Check component against a variety of system types.
+ */
+static int
+as_client_run_check_syscompat (const gchar *command, char **argv, int argc)
+{
+	g_autoptr(GOptionContext) opt_context = NULL;
+	gint ret;
+	const gchar *fname_or_cid = NULL;
+	gboolean optn_sc_details = FALSE;
+
+	const GOptionEntry check_syscompat_options[] = {
+		{ "details",
+		  0, 0,
+		  G_OPTION_ARG_NONE, &optn_sc_details,
+		  /* TRANSLATORS: ascli flag description for: --details (part of the "check-syscompat" subcommand) */
+		  N_ ("Print more detailed output on why incompatibilities exist."),
+		  NULL },
+		{ NULL }
+	};
+
+	opt_context = as_client_new_subcommand_option_context (command, check_syscompat_options);
+	g_option_context_add_main_entries (opt_context, data_catalog_options, NULL);
+
+	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
+	if (ret != 0)
+		return ret;
+
+	if (argc > 2)
+		fname_or_cid = argv[2];
+
+	return ascli_check_syscompat (fname_or_cid, optn_cachepath, optn_no_cache, optn_sc_details);
 }
 
 /**
@@ -584,17 +626,18 @@ as_client_run_put (const gchar *command, char **argv, int argc)
 	gint ret;
 
 	const GOptionEntry put_file_options[] = {
-		{ "origin", 0, 0,
-			G_OPTION_ARG_STRING,
-			&optn_origin,
-			/* TRANSLATORS: ascli flag description for: --origin (part of the "put" subcommand) */
-			N_("Set the data origin for the installed metadata catalog file."), NULL },
-		{ "user", 0, 0,
-			G_OPTION_ARG_NONE,
-			&optn_usermode,
-			/* TRANSLATORS: ascli flag description for: --user (part of the "put" subcommand) */
-			N_("Install the file for the current user, instead of globally."),
-			NULL },
+		{ "origin",
+		  0, 0,
+		  G_OPTION_ARG_STRING, &optn_origin,
+		  /* TRANSLATORS: ascli flag description for: --origin (part of the "put" subcommand) */
+		  N_ ("Set the data origin for the installed metadata catalog file."),
+		  NULL },
+		{ "user",
+		  0, 0,
+		  G_OPTION_ARG_NONE, &optn_usermode,
+		  /* TRANSLATORS: ascli flag description for: --user (part of the "put" subcommand) */
+		  N_ ("Install the file for the current user, instead of globally."),
+		  NULL },
 		{ NULL }
 	};
 
@@ -617,17 +660,20 @@ static const gchar *optn_bundle_type = NULL;
 static gboolean optn_choose_first = FALSE;
 
 const GOptionEntry pkgmanage_options[] = {
-	{ "bundle-type", 0, 0,
-		G_OPTION_ARG_STRING,
-		&optn_bundle_type,
-		/* TRANSLATORS: ascli flag description for: --bundle-type (part of the "remove" and "install" subcommands) */
-		N_("Limit the command to use only components from the given bundling system (`flatpak` or `package`)."), NULL },
-	{ "first", 0, 0,
-		G_OPTION_ARG_NONE,
-		&optn_choose_first,
-		/* TRANSLATORS: ascli flag description for: --first (part of the "remove" and "install" subcommands) */
-		N_("Do not ask for which software component should be used and always choose the first entry."),
-		NULL },
+	{ "bundle-type",
+	  0, 0,
+	  G_OPTION_ARG_STRING, &optn_bundle_type,
+	  /* TRANSLATORS: ascli flag description for: --bundle-type (part of the "remove" and "install" subcommands) */
+	  N_ ("Limit the command to use only components from the given bundling system (`flatpak` "
+	      "or `package`)."),
+	  NULL },
+	{ "first",
+	  0, 0,
+	  G_OPTION_ARG_NONE, &optn_choose_first,
+	  /* TRANSLATORS: ascli flag description for: --first (part of the "remove" and "install" subcommands) */
+	  N_ ("Do not ask for which software component should be used and always choose the first "
+	      "entry."),
+	  NULL },
 	{ NULL }
 };
 
@@ -663,9 +709,7 @@ as_client_run_install (const gchar *command, char **argv, int argc)
 		return ASCLI_EXIT_CODE_BAD_INPUT;
 	}
 
-	return ascli_install_component (value,
-					bundle_kind,
-					optn_choose_first);
+	return ascli_install_component (value, bundle_kind, optn_choose_first);
 }
 
 /**
@@ -700,9 +744,7 @@ as_client_run_remove (const gchar *command, char **argv, int argc)
 		return ASCLI_EXIT_CODE_BAD_INPUT;
 	}
 
-	return ascli_remove_component (value,
-					bundle_kind,
-					optn_choose_first);
+	return ascli_remove_component (value, bundle_kind, optn_choose_first);
 }
 
 /**
@@ -772,9 +814,7 @@ as_client_run_convert (const gchar *command, char **argv, int argc)
 		fname2 = argv[3];
 
 	mformat = as_format_kind_from_string (optn_format);
-	return ascli_convert_data (fname1,
-				   fname2,
-				   mformat);
+	return ascli_convert_data (fname1, fname2, mformat);
 }
 
 /**
@@ -823,7 +863,8 @@ as_client_run_compare_versions (const gchar *command, char **argv, int argc)
 		if (compare == AS_RELATION_COMPARE_UNKNOWN) {
 			guint i;
 			/** TRANSLATORS: The user tried to compare version numbers, but the comparison operator (greater-then, equal, etc.) was invalid. */
-			ascli_print_stderr (_("Unknown compare relation '%s'. Valid values are:"), comp_str);
+			ascli_print_stderr (_("Unknown compare relation '%s'. Valid values are:"),
+					       comp_str);
 			for (i = 1; i < AS_RELATION_COMPARE_LAST; i++)
 				g_printerr (" • %s\n", as_relation_compare_to_string (i));
 			return 2;
@@ -853,7 +894,7 @@ as_client_run_compare_versions (const gchar *command, char **argv, int argc)
 			res = FALSE;
 		}
 
-		g_print ("%s: ", res? "true" : "false");
+		g_print ("%s: ", res ? "true" : "false");
 		if (rc == 0)
 			g_print ("%s == %s\n", ver1, ver2);
 		else if (rc > 0)
@@ -861,7 +902,7 @@ as_client_run_compare_versions (const gchar *command, char **argv, int argc)
 		else if (rc < 0)
 			g_print ("%s << %s\n", ver1, ver2);
 
-		return res? 0 : 1;
+		return res ? 0 : 1;
 	} else {
 		ascli_print_stderr (_("Too many parameters: Need two version numbers or version numbers and a comparison operator."));
 		return 2;
@@ -885,27 +926,30 @@ as_client_run_new_template (const gchar *command, char **argv, int argc)
 	const gchar *optn_desktop_file = NULL;
 
 	const GOptionEntry newtemplate_options[] = {
-		{ "from-desktop", 0, 0,
-			G_OPTION_ARG_STRING,
-			&optn_desktop_file,
-			/* TRANSLATORS: ascli flag description for: --from-desktop (part of the new-template subcommand) */
-			N_("Use the given .desktop file to fill in the basic values of the metainfo file."), NULL },
+		{ "from-desktop",
+		  0, 0,
+		  G_OPTION_ARG_STRING, &optn_desktop_file,
+		  /* TRANSLATORS: ascli flag description for: --from-desktop (part of the new-template subcommand) */
+		  N_ ("Use the given .desktop file to fill in the basic values of the metainfo "
+		      "file."),
+		  NULL },
 		{ NULL }
 	};
 
 	/* TRANSLATORS: Additional help text for the 'new-template' ascli subcommand */
-	desc_str = g_string_new (_("This command takes optional TYPE and FILE positional arguments, FILE being a file to write to (or \"-\" for standard output)."));
+	desc_str = g_string_new (
+	    _("This command takes optional TYPE and FILE positional arguments, FILE being a file to write to (or \"-\" for standard output)."));
 	g_string_append (desc_str, "\n");
 	/* TRANSLATORS: Additional help text for the 'new-template' ascli subcommand, a bullet-pointed list of types follows */
-	g_string_append_printf (desc_str, _("The TYPE must be a valid component-type, such as: %s"), "\n");
+	g_string_append_printf (desc_str,
+				_("The TYPE must be a valid component-type, such as: %s"), "\n");
 	for (i = 1; i < AS_COMPONENT_KIND_LAST; i++)
 		g_string_append_printf (desc_str, " • %s\n", as_component_kind_to_string (i));
 
 	opt_context = as_client_new_subcommand_option_context (command, newtemplate_options);
 	g_option_context_set_description (opt_context, desc_str->str);
 
-	ret = as_client_option_context_parse (opt_context,
-					      command, &argc, &argv);
+	ret = as_client_option_context_parse (opt_context, command, &argc, &argv);
 	if (ret != 0)
 		return ret;
 
@@ -914,9 +958,7 @@ as_client_run_new_template (const gchar *command, char **argv, int argc)
 	if (argc > 3)
 		out_fname = argv[3];
 
-	return ascli_create_metainfo_template (out_fname,
-					       cpt_kind_str,
-					       optn_desktop_file);
+	return ascli_create_metainfo_template (out_fname, cpt_kind_str, optn_desktop_file);
 }
 
 /**
@@ -934,11 +976,12 @@ as_client_run_make_desktop_file (const gchar *command, char **argv, int argc)
 	gint ret;
 
 	const GOptionEntry make_desktop_file_options[] = {
-		{ "exec", 0, 0,
-			G_OPTION_ARG_STRING,
-			&optn_exec_command,
-			/* TRANSLATORS: ascli flag description for: --exec (part of the make-desktop-file subcommand) */
-			N_("Use the specified line for the 'Exec=' key of the desktop-entry file."), NULL },
+		{ "exec",
+		  0, 0,
+		  G_OPTION_ARG_STRING, &optn_exec_command,
+		  /* TRANSLATORS: ascli flag description for: --exec (part of the make-desktop-file subcommand) */
+		  N_ ("Use the specified line for the 'Exec=' key of the desktop-entry file."),
+		  NULL },
 		{ NULL }
 	};
 
@@ -952,9 +995,7 @@ as_client_run_make_desktop_file (const gchar *command, char **argv, int argc)
 	if (argc > 3)
 		de_fname = argv[3];
 
-	return ascli_make_desktop_entry_file (mi_fname,
-					      de_fname,
-					      optn_exec_command);
+	return ascli_make_desktop_entry_file (mi_fname, de_fname, optn_exec_command);
 }
 
 /**
@@ -975,24 +1016,27 @@ as_client_run_news_to_metainfo (const gchar *command, char **argv, int argc)
 	gint ret;
 
 	const GOptionEntry news_to_metainfo_options[] = {
-		{ "format", 0, 0,
-			G_OPTION_ARG_STRING,
-			&optn_format_text,
-			/* TRANSLATORS: ascli flag description for: --format as part of the news-to-metainfo command */
-			N_("Assume the input file is in the selected format ('yaml', 'text' or 'markdown')."),
-			NULL },
-		{ "limit", 'l', 0,
-			G_OPTION_ARG_INT,
-			&optn_limit,
-			/* TRANSLATORS: ascli flag description for: --limit as part of the news-to-metainfo command */
-			N_("Limit the number of release entries that end up in the metainfo file (<= 0 for unlimited)."),
-			NULL },
-		{ "translatable-count", 't', 0,
-			G_OPTION_ARG_INT,
-			&optn_translatable_n,
-			/* TRANSLATORS: ascli flag description for: --translatable-count as part of the news-to-metainfo command */
-			N_("Set the number of releases that should have descriptions marked for translation (latest releases are translated first, -1 for unlimited)."),
-			NULL },
+		{ "format",
+		  0, 0,
+		  G_OPTION_ARG_STRING, &optn_format_text,
+		  /* TRANSLATORS: ascli flag description for: --format as part of the news-to-metainfo command */
+		  N_ ("Assume the input file is in the selected format ('yaml', 'text' or "
+		      "'markdown')."),
+		  NULL },
+		{ "limit",
+		  'l', 0,
+		  G_OPTION_ARG_INT, &optn_limit,
+		  /* TRANSLATORS: ascli flag description for: --limit as part of the news-to-metainfo command */
+		  N_ ("Limit the number of release entries that end up in the metainfo file (<= 0 "
+		      "for unlimited)."),
+		  NULL },
+		{ "translatable-count",
+		  't', 0,
+		  G_OPTION_ARG_INT, &optn_translatable_n,
+		  /* TRANSLATORS: ascli flag description for: --translatable-count as part of the news-to-metainfo command */
+		  N_ ("Set the number of releases that should have descriptions marked for "
+		      "translation (latest releases are translated first, -1 for unlimited)."),
+		  NULL },
 		{ NULL }
 	};
 
@@ -1009,11 +1053,11 @@ as_client_run_news_to_metainfo (const gchar *command, char **argv, int argc)
 		out_fname = argv[4];
 
 	return ascli_news_to_metainfo (news_fname,
-					mi_fname,
-					out_fname,
-					optn_limit,
-					optn_translatable_n,
-					optn_format_text);
+				       mi_fname,
+				       out_fname,
+				       optn_limit,
+				       optn_translatable_n,
+				       optn_format_text);
 }
 
 /**
@@ -1031,11 +1075,12 @@ as_client_run_metainfo_to_news (const gchar *command, char **argv, int argc)
 	gint ret;
 
 	const GOptionEntry metainfo_to_news_options[] = {
-		{ "format", 0, 0,
-			G_OPTION_ARG_STRING,
-			&optn_format_text,
-			/* TRANSLATORS: ascli flag description for: --format as part of the metainfo-to-news command */
-			N_("Generate the output in the selected format ('yaml', 'text' or 'markdown')."), NULL },
+		{ "format",
+		  0, 0,
+		  G_OPTION_ARG_STRING, &optn_format_text,
+		  /* TRANSLATORS: ascli flag description for: --format as part of the metainfo-to-news command */
+		  N_ ("Generate the output in the selected format ('yaml', 'text' or 'markdown')."),
+		  NULL },
 		{ NULL }
 	};
 
@@ -1049,9 +1094,7 @@ as_client_run_metainfo_to_news (const gchar *command, char **argv, int argc)
 	if (argc > 3)
 		news_fname = argv[3];
 
-	return ascli_metainfo_to_news (mi_fname,
-					news_fname,
-					optn_format_text);
+	return ascli_metainfo_to_news (mi_fname, news_fname, optn_format_text);
 }
 
 /**
@@ -1074,17 +1117,23 @@ as_client_run_compose (const gchar *command, char **argv, int argc)
 {
 	const gchar *ascompose_exe = LIBEXECDIR "/appstreamcli-compose";
 	g_autofree const gchar **asc_argv = NULL;
-
+#ifdef G_OS_WIN32
+	gint wait_status = 0;
+	g_autoptr(GError) error = NULL;
+#endif
 	if (!g_file_test (ascompose_exe, G_FILE_TEST_EXISTS)) {
 		/* TRANSLATORS: appstreamcli-compose was not found */
-		ascli_print_stderr (_("Compose binary '%s' was not found! Can not continue."), ascompose_exe);
+		ascli_print_stderr (
+		    _("AppStream Compose binary '%s' was not found! Can not continue."),
+		       ascompose_exe);
 		/* TRANSLATORS: appstreamcli-compose was not found - info text */
-		ascli_print_stderr (_("You may be able to install the AppStream Compose addon via: `%s`"),
-				    "sudo appstreamcli install org.freedesktop.appstream.compose");
+		ascli_print_stderr (
+		    _("You may be able to install the AppStream Compose addon via: `%s`"),
+		       "sudo appstreamcli install org.freedesktop.appstream.compose");
 		return 4;
 	}
 
-	asc_argv = g_new0 (const gchar*, argc + 2);
+	asc_argv = g_new0 (const gchar *, argc + 2);
 	asc_argv[0] = ascompose_exe;
 	if (argc < 2) {
 		/* TRANSLATORS: Unexpected number of parameters on the command-line */
@@ -1092,22 +1141,48 @@ as_client_run_compose (const gchar *command, char **argv, int argc)
 		return 5;
 	}
 	for (gint i = 2; i < argc; i++)
-		asc_argv[i-1] = argv[i];
+		asc_argv[i - 1] = argv[i];
 
-	return execv(ascompose_exe, (gchar * const*) asc_argv);
+#ifdef G_OS_WIN32
+	if (!g_spawn_sync (ascompose_exe,
+			   (gchar **) asc_argv,
+			   NULL,
+			   G_SPAWN_DEFAULT,
+			   NULL,
+			   NULL,
+			   NULL,
+			   NULL,
+			   &wait_status,
+			   &error)) {
+		/* TRANSLATORS: "Compose" is a command of appstreamcli to build metadata catalogs. */
+		ascli_print_stderr (_("Compose operation failed to execute: %s"), error->message);
+		return 6;
+	}
+
+#if GLIB_CHECK_VERSION(2, 70, 0)
+	if (!g_spawn_check_wait_status (wait_status, &error))
+#else
+	if (!g_spawn_check_exit_status (wait_status, &error))
+#endif
+	{
+		ascli_print_stderr (_("Compose failed: %s"), error->message);
+		return error->code;
+	}
+	return 0;
+#else
+	return execv (ascompose_exe, (char *const *) asc_argv);
+#endif
 }
 
-typedef gboolean (*AsCliCommandCb) (const gchar *command,
-				    gchar **argv,
-				    gint argc);
+typedef gboolean (*AsCliCommandCb) (const gchar *command, gchar **argv, gint argc);
 
 typedef struct {
-	gchar		*name;
-	gchar		*alias;
-	gchar		*arguments;
-	gchar		*summary;
-	guint		 block_id;
-	AsCliCommandCb	 callback;
+	gchar *name;
+	gchar *alias;
+	gchar *arguments;
+	gchar *summary;
+	guint block_id;
+	AsCliCommandCb callback;
 } AsCliCommandItem;
 
 /**
@@ -1128,12 +1203,12 @@ ascli_command_item_free (AsCliCommandItem *item)
  */
 static void
 ascli_add_cmd (GPtrArray *commands,
-		guint block_id,
-		const gchar *name,
-		const gchar *alias,
-		const gchar *arguments,
-		const gchar *summary,
-		AsCliCommandCb callback)
+	       guint block_id,
+	       const gchar *name,
+	       const gchar *alias,
+	       const gchar *arguments,
+	       const gchar *summary,
+	       AsCliCommandCb callback)
 {
 	AsCliCommandItem *item;
 
@@ -1164,7 +1239,7 @@ ascli_add_cmd (GPtrArray *commands,
 /**
  * as_client_get_help_summary:
  **/
-static gchar*
+static gchar *
 as_client_get_help_summary (GPtrArray *commands)
 {
 	guint current_block_id = 0;
@@ -1173,9 +1248,11 @@ as_client_get_help_summary (GPtrArray *commands)
 	GString *string = g_string_new ("");
 
 	/* TRANSLATORS: This is the header to the --help menu */
-	g_string_append_printf (string, "%s\n\n%s\n", _("AppStream command-line interface"),
-				/* these are commands we can use with appstreamcli */
-				_("Subcommands:"));
+	g_string_append_printf (string,
+				"%s\n\n%s\n",
+				_("AppStream command-line interface"),
+				   /* these are commands we can use with appstreamcli */
+				   _("Subcommands:"));
 
 	compose_available = as_client_check_compose_available ();
 	blocks_maxlen = g_array_new (FALSE, FALSE, sizeof (guint));
@@ -1213,11 +1290,13 @@ as_client_get_help_summary (GPtrArray *commands)
 		block_maxlen = g_array_index (blocks_maxlen, guint, item->block_id);
 		term_len = strlen (item->name) + strlen (item->arguments);
 
-		g_string_append_printf (string, "  %s %s%*s",
+		g_string_append_printf (string,
+					"  %s %s%*s",
 					item->name,
 					item->arguments,
-					(block_maxlen - term_len) + 1, "");
-		synopsis_len = block_maxlen + 3 + 1 ;
+					(block_maxlen - term_len) + 1,
+					"");
+		synopsis_len = block_maxlen + 3 + 1;
 		summary_wrap = ascli_format_long_output (item->summary,
 							 synopsis_len + 72,
 							 synopsis_len + 2);
@@ -1226,7 +1305,8 @@ as_client_get_help_summary (GPtrArray *commands)
 	}
 
 	g_string_append (string, "\n");
-	g_string_append (string, _("You can find information about subcommand-specific options by passing \"--help\" to the subcommand."));
+	g_string_append (string,
+			 _("You can find information about subcommand-specific options by passing \"--help\" to the subcommand."));
 
 	return g_string_free (string, FALSE);
 }
@@ -1249,7 +1329,10 @@ ascli_run_command (GPtrArray *commands, const gchar *command, char **argv, int a
 	}
 
 	/* TRANSLATORS: ascli has been run with unknown command. '%s --help' is the command to receive help and should not be translated. */
-	ascli_print_stderr (_("Command '%s' is unknown. Run '%s --help' for a list of available commands."), command, argv[0]);
+	ascli_print_stderr (
+	    _("Command '%s' is unknown. Run '%s --help' for a list of available commands."),
+	       command,
+	       argv[0]);
 	return 1;
 }
 
@@ -1267,29 +1350,31 @@ as_client_run (char **argv, int argc)
 	gint retval = 0;
 	const gchar *command = NULL;
 
-
 	const GOptionEntry client_options[] = {
-		{ "version", 0, 0,
-			G_OPTION_ARG_NONE,
-			&optn_show_version,
-			/* TRANSLATORS: ascli flag description for: --version */
-			_("Show the program version."),
-			NULL },
-		{ "verbose", (gchar) 0, 0,
-			G_OPTION_ARG_NONE,
-			&optn_verbose_mode,
-			/* TRANSLATORS: ascli flag description for: --verbose */
-			_("Show extra debugging information."),
-			NULL },
-		{ "no-color", (gchar) 0, 0,
-			G_OPTION_ARG_NONE, &optn_no_color,
-			/* TRANSLATORS: ascli flag description for: --no-color */
-			_("Don\'t show colored output."), NULL },
-		{ "profile", '\0', 0, G_OPTION_ARG_NONE, &enable_profiling,
+		{ "version",
+		  0, 0,
+		  G_OPTION_ARG_NONE, &optn_show_version,
+		  /* TRANSLATORS: ascli flag description for: --version */
+		  _("Show the program version."), NULL },
+		  { "verbose",
+		    (gchar) 0,
+		    0, G_OPTION_ARG_NONE,
+		    &optn_verbose_mode,
+		    /* TRANSLATORS: ascli flag description for: --verbose */
+		    _("Show extra debugging information."), NULL },
+		    { "no-color",
+		      (gchar) 0,
+		      0, G_OPTION_ARG_NONE,
+		      &optn_no_color,
+		      /* TRANSLATORS: ascli flag description for: --no-color */
+		      _("Don\'t show colored output."), NULL },
+		      { "profile",
+			'\0', 0,
+			G_OPTION_ARG_NONE, &enable_profiling,
 			/* TRANSLATORS: ascli flag description for: --profile */
 			_("Enable profiling"), NULL },
-		{ NULL }
-	};
+			{ NULL }
+	 };
 
 	opt_context = g_option_context_new ("- AppStream CLI.");
 	g_option_context_add_main_entries (opt_context, client_options, NULL);
@@ -1297,120 +1382,187 @@ as_client_run (char **argv, int argc)
 	/* register all available subcommands */
 	commands = g_ptr_array_new_with_free_func ((GDestroyNotify) ascli_command_item_free);
 	ascli_add_cmd (commands,
-			0, "search", "s", "TERM",
-			/* TRANSLATORS: `appstreamcli search` command description. */
-			_("Search the component database."),
-			as_client_run_search);
+		       0,
+		       "search",
+		       "s",
+		       "TERM",
+		       /* TRANSLATORS: `appstreamcli search` command description. */
+		       _("Search the component database."), as_client_run_search);
 	ascli_add_cmd (commands,
-			0, "get", NULL, "COMPONENT-ID",
-			/* TRANSLATORS: `appstreamcli get` command description. */
-			_("Get information about a component by its ID."),
-			as_client_run_get);
+		       0,
+		       "get",
+		       NULL,
+		       "COMPONENT-ID",
+		       /* TRANSLATORS: `appstreamcli get` command description. */
+		       _("Get information about a component by its ID."), as_client_run_get);
 	ascli_add_cmd (commands,
-			0, "what-provides", NULL, "TYPE VALUE",
-			/* TRANSLATORS: `appstreamcli what-provides` command description. */
-			_("Get components which provide the given item. Needs an item type (e.g. lib, bin, python3, …) and item value as parameter."),
-			as_client_run_what_provides);
+		       0,
+		       "what-provides",
+		       NULL,
+		       "TYPE VALUE",
+		       /* TRANSLATORS: `appstreamcli what-provides` command description. */
+		       _("Get components which provide the given item. Needs an item type (e.g. lib, bin, python3, …) and item value as parameter."),
+			  as_client_run_what_provides);
 	ascli_add_cmd (commands,
-			0, "list-categories", NULL, "NAMES",
-			/* TRANSLATORS: `appstreamcli list-categories` command description. */
-			_("List components that are part of the specified categories."),
-			as_client_run_list_categories);
+		       0,
+		       "list-categories",
+		       NULL,
+		       "NAMES",
+		       /* TRANSLATORS: `appstreamcli list-categories` command description. */
+		       _("List components that are part of the specified categories."),
+			  as_client_run_list_categories);
 
 	ascli_add_cmd (commands,
-			1, "dump", NULL, "COMPONENT-ID",
-			/* TRANSLATORS: `appstreamcli dump` command description. */
-			_("Dump raw XML metadata for a component matching the ID."),
-			as_client_run_dump);
+		       1,
+		       "dump",
+		       NULL,
+		       "COMPONENT-ID",
+		       /* TRANSLATORS: `appstreamcli dump` command description. */
+		       _("Dump raw XML metadata for a component matching the ID."),
+			  as_client_run_dump);
 	ascli_add_cmd (commands,
-			1, "refresh-cache", "refresh", NULL,
-			/* TRANSLATORS: `appstreamcli refresh-cache` command description. */
-			_("Rebuild the component metadata cache."),
-			as_client_run_refresh_cache);
+		       1,
+		       "refresh-cache",
+		       "refresh",
+		       NULL,
+		       /* TRANSLATORS: `appstreamcli refresh-cache` command description. */
+		       _("Rebuild the component metadata cache."), as_client_run_refresh_cache);
 
 	ascli_add_cmd (commands,
-			2, "validate", NULL, "FILE",
-			/* TRANSLATORS: `appstreamcli validate` command description. */
-			_("Validate AppStream XML files for issues."),
-			as_client_run_validate);
+		       2,
+		       "validate",
+		       NULL,
+		       "FILE",
+		       /* TRANSLATORS: `appstreamcli validate` command description. */
+		       _("Validate AppStream XML files for issues."), as_client_run_validate);
 	ascli_add_cmd (commands,
-			2, "validate-tree", NULL, "DIRECTORY",
-			/* TRANSLATORS: `appstreamcli validate-tree` command description. */
-			_("Validate an installed file-tree of an application for valid metadata."),
-			as_client_run_validate_tree);
+		       2,
+		       "validate-tree",
+		       NULL,
+		       "DIRECTORY",
+		       /* TRANSLATORS: `appstreamcli validate-tree` command description. */
+		       _("Validate an installed file-tree of an application for valid metadata."),
+			  as_client_run_validate_tree);
 	ascli_add_cmd (commands,
-			2, "check-license", NULL, "LICENSE",
-			/* TRANSLATORS: `appstreamcli `check-license` command description. */
-			_("Check license string for validity and print details about it."),
-			as_client_run_check_license);
+		       2,
+		       "check-license",
+		       NULL,
+		       "LICENSE",
+		       /* TRANSLATORS: `appstreamcli `check-license` command description. */
+		       _("Check license string for validity and print details about it."),
+			  as_client_run_check_license);
 	ascli_add_cmd (commands,
-			2, "is-satisfied", NULL, "FILE|COMPONENT-ID",
-			/* TRANSLATORS: `appstreamcli `check-license` command description. */
-			_("Check if requirements of a component (via its ID or MetaInfo file) are satisfied on this system."),
-			as_client_run_is_satisfied);
+		       2,
+		       "is-satisfied",
+		       NULL,
+		       "FILE|COMPONENT-ID",
+		       /* TRANSLATORS: `appstreamcli `check-license` command description. */
+		       _("Check if requirements of a component (via its ID or MetaInfo file) are satisfied on this system."),
+			  as_client_run_is_satisfied);
+	ascli_add_cmd (commands,
+		       2,
+		       "check-syscompat",
+		       NULL,
+		       "FILE|COMPONENT-ID",
+		       /* TRANSLATORS: `appstreamcli `check-syscompat` command description. */
+		       _("Check compatibility of a component (via its ID or MetaInfo file) with common system and chassis types."),
+			  as_client_run_check_syscompat);
 
 	ascli_add_cmd (commands,
-			3, "install", NULL, "COMPONENT-ID",
-			/* TRANSLATORS: `appstreamcli install` command description. */
-			_("Install software matching the component-ID."),
-			as_client_run_install);
+		       3,
+		       "install",
+		       NULL,
+		       "COMPONENT-ID",
+		       /* TRANSLATORS: `appstreamcli install` command description. */
+		       _("Install software matching the component-ID."), as_client_run_install);
 	ascli_add_cmd (commands,
-			3, "remove", NULL, "COMPONENT-ID",
-			/* TRANSLATORS: `appstreamcli remove` command description. */
-			_("Remove software matching the component-ID."),
-			as_client_run_remove);
+		       3,
+		       "remove",
+		       NULL,
+		       "COMPONENT-ID",
+		       /* TRANSLATORS: `appstreamcli remove` command description. */
+		       _("Remove software matching the component-ID."), as_client_run_remove);
 
 	ascli_add_cmd (commands,
-			4, "status", NULL, NULL,
-			/* TRANSLATORS: `appstreamcli status` command description. */
-			_("Display status information about available AppStream metadata."),
-			as_client_run_status);
+		       4,
+		       "status",
+		       NULL,
+		       NULL,
+		       /* TRANSLATORS: `appstreamcli status` command description. */
+		       _("Display status information about available AppStream metadata."),
+			  as_client_run_status);
 	ascli_add_cmd (commands,
-			4, "sysinfo", NULL, NULL,
-			/* TRANSLATORS: `appstreamcli sysinfo` command description. */
-			_("Show information about the current device and used operating system."),
-			as_client_run_sysinfo);
+		       4,
+		       "sysinfo",
+		       NULL,
+		       NULL,
+		       /* TRANSLATORS: `appstreamcli sysinfo` command description. */
+		       _("Show information about the current device and used operating system."),
+			  as_client_run_sysinfo);
 	ascli_add_cmd (commands,
-			4, "put", NULL, "FILE",
-			/* TRANSLATORS: `appstreamcli put` command description. */
-			_("Install a metadata file into the right location."),
-			as_client_run_put);
+		       4,
+		       "put",
+		       NULL,
+		       "FILE",
+		       /* TRANSLATORS: `appstreamcli put` command description. */
+		       _("Install a metadata file into the right location."), as_client_run_put);
+	ascli_add_cmd (
+	    commands,
+	    4,
+	    "convert",
+	    NULL,
+	    "FILE FILE",
+	    /* TRANSLATORS: `appstreamcli convert` command description. "Catalog XML" is a term describing a specific type of AppStream XML data. */
+	    _("Convert metadata catalog XML to YAML or vice versa."), as_client_run_convert);
 	ascli_add_cmd (commands,
-			4, "convert", NULL, "FILE FILE",
-			/* TRANSLATORS: `appstreamcli convert` command description. "Catalog XML" is a term describing a specific type of AppStream XML data. */
-			_("Convert metadata catalog XML to YAML or vice versa."),
-			as_client_run_convert);
-	ascli_add_cmd (commands,
-			4, "vercmp", "compare-versions", "VER1 [COMP] VER2",
-			/* TRANSLATORS: `appstreamcli vercmp` command description. */
-			_("Compare two version numbers."),
-			as_client_run_compare_versions);
+		       4,
+		       "vercmp",
+		       "compare-versions",
+		       "VER1 [COMP] VER2",
+		       /* TRANSLATORS: `appstreamcli vercmp` command description. */
+		       _("Compare two version numbers."), as_client_run_compare_versions);
 
+	ascli_add_cmd (
+	    commands,
+	    5,
+	    "new-template",
+	    NULL,
+	    "TYPE FILE",
+	    /* TRANSLATORS: `appstreamcli new-template` command description. */
+	    _("Create a template for a metainfo file (to be filled out by the upstream project)."),
+	       as_client_run_new_template);
 	ascli_add_cmd (commands,
-			5, "new-template", NULL, "TYPE FILE",
-			/* TRANSLATORS: `appstreamcli new-template` command description. */
-			_("Create a template for a metainfo file (to be filled out by the upstream project)."),
-			as_client_run_new_template);
+		       5,
+		       "make-desktop-file",
+		       NULL,
+		       "MI_FILE DESKTOP_FILE",
+		       /* TRANSLATORS: `appstreamcli make-desktop-file` command description. */
+		       _("Create a desktop-entry file from a metainfo file."),
+			  as_client_run_make_desktop_file);
 	ascli_add_cmd (commands,
-			5, "make-desktop-file", NULL, "MI_FILE DESKTOP_FILE",
-			/* TRANSLATORS: `appstreamcli make-desktop-file` command description. */
-			_("Create a desktop-entry file from a metainfo file."),
-			as_client_run_make_desktop_file);
+		       5,
+		       "news-to-metainfo",
+		       NULL,
+		       "NEWS_FILE MI_FILE [OUT_FILE]",
+		       /* TRANSLATORS: `appstreamcli news-to-metainfo` command description. */
+		       _("Convert a YAML or text NEWS file into metainfo releases."),
+			  as_client_run_news_to_metainfo);
 	ascli_add_cmd (commands,
-			5, "news-to-metainfo", NULL, "NEWS_FILE MI_FILE [OUT_FILE]",
-			/* TRANSLATORS: `appstreamcli news-to-metainfo` command description. */
-			_("Convert a YAML or text NEWS file into metainfo releases."),
-			as_client_run_news_to_metainfo);
+		       5,
+		       "metainfo-to-news",
+		       NULL,
+		       "MI_FILE NEWS_FILE",
+		       /* TRANSLATORS: `appstreamcli metainfo-to-news` command description. */
+		       _("Write NEWS text or YAML file with information from a metainfo file."),
+			  as_client_run_metainfo_to_news);
 	ascli_add_cmd (commands,
-			5, "metainfo-to-news", NULL, "MI_FILE NEWS_FILE",
-			/* TRANSLATORS: `appstreamcli metainfo-to-news` command description. */
-			_("Write NEWS text or YAML file with information from a metainfo file."),
-			as_client_run_metainfo_to_news);
-	ascli_add_cmd (commands,
-			5, "compose", NULL, NULL,
-			/* TRANSLATORS: `appstreamcli compose` command description. */
-			_("Compose AppStream metadata catalog from directory trees."),
-			as_client_run_compose);
+		       5,
+		       "compose",
+		       NULL,
+		       NULL,
+		       /* TRANSLATORS: `appstreamcli compose` command description. */
+		       _("Compose AppStream metadata catalog from directory trees."),
+			  as_client_run_compose);
 
 	/* we handle the unknown options later in the individual subcommands */
 	g_option_context_set_ignore_unknown_options (opt_context, TRUE);
@@ -1418,7 +1570,9 @@ as_client_run (char **argv, int argc)
 	if (argc < 2) {
 		/* TRANSLATORS: ascli has been run without command. */
 		g_printerr ("%s\n", _("You need to specify a command."));
-		ascli_print_stderr (_("Run '%s --help' to see a full list of available command line options."), argv[0]);
+		ascli_print_stderr (
+		    _("Run '%s --help' to see a full list of available command line options."),
+		       argv[0]);
 		return 1;
 	}
 	command = argv[1];
@@ -1428,7 +1582,7 @@ as_client_run (char **argv, int argc)
 		/* set the summary text */
 		g_autofree gchar *summary = NULL;
 		summary = as_client_get_help_summary (commands);
-		g_option_context_set_summary (opt_context, summary) ;
+		g_option_context_set_summary (opt_context, summary);
 		g_option_context_set_help_enabled (opt_context, TRUE);
 	} else {
 		g_option_context_set_help_enabled (opt_context, FALSE);
@@ -1444,7 +1598,10 @@ as_client_run (char **argv, int argc)
 			ascli_print_stdout (_("AppStream version: %s"), PACKAGE_VERSION);
 		} else {
 			/* TRANSLATORS: Output if appstreamcli --version is run and the CLI and libappstream versions differ. */
-			ascli_print_stdout (_("AppStream CLI tool version: %s\nAppStream library version: %s"), PACKAGE_VERSION, as_version_string ());
+			ascli_print_stdout (
+			    _("AppStream CLI tool version: %s\nAppStream library version: %s"),
+			       PACKAGE_VERSION,
+			       as_version_string ());
 		}
 		return 0;
 	}
@@ -1472,7 +1629,11 @@ as_client_run (char **argv, int argc)
 	ascli_set_output_colored (!optn_no_color);
 
 	/* if out terminal is no tty, disable colors automatically */
+#ifdef G_OS_WIN32
+	if (!_isatty (fileno (stdout)))
+#else
 	if (!isatty (fileno (stdout)))
+#endif
 		ascli_set_output_colored (FALSE);
 
 	/* don't let gvfsd start its own session bus: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=852696 */
@@ -1494,7 +1655,7 @@ as_client_run (char **argv, int argc)
 }
 
 int
-main (int argc, char ** argv)
+main (int argc, char **argv)
 {
 	gint code = 0;
 

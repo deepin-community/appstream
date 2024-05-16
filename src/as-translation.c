@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -38,11 +38,10 @@
  * See also: #AsComponent
  */
 
-typedef struct
-{
-	AsTranslationKind	kind;
-	GRefString		*id;
-	GRefString		*source_locale;
+typedef struct {
+	AsTranslationKind kind;
+	GRefString *id;
+	GRefString *source_locale;
 } AsTranslationPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AsTranslation, as_translation, G_TYPE_OBJECT)
@@ -56,7 +55,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (AsTranslation, as_translation, G_TYPE_OBJECT)
  *
  * Returns: string version of @kind
  **/
-const gchar*
+const gchar *
 as_translation_kind_to_string (AsTranslationKind kind)
 {
 	if (kind == AS_TRANSLATION_KIND_GETTEXT)
@@ -154,7 +153,7 @@ as_translation_set_kind (AsTranslation *tr, AsTranslationKind kind)
  *
  * The ID (e.g. Gettext translation domain) of this translation.
  */
-const gchar*
+const gchar *
 as_translation_get_id (AsTranslation *tr)
 {
 	AsTranslationPrivate *priv = GET_PRIVATE (tr);
@@ -185,7 +184,7 @@ as_translation_set_id (AsTranslation *tr, const gchar *id)
  * Returns: (not nullable): The locale of the source strings for this component.
  * Since: 0.14.6
  */
-const gchar*
+const gchar *
 as_translation_get_source_locale (AsTranslation *tr)
 {
 	AsTranslationPrivate *priv = GET_PRIVATE (tr);
@@ -195,8 +194,7 @@ as_translation_get_source_locale (AsTranslation *tr)
 /**
  * as_translation_set_source_locale:
  * @tr: a #AsTranslation instance.
- * @locale: (nullable): The locale that the source strings are in, or %NULL if
- *    unknown or default.
+ * @locale: (nullable): The POSIX locale that the source strings are in, or %NULL if unknown or default.
  *
  * Set the locale of the source strings for this component. In gettext, this is
  * referred to as the `C` locale. It’s almost always `en_US`, but for some
@@ -272,7 +270,7 @@ as_translation_to_xml_node (AsTranslation *tr, AsContext *ctx, xmlNode *root)
  *
  * Returns: (transfer full): a #AsTranslation
  **/
-AsTranslation*
+AsTranslation *
 as_translation_new (void)
 {
 	AsTranslation *tr;

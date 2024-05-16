@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2018-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2018-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -22,21 +22,19 @@
 #define __AS_SYSTEM_INFO_PRIVATE_H
 
 #include "as-system-info.h"
-#include "as-settings-private.h"
+#include "as-macros-private.h"
 
-G_BEGIN_DECLS
-#pragma GCC visibility push(hidden)
+AS_BEGIN_PRIVATE_DECLS
 
-AS_INTERNAL_VISIBLE void		as_system_info_load_os_release (AsSystemInfo *sysinfo,
-									const gchar *os_release_fname);
+AS_INTERNAL_VISIBLE
+void as_system_info_load_os_release (AsSystemInfo *sysinfo, const gchar *os_release_fname);
 
-AS_INTERNAL_VISIBLE void		as_system_info_set_kernel (AsSystemInfo *sysinfo,
-								   const gchar *name,
-								   const gchar *version);
+AS_INTERNAL_VISIBLE
+void as_system_info_set_kernel (AsSystemInfo *sysinfo, const gchar *name, const gchar *version);
 
-AS_INTERNAL_VISIBLE void		as_system_info_set_memory_total (AsSystemInfo *sysinfo, gulong size_mib);
+AS_INTERNAL_VISIBLE
+void as_system_info_set_memory_total (AsSystemInfo *sysinfo, gulong size_mib);
 
-#pragma GCC visibility pop
-G_END_DECLS
+AS_END_PRIVATE_DECLS
 
 #endif /* __AS_SYSTEM_INFO_PRIVATE_H */

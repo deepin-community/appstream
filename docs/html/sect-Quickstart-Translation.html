@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Translating Metadata | AppStream | AppStream 1.0</title><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" /><link rel="stylesheet" type="text/css" href="static/css/style.css" /><link rel="stylesheet" type="text/css" href="static/css/highlight.css" /><meta name="generator" content="DAPS 3.3.2" /><meta name="product-name" content="AppStream" /><meta name="product-number" content="1.0" /><meta name="book-title" content="AppStream" /><meta name="chapter-title" content="5.4. Translating Metadata" /><meta name="description" content="5.4.1 Introduction # Most AppStream metadata can be translated, This page contains some practical instructions how to translate the metadata. Note: For KDE developers If you are a KDE developer and using the KDE infrastructure with it's localization support, you need to do nothing to get translated …" /><link rel="home" href="index.html" title="AppStream" /><link rel="up" href="chap-Quickstart.html" title="Chapter 5. Metadata Quickstart" /><link rel="prev" href="sect-Quickstart-Distros.html" title="5.3. For distributors packaging Appstream metadata" /><link rel="next" href="chap-Validation.html" title="Chapter 6. Data Validation" />
+<script src="static/js/highlight.min.js" type="text/javascript"></script><script>
+
+document.addEventListener('DOMContentLoaded', (event) => {
+  document.querySelectorAll('.verbatim-wrap.highlight').forEach((block) => {
+    hljs.highlightBlock(block);
+  });
+});
+hljs.configure({
+  useBR: false
+});
+
+</script></head><body class="offline js-off"><div class="bypass-block"><a href="#_content">Jump to content</a><a href="#_bottom-navigation">Jump to page navigation: previous page [access key p]/next page [access key n]</a></div><div id="_outer-wrap"><div id="_white-bg"><div id="_header"><div id="_logo"><a href="https://www.freedesktop.org/software/appstream/docs/"><img src="static/images/logo.png" alt="Logo" /><span>AppStream</span></a></div><div class="crumbs"><a class="book-link" href="index.html" title="AppStream"><span class="book-icon">AppStream</span></a><span> › </span><a class="crumb" href="chap-Quickstart.html">Metadata Quickstart</a><span> › </span><a class="crumb" href="sect-Quickstart-Translation.html" accesskey="c"><span class="single-contents-icon"></span>Translating Metadata</a></div><div class="clearme"></div></div></div><div id="_toolbar-wrap"><div id="_toolbar"><div id="_toc-area" class="inactive"><a id="_toc-area-button" class="tool" title="Contents" accesskey="c" href="index.html"><span class="tool-spacer"><span class="toc-icon">Contents</span><span class="clearme"></span></span><span class="tool-label">Contents</span></a><div class="active-contents bubble-corner"></div><div class="active-contents bubble"><div class="bubble-container"><h6>AppStream</h6><div id="_bubble-toc"><ol><li class="inactive"><a href="chap-AppStream-About.html"><span class="number">1 </span><span class="name">About AppStream</span></a></li><li class="inactive"><a href="chap-Metadata.html"><span class="number">2 </span><span class="name">Upstream Metadata</span></a></li><li class="inactive"><a href="chap-CatalogData.html"><span class="number">3 </span><span class="name">Catalog Metadata</span></a></li><li class="inactive"><a href="chap-AppStream-Misc.html"><span class="number">4 </span><span class="name">Miscellaneous</span></a></li><li class="inactive"><a href="chap-Quickstart.html"><span class="number">5 </span><span class="name">Metadata Quickstart</span></a></li><li class="inactive"><a href="chap-Validation.html"><span class="number">6 </span><span class="name">Data Validation</span></a></li><li class="inactive"><a href="chap-AppStream-ManualPages.html"><span class="number">7 </span><span class="name">Manual pages</span></a><ol>
+	<a href="re01.html#id-1.8.3.1">appstreamcli</a>
+	2012-2024Matthias Klumpp
+	AppStream
+	26 July,2012
+	appstreamcli1appstreamcliHandle AppStream metadata formats and query AppStream dataappstreamcliCOMMAND<a href="re01.html#id-1.8.3.5">Description</a>
+			This manual page documents briefly the appstreamcli command.
+		
+			appstreamcli is a small helper tool to work with AppStream metadata and
+			access the AppStream component index from the command-line. The AppStream component
+			index contains a list of all available software components for your distribution, matched to their
+			package names.
+			It is generated using AppStream XML or Debian DEP-11 data, which is provided by your distributor.
+		
+			For more information about the AppStream project and the other components which are part of it, take a look at
+			the AppStream pages at Freedesktop.org.
+		<a href="re01.html#id-1.8.3.6">Options</a>get IDGet a component from the metadata pool by its identifier.ssearch TERMSearch the AppStream component pool for a given search term.what-provides TYPE TERM
+						Return components which provide a given item. An item type can be specified using the
+						TYPE parameter, a value to search for has to be
+						supplied using the TERM parameter.
+					Examples:
+						Get components which handle the "text/xml" mediatype.
+					
+						appstreamcli what-provides mediatype "text/xml"
+					
+						Get component which provides the "libfoo.so.2" library.
+					
+						appstreamcli what-provides lib libfoo.so.2
+					refreshrefresh-cache
+						Trigger a database refresh, if necessary.
+						In case you want to force the database to be rebuilt, supply the --force flag.
+					This command must be executed with root permission.status
+						Display various information about the installed metadata and
+						the metadata cache.
+					os-info
+						Show information about the current operating system from the metadata
+						index.
+						This requires the operating system to provide a operating-system
+						component for itself.
+					dump ID
+						Dump the complete XML descriptions of components with the given ID that were found in the
+						metadata pool.
+					validate FILES
+						Validate AppStream XML metadata for compliance with the specification.
+					
+						Both XML metadata types, upstream and distro XML, are handled.
+						The format type which should be validated is determined automatically.
+					
+						The --pedantic flag triggers a more pedantic
+						validation of the file, including minor and style issues in the report.
+					validate-tree DIRECTORY
+						Validate AppStream XML metadata found in a file-tree.
+					
+						This performs a standard validation of all found metadata, but also checks for additional
+						errors, like the presence of .desktop files and validity of other additional metadata.
+					check-license LICENSE
+						Test a license string or license expression for validity and display details about it.
+					
+						This will check whether the license string is considered to be valid for AppStream, and return
+						a non-zero exit code if it is not. The command will also display useful information like the
+						canonical ID of a license, whether it is suitable as license for AppStream metadata,
+						and whether the license is considered to be for Free and Open Source software or proprietary software.
+					
+						AppStream will consider any license as Free and Open Source that is marked as suitable by either the
+						Free Software Foundation (FSF), Open Source Initiative (OSI) or explicit license list
+						of the Debian Free Software Guidelines (DFSG).
+					install ID
+						Install a software component by its ID using the package manager or Flatpak.
+					
+						This resolves the AppStream component ID to an installation candidate and then
+						calls either the native package manager or Flatpak (if available) to install
+						the component.
+					remove ID
+						Uninstall a software component by its ID using the package manager or Flatpak.
+					
+						This will uninstall software matching the selected ID using either the native
+						package manager or Flatpak (if available).
+					put FILE
+						Install a metadata file into the right directory on the current machine.
+					compare-versionsvercmp VER1 [CMP] VER2
+						Compare two version numbers. If two version numbers are given as parameters, the versions will be compared and the
+						comparison result will be printed to stdout.
+					
+						If a version number, a comparison operator and another version number are passed in as parameter, the result of the comparison
+						operation will be printed to stdout, and appstreamcli will exit with a non-zero exit status in case the comparison
+						failed.
+						The comparison operator can be one of the following:
+					eq - Equal tone - Not equal tolt - Less thangt - Greater thanle - Less than or equal toge - Greater than or equal tonew-template TYPE FILE
+						Create a metainfo file template to be used by software projects. The --from-desktop option can be used
+						to use a .desktop file as template for generating the example file.
+					
+						The generated files contain example entries which need to be filed in with the actual desired values by the project author.
+					
+						The first TYPE parameter is the name of an AppStream component type. For a complete list check out
+						the documentation or the help output
+						of appstreamcli for this subcommand.
+					make-desktop-file MI_FILE DESKTOP_FILE
+						Create a XDG desktop-entry file from a metainfo file.
+						If the desktop-entry file specified in DESKTOP_FILE already exists, it will get extended with
+						the new information extracted from the metainfo file. Otherwise a new file will be created.
+					
+						This command will use the first binary mentioned in a provides tag of the component
+						for the Exec= field of the new desktop-entry file.
+						If this is not the desired behavior, the --exec flag can be used
+						to explicitly define a binary to launch. Other methods of launching the application are currently not supported.
+					
+						In order to generate a proper desktop-entry, this command assumes that not only the minimally required tags for an
+						AppStream component are set, but also that it has an &lt;icon/&gt; tag of type "stock" to describe
+						the stock icon that should be used as well as a &lt;categories/&gt; tag containing the categories the application should
+						be placed in.
+					news-to-metainfo NEWS_FILE MI_FILE [OUT_FILE]
+						This command converts a NEWS file as used by many open source projects into the XML used by AppStream. Since NEWS files are free text,
+						a lot of heuristics will be applied to get reasonable results. The converter can also read a YAML version of the AppStream release
+						description and convert it to XML as well.
+						If the metainfo file MI_FILE already exists, it will be augmented with the new release entries, otherwise the release entries
+						will be written without any wrapping component.
+						If [OUT_FILE] is specified, instead of acting on MI_FILE the changed data will
+						be written to the particular file. If any of the output filenames is set to "-", the output will instead be written to stdout.
+					
+						The --format option can be used to enforce reading the input file in a specific format ("text" or "yaml") in case the format autodetection fails.
+						The --limit option is used to limit the amount of release entries written (the newest entries will always be first).
+					metainfo-to-news MI_FILE NEWS_FILE
+						This command reverses the news-to-metainfo command and writes a NEWS file as text or YAML using the XML
+						contained in a metainfo file. If NEWS_FILE is set to "-", the resulting data
+						will be written to stdout instead of to a file.
+					
+						The --format option can be used to explicitly specify the output format ("yaml" or "text"). If it is not set,
+						appstreamcli will guess which format is most suitable.
+					convert FILE1 FILE1
+						Converts AppStream XML metadata into its YAML representation and vice versa.
+					compose
+						Composes an AppStream metadata catalog from a directory tree with metainfo files.
+						This command is only available if the org.freedesktop.appstream.compose
+						component is installed.
+						See appstreamcli-compose1
+						for more information.
+					--detailsPrint out more information about a found component.--no-colorDon't print colored output.--no-netDo not access the network when validating metadata.
+						The same effect can be achieved by setting the AS_VALIDATE_NONET environment variable
+						before running appstreamcli.
+					--versionDisplay the version number of appstreamcli<a href="re01.html#id-1.8.3.7">See Also</a>pkcon1.<a href="re01.html#id-1.8.3.8">AUTHOR</a>
+	This manual page was written by Matthias Klumpp matthias@tenstral.net.
+
+	<a href="re02.html#id-1.8.4.1">appstreamcli compose</a>
+	2020-2024Matthias Klumpp
+	AppStream
+	28 Aug,2020
+	appstreamcli compose1appstreamcli-composeCompose AppStream metadata catalog from directory treesappstreamcli composeCOMMAND<a href="re02.html#id-1.8.4.5">Description</a>
+			This manual page documents briefly the appstreamcli compose command.
+		
+			The appstreamcli compose tool is used to construct AppStream metadata catalogs from directory trees.
+			The tool will also perform many related metadata generation actions, like resizing icons and
+			screenshots and merging in data from referenced desktop-entry files as well as translation status
+			information.
+			Therefore, the tool provides a fast way to test how the final processed metadata for an application
+			that is shipped to users may look like.
+			It also provides a way to easily generate AppStream data for projects which do not need a more complex data
+			generator like appstream-generator.
+		
+			In order for the appstreamcli compose command to be available, you may need to install the
+			optional compose module for appstreamcli first.
+		
+			For more information about the AppStream project and the other components which are part of it, take a look at
+			the AppStream pages at Freedesktop.org.
+		<a href="re02.html#id-1.8.4.6">Options</a>SOURCE-DIRECTORIES
+						A list of directories to process needs to be provided as positional parameters.
+						Data from all directories will be combined into one output namespace.
+					--origin NAME
+						Set the AppStream data origin identifier. This can be a value like
+						"debian-unstable-main" or "flathub".
+					--result-root DIR
+						Sets the directory where all generated output that is deployed to a user's
+						machine is exported to. If this parameter is not set and we only have one
+						directory to process, we use that directory as default output path.
+					
+						If both --data-dir and --icons-dir are
+						set, --result-root is not necessary and no data will be
+						written to that directory.
+					--data-dir DIR
+						Override the directory where the generated AppStream metadata catalog
+						will be written to. Data will be written directly to this directory, and
+						no supdirectories will be created (unlike when using --result-root
+						to set an output location).
+					--icons-dir DIR
+						Override the directory where the cached icons are exported to.
+					--hints-dir DIR
+						Set a directory where hints reported generated during metadata processing
+						are saved to. If this parameter is not set, no HTML/YAML hint reports
+						will be saved.
+					--media-dir DIR
+						If set, creates a directory with media content (icons, screenshots, ...) that
+						can be served via a webserver. The metadata will be extended to include information
+						about these remote media.
+					--media-baseurl URL
+						The URL under which the contents of a directory set via --media-dir
+						will be served. This value must be set if a media directory is created.
+					--prefix DIR
+						Set the default prefix that is used in the processed directories. If
+						none is set explicitly, /usr is assumed.
+					--print-report MODE
+						Print the issue hints report (that gets exported as HTML and YAML
+						document when --hints-dir was set) to the console
+						in text form.
+					
+						Various print modes are supported: on-error only prints a
+						short report if the run failed (default), short generates
+						an abridged report that is always printed and full results
+						in a detailed report to be printed.
+					--no-partial-urls
+						If set, all URLs in the generated data will be absolute and media_baseurl will not be used.
+						This makes changing the media mirror harder without regenerating all data and is generally not recommended,
+						to increase flexibility.
+					--icon-policy POLICY-STRING
+						Override the existing icon policy with a custom one. The icon policy sets how icons of
+						different sizes should be dealt with. They can be in the icon cache only, be a remote icon in
+						the media location or be both cached and available in the remote location.
+					
+						The icon-policy string is comprised of comma-separated %{size}x%{size}@%{scale}=%{state} statements.
+						The size and scale are that of the respective icon, with the scale being allowed to be
+						omitted if it is 1. The state can be one of remote, cached or
+						cached-remote.
+					
+						By default, a policy of 48x48=cached,48x48@2=cached,64x64=cached,64x64@2=cached,128x128=cached-remote,128x128@2=cached-remote
+						is selected.
+					--allow-custom CUSTOM-KEY-NAMES
+						By default, all custom entries set in MetaInfo input data are removed.
+						This flag allows to whitelist custom keys to be propagated to the final catalog output data.
+						The custom-key names should be provided as a comma-separated list.
+					--components COMPONENT-IDs
+						Set a comma-separated list of AppStream component IDs that should be
+						considered for the generated metadata. All components that exist in
+						the input data but are not mentioned in this list will be ignored
+						for the generated output.
+					--no-colorDon't print colored output.--verboseDisplay extra debugging information--versionDisplay the version number of appstreamcli compose<a href="re02.html#id-1.8.4.7">See Also</a>
+			appstreamcli1,
+			appstream-generator1.
+		<a href="re02.html#id-1.8.4.8">AUTHOR</a>
+	This manual page was written by Matthias Klumpp matthias@tenstral.net.
+</ol></li><li class="inactive"><a href="chap-AppStream-API.html"><span class="number">8 </span><span class="name">AppStream API Reference</span></a></li><li class="inactive"><a href="ix01.html"><span class="number"> </span><span class="name">Index</span></a></li></ol></div><div class="clearme"></div></div></div></div><div id="_nav-area" class="inactive"><div class="tool"><span class="nav-inner"><span class="tool-label">Navigation</span><a accesskey="p" class="tool-spacer" title="5.3. For distributors packaging Appstream metadata" href="sect-Quickstart-Distros.html"><span class="prev-icon">←</span></a><a accesskey="n" class="tool-spacer" title="Chapter 6. Data Validation" href="chap-Validation.html"><span class="next-icon">→</span></a></span></div></div></div></div><div id="_fixed-header-wrap" class="inactive"><div id="_fixed-header"><div class="crumbs"><a class="book-link" href="index.html" title="AppStream"><span class="book-icon">AppStream</span></a><span> › </span><a class="crumb" href="chap-Quickstart.html">Metadata Quickstart</a><span> › </span><a class="crumb" href="sect-Quickstart-Translation.html" accesskey="c"><span class="single-contents-icon"></span>Translating Metadata</a></div><div class="buttons"><a class="top-button button" href="#">Top</a><div class="button"><a accesskey="p" class="tool-spacer" title="5.3. For distributors packaging Appstream metadata" href="sect-Quickstart-Distros.html"><span class="prev-icon">←</span></a><a accesskey="n" class="tool-spacer" title="Chapter 6. Data Validation" href="chap-Validation.html"><span class="next-icon">→</span></a></div><div class="clearme"></div></div><div class="clearme"></div></div></div><div id="_content" class=""><div class="documentation"><div class="sect1" id="sect-Quickstart-Translation"><div class="titlepage"><div><div><h2 class="title" id="sect-Quickstart-Translation"><span class="number">5.4 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Translating Metadata</span> <a title="Permalink" class="permalink" href="sect-Quickstart-Translation.html">#</a></h2></div></div></div><div class="sect2" id="qsr-l10n-introduction"><div class="titlepage"><div><div><h3 class="title" id="qsr-l10n-introduction"><span class="number">5.4.1 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Introduction</span> <a title="Permalink" class="permalink" href="sect-Quickstart-Translation.html#qsr-l10n-introduction">#</a></h3></div></div></div><p>
+			Most AppStream metadata can be translated, This page contains some practical instructions how to translate the
+			metadata.
+		</p><div id="id-1.6.6.2.3" class="admonition note normal"><img class="symbol" alt="Note" title="Note" src="static/images/icon-note.png" /><h6>Note: For KDE developers</h6><p>
+				If you are a KDE developer and using the KDE infrastructure with it's localization support, you need to do nothing
+				to get translated metadata. Just place your <code class="filename">*.metainfo.xml*</code> (or <code class="filename">*.appdata.xml*</code> file)
+				at a sane place, and the l10n-script will translate the file in-place automatically.
+			</p></div></div><div class="sect2" id="qsr-l10n-selection"><div class="titlepage"><div><div><h3 class="title" id="qsr-l10n-selection"><span class="number">5.4.2 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Selecting strings for translation</span> <a title="Permalink" class="permalink" href="sect-Quickstart-Translation.html#qsr-l10n-selection">#</a></h3></div></div></div><p>
+			By default, all strings in a MetaInfo file that are in translatable elements will be marked for translation.
+			If you are using <code class="literal">xgettext</code>, <code class="literal">itstool</code> or any other tool that uses ITS rules
+			for translation, and have AppStream or AppStream's ITS rules installed, you can exclude any element from
+			being translated by adding a <code class="code">translate="no"</code> attribute to it.
+		</p><p>
+			One special case is the <code class="code">description</code> block in MetaInfo files and release metadata. In MetaInfo files,
+			each individual paragraph of a description (or enumerated entry) is translated individually, however you can only
+			exclude the complete block from being translated by adding <code class="code">translate="no"</code> to the <code class="code">description</code>
+			element. It is generally discouraged to not translate component descriptions, so please use this with care!
+		</p></div><div class="sect2" id="qsr-l10n-itstool"><div class="titlepage"><div><div><h3 class="title" id="qsr-l10n-itstool"><span class="number">5.4.3 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Translating using Itstool</span> <a title="Permalink" class="permalink" href="sect-Quickstart-Translation.html#qsr-l10n-itstool">#</a></h3></div></div></div><p>
+			One good way to translate MetaInfo files besides using plain Gettext is using Itstool for translation.
+			In order to translate an XML file with it, you need an <code class="filename">.its</code> file with translation definitions.
+			This file is installed with Gettext, but a more recent version is also shipped by AppStream, so make sure <code class="literal">appstream</code>
+			itself is installed to get more complete translations.
+		</p><p>
+			To extract a GNU Gettext <code class="filename">.pot</code> file from your XML file, run itstool with the follwing arguments (replacing "foo" with
+			your project name):
+		</p><div class="verbatim-wrap highlight Bash"><pre class="programlisting">itstool -o $podir/foo_metadata.pot data/foo.metainfo.xml</pre></div><p>
+			You can then translate the <code class="filename">.pot</code> file using the standard methods for translating files like these. You obtain
+			<code class="filename">.po</code> files, which you can convert into <code class="filename">.mo</code> files (using msgfmt) like you would do with any
+			other localization. Then, you need to call <code class="command">itstool</code> again, to create a translated version of the original XML file:
+		</p><div class="verbatim-wrap highlight Bash"><pre class="programlisting">itstool -j data/foo.metainfo.xml -o output/foo.metainfo.xml $modir/*.mo</pre></div><p>
+			Please ensure that the <code class="filename">.mo</code> files in <code class="filename">$modir</code> are named with their language codes.
+		</p><div id="id-1.6.6.4.8" class="admonition note normal"><img class="symbol" alt="Note" title="Note" src="static/images/icon-note.png" /><h6>Note</h6><p>
+				You can find more information about Itstool <a class="ulink" href="http://itstool.org/" target="_blank">on their homepage<span class="ulink-url"> (http://itstool.org/)</span></a>.
+			</p></div><div class="sect3" id="qsr-l10n-itstool-meson"><div class="titlepage"><div><div><h4 class="title" id="qsr-l10n-itstool-meson"><span class="number">5.4.3.1 </span><span xmlns:dm="urn:x-suse:ns:docmanager" class="name">Integrating with Meson</span> <a title="Permalink" class="permalink" href="sect-Quickstart-Translation.html#qsr-l10n-itstool-meson">#</a></h4></div></div></div><p>
+				First add your MetaInfo file to your <code class="filename">POTFILES.in</code> file and use Gettext for extraction
+				of translatable elements:
+			</p><div class="verbatim-wrap"><pre class="programlisting">i18n = import('i18n')
+
+i18n_result = i18n.gettext(gettext_domain,
+    preset : 'glib',
+)</pre></div><p>
+				To then apply the translated data to the MetaInfo XML file, you can use the built-in <code class="code">itstool_join</code> function:
+			</p><div class="verbatim-wrap"><pre class="programlisting">metainfo_dir = join_paths(get_option ('datadir'), 'metainfo')
+
+metainfo_i18n = i18n.itstool_join(
+    input:  'org.example.myapp.metainfo.xml',
+    output: 'org.example.myapp.metainfo.xml',
+    mo_targets: i18n_result[0],
+    install: true,
+    install_dir: metainfo_dir,
+)</pre></div></div></div></div></div><div class="page-bottom"><div id="_bottom-navigation"><a class="nav-link" href="chap-Validation.html"><span class="next-icon">→</span><span class="nav-label"><span class="number">Chapter 6 </span>Data Validation</span></a><a class="nav-link" href="sect-Quickstart-Distros.html"><span class="prev-icon">←</span><span class="nav-label">For distributors packaging Appstream metadata</span></a></div></div></div><div id="_inward"></div></div><div id="_footer-wrap"><div id="_footer"><p>©
+        2024 
+        Freedesktop.org, the AppStream Project</p></div></div></body></html>

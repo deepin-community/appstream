@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2019-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -27,7 +27,8 @@
 class QUrl;
 class QString;
 struct _AsVideo;
-namespace AppStream {
+namespace AppStream
+{
 
 class VideoData;
 
@@ -37,75 +38,77 @@ class VideoData;
  * This class doesn't contain any video data, but only a reference to
  * an url and a bit of useful metadata about the video.
  */
-class APPSTREAMQT_EXPORT Video {
+class APPSTREAMQT_EXPORT Video
+{
     Q_GADGET
-    public:
-        enum CodecKind {
-            CodecKindUnknown,
-            CodecKindVP9,
-            CodecKindAV1
-        };
-        Q_ENUM(CodecKind)
 
-        enum ContainerKind {
-            ContainerKindUnknown,
-            ContainerKindMKV,
-            ContainerKindWebM
-        };
-        Q_ENUM(ContainerKind)
+public:
+    enum CodecKind {
+        CodecKindUnknown,
+        CodecKindVP9,
+        CodecKindAV1
+    };
+    Q_ENUM(CodecKind)
 
-        Video();
-        Video(_AsVideo *vid);
-        Video(const Video& other);
-        ~Video();
+    enum ContainerKind {
+        ContainerKindUnknown,
+        ContainerKindMKV,
+        ContainerKindWebM
+    };
+    Q_ENUM(ContainerKind)
 
-        Video& operator=(const Video& other);
+    Video();
+    Video(_AsVideo *vid);
+    Video(const Video &other);
+    ~Video();
 
-        /**
-         * \returns the internally stored AsVideo
-         */
-        _AsVideo *asVideo() const;
+    Video &operator=(const Video &other);
 
-        /**
-         * \return the codec of this video, if known
-         */
-        CodecKind codec() const;
-        void setCodec(CodecKind codec);
+    /**
+     * \returns the internally stored AsVideo
+     */
+    _AsVideo *cPtr() const;
 
-	/**
-         * \return the container format of this video, if known
-         */
-        ContainerKind container() const;
-        void setContainer(ContainerKind container);
+    /**
+     * \return the codec of this video, if known
+     */
+    CodecKind codec() const;
+    void setCodec(CodecKind codec);
 
-        /**
-         * \return the url for this video
-         */
-        const QUrl url() const;
-        void setUrl(const QUrl& url);
+    /**
+     * \return the container format of this video, if known
+     */
+    ContainerKind container() const;
+    void setContainer(ContainerKind container);
 
-        /**
-         * \return the expected width of this video
-         */
-        uint width() const;
-        void setWidth(uint width);
+    /**
+     * \return the url for this video
+     */
+    const QUrl url() const;
+    void setUrl(const QUrl &url);
 
-        /**
-         * \return the expected height of this video
-         */
-        uint height() const;
-        void setHeight(uint height);
+    /**
+     * \return the expected width of this video
+     */
+    uint width() const;
+    void setWidth(uint width);
 
-        /**
-         * \returns the expected size of the video
-         */
-        QSize size() const;
+    /**
+     * \return the expected height of this video
+     */
+    uint height() const;
+    void setHeight(uint height);
 
-    private:
-        QSharedDataPointer<VideoData> d;
+    /**
+     * \returns the expected size of the video
+     */
+    QSize size() const;
+
+private:
+    QSharedDataPointer<VideoData> d;
 };
 }
 
-APPSTREAMQT_EXPORT QDebug operator<<(QDebug s, const AppStream::Video& video);
+APPSTREAMQT_EXPORT QDebug operator<<(QDebug s, const AppStream::Video &video);
 
 #endif // APPSTREAMQT_VIDEO_H

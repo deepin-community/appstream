@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -26,8 +26,8 @@
 G_BEGIN_DECLS
 #pragma GCC visibility push(hidden)
 
-GPtrArray	*asc_globals_get_pangrams_for (const gchar *lang);
-AscHintTag	*asc_globals_get_hint_tag_details (const gchar *tag);
+GPtrArray	      *asc_globals_get_pangrams_for (const gchar *lang);
+AscHintTag	      *asc_globals_get_hint_tag_details (const gchar *tag);
 
 #pragma GCC visibility pop
 G_END_DECLS

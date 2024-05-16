@@ -16,7 +16,13 @@ option('vapi',
 option('qt',
        type : 'boolean',
        value : false,
-       description : 'Build libappstream-qt'
+       description : 'Build libAppStreamQt'
+)
+option('qt-versions',
+       type: 'array',
+       choices: ['5', '6'],
+       value : ['6'],
+       description: 'Major versions of Qt to build for.'
 )
 option('compose',
        type : 'boolean',
@@ -37,6 +43,11 @@ option('svg-support',
        type : 'boolean',
        value : true,
        description : 'SVG graphics support for compose (only disable this for bootstrapping purposes)'
+)
+option('zstd-support',
+       type : 'boolean',
+       value : true,
+       description : 'Support Zstd for (de)compressing local / remote metadata'
 )
 
 option('docs',

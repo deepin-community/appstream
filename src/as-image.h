@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -18,7 +18,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined (__APPSTREAM_H) && !defined (AS_COMPILATION)
+#if !defined(__APPSTREAM_H) && !defined(AS_COMPILATION)
 #error "Only <appstream.h> can be included directly."
 #endif
 
@@ -32,16 +32,15 @@ G_BEGIN_DECLS
 #define AS_TYPE_IMAGE (as_image_get_type ())
 G_DECLARE_DERIVABLE_TYPE (AsImage, as_image, AS, IMAGE, GObject)
 
-struct _AsImageClass
-{
-	GObjectClass		parent_class;
+struct _AsImageClass {
+	GObjectClass parent_class;
 	/*< private >*/
-	void (*_as_reserved1)	(void);
-	void (*_as_reserved2)	(void);
-	void (*_as_reserved3)	(void);
-	void (*_as_reserved4)	(void);
-	void (*_as_reserved5)	(void);
-	void (*_as_reserved6)	(void);
+	void (*_as_reserved1) (void);
+	void (*_as_reserved2) (void);
+	void (*_as_reserved3) (void);
+	void (*_as_reserved4) (void);
+	void (*_as_reserved5) (void);
+	void (*_as_reserved6) (void);
 };
 
 /**
@@ -60,38 +59,28 @@ typedef enum {
 	AS_IMAGE_KIND_LAST
 } AsImageKind;
 
-/* some useful constants */
-#define AS_IMAGE_LARGE_HEIGHT		423	/* Since: 0.14.0 */
-#define AS_IMAGE_LARGE_WIDTH		752	/* Since: 0.14.0 */
-#define AS_IMAGE_NORMAL_HEIGHT		351	/* Since: 0.14.0 */
-#define AS_IMAGE_NORMAL_WIDTH		624	/* Since: 0.14.0 */
-#define AS_IMAGE_THUMBNAIL_HEIGHT	63	/* Since: 0.14.0 */
-#define AS_IMAGE_THUMBNAIL_WIDTH 	112	/* Since: 0.14.0 */
+AsImageKind  as_image_kind_from_string (const gchar *kind);
+const gchar *as_image_kind_to_string (AsImageKind kind);
 
-AsImageKind	 as_image_kind_from_string (const gchar *kind);
-const gchar	*as_image_kind_to_string (AsImageKind kind);
+AsImage	    *as_image_new (void);
 
-AsImage		*as_image_new (void);
+AsImageKind  as_image_get_kind (AsImage *image);
+void	     as_image_set_kind (AsImage *image, AsImageKind kind);
 
-AsImageKind	 as_image_get_kind (AsImage *image);
-void		 as_image_set_kind (AsImage *image,
-					AsImageKind kind);
+const gchar *as_image_get_url (AsImage *image);
+void	     as_image_set_url (AsImage *image, const gchar *url);
 
-const gchar	*as_image_get_url (AsImage *image);
-void		 as_image_set_url (AsImage *image,
-					const gchar *url);
+guint	     as_image_get_width (AsImage *image);
+void	     as_image_set_width (AsImage *image, guint width);
 
-guint		 as_image_get_width (AsImage *image);
-void		 as_image_set_width (AsImage *image,
-					guint width);
+guint	     as_image_get_height (AsImage *image);
+void	     as_image_set_height (AsImage *image, guint height);
 
-guint		 as_image_get_height (AsImage *image);
-void		 as_image_set_height (AsImage *image,
-					guint height);
+guint	     as_image_get_scale (AsImage *image);
+void	     as_image_set_scale (AsImage *image, guint scale);
 
-const gchar	*as_image_get_locale (AsImage *image);
-void		 as_image_set_locale (AsImage *image,
-				      const gchar *locale);
+const gchar *as_image_get_locale (AsImage *image);
+void	     as_image_set_locale (AsImage *image, const gchar *locale);
 
 G_END_DECLS
 

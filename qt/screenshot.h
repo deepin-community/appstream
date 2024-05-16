@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2014 Sune Vuorela <sune@vuorela.dk>
- * Copyright (C) 2016-2019 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -23,14 +23,15 @@
 
 #include <QObject>
 #include <QSharedDataPointer>
+#include <optional>
 #include "appstreamqt_export.h"
 
 #include <QString>
 #include <QList>
 
-
 struct _AsScreenshot;
-namespace AppStream {
+namespace AppStream
+{
 
 class Image;
 class Video;
@@ -41,8 +42,10 @@ class ScreenshotData;
  * A screenshot might appear in various resolutions
  */
 
-class APPSTREAMQT_EXPORT Screenshot {
-Q_GADGET
+class APPSTREAMQT_EXPORT Screenshot
+{
+    Q_GADGET
+
 public:
     enum MediaKind {
         MediaKindUnknown,
@@ -53,14 +56,14 @@ public:
 
     Screenshot();
     Screenshot(_AsScreenshot *scr);
-    Screenshot(const Screenshot& other);
+    Screenshot(const Screenshot &other);
     ~Screenshot();
-    Screenshot& operator=(const Screenshot& other);
+    Screenshot &operator=(const Screenshot &other);
 
     /**
      * \returns the internally stored AsScreenshot
      */
-    _AsScreenshot *asScreenshot() const;
+    _AsScreenshot *cPtr() const;
 
     /**
      * \return true if it is the default screenshot
@@ -74,27 +77,47 @@ public:
     MediaKind mediaKind() const;
 
     /**
-     * \return the images for this screenshot
+     * \return the language-specific images for this screenshot
      */
     QList<AppStream::Image> images() const;
 
     /**
-     * \return the videos for this screenshot
+     * \return all images for this screenshot
+     */
+    QList<AppStream::Image> imagesAll() const;
+
+    /**
+     * \return retrieve an image that roughly matches the selected size constraints
+     */
+    std::optional<AppStream::Image> image(uint width, uint height, uint scale) const;
+
+    /**
+     * \return the language-specific videos for this screenshot
      */
     QList<AppStream::Video> videos() const;
+
+    /**
+     * \return all videos for this screenshot
+     */
+    QList<AppStream::Video> videosAll() const;
 
     /**
      * \return caption for this image or a null QString if no caption
      */
     QString caption() const;
-    void setCaption(const QString& caption, const QString& lang = {});
+    void setCaption(const QString &caption, const QString &lang = {});
+
+    /**
+     * \return GUI environment ID this screenshot was recorded in.
+     */
+    QString environment() const;
+    void setEnvironment(const QString &guiEnvId);
 
 private:
     QSharedDataPointer<ScreenshotData> d;
-
 };
 }
 
-APPSTREAMQT_EXPORT QDebug operator<<(QDebug s, const AppStream::Screenshot& screenshot);
+APPSTREAMQT_EXPORT QDebug operator<<(QDebug s, const AppStream::Screenshot &screenshot);
 
 #endif // APPSTREAMQT_SCREENSHOT_H

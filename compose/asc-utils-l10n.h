@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -23,18 +23,16 @@
 #include <glib-object.h>
 #include <appstream.h>
 
-#include "as-settings-private.h"
+#include "as-macros-private.h"
 #include "asc-result.h"
 #include "asc-unit.h"
 
-G_BEGIN_DECLS
-#pragma GCC visibility push(hidden)
+AS_BEGIN_PRIVATE_DECLS
 
 AS_INTERNAL_VISIBLE
-void		asc_read_translation_status (AscResult *cres,
-						AscUnit *unit,
-						const gchar *prefix,
-						guint min_percentage);
+void asc_read_translation_status (AscResult   *cres,
+				  AscUnit     *unit,
+				  const gchar *prefix,
+				  guint	       min_percentage);
 
-#pragma GCC visibility pop
-G_END_DECLS
+AS_END_PRIVATE_DECLS

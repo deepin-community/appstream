@@ -16,6 +16,7 @@ aslib_src = [
     'as-tag.c',
     'as-xml.c',
     'as-yaml.c',
+    'as-zstd-decompressor.c',
     # (mostly) public
     'as-agreement.c',
     'as-agreement-section.c',
@@ -25,10 +26,10 @@ aslib_src = [
     'as-category.c',
     'as-checksum.c',
     'as-component.c',
+    'as-component-box.c',
     'as-content-rating.c',
     'as-context.c',
-    'as-distro-details.c',
-    'as-enums.c',
+    'as-developer.c',
     'as-icon.c',
     'as-image.c',
     'as-issue.c',
@@ -36,8 +37,11 @@ aslib_src = [
     'as-metadata.c',
     'as-pool.c',
     'as-provided.c',
+    'as-reference.c',
     'as-relation.c',
+    'as-relation-check-result.c',
     'as-release.c',
+    'as-release-list.c',
     'as-review.c',
     'as-screenshot.c',
     'as-spdx.c',
@@ -61,19 +65,23 @@ aslib_pub_headers = [
     'as-category.h',
     'as-checksum.h',
     'as-component.h',
+    'as-component-box.h',
     'as-content-rating.h',
     'as-context.h',
-    'as-distro-details.h',
-    'as-enums.h',
+    'as-developer.h',
     'as-icon.h',
     'as-image.h',
     'as-issue.h',
     'as-launchable.h',
+    'as-macros.h',
     'as-metadata.h',
     'as-pool.h',
     'as-provided.h',
+    'as-reference.h',
     'as-relation.h',
+    'as-relation-check-result.h',
     'as-release.h',
+    'as-release-list.h',
     'as-review.h',
     'as-screenshot.h',
     'as-spdx.h',
@@ -88,8 +96,7 @@ aslib_pub_headers = [
 ]
 
 aslib_gir_headers = [
-    'as-pool-gir.h',
-    'as-category-gir.h',
+    'as-category-gi.h',
 ]
 
 aslib_priv_headers = [
@@ -99,30 +106,38 @@ aslib_priv_headers = [
     'as-cache.h',
     'as-checksum-private.h',
     'as-component-private.h',
+    'as-component-box-private.h',
     'as-content-rating-private.h',
     'as-context-private.h',
     'as-curl.h',
     'as-desktop-entry.h',
-    'as-distro-details-private.h',
+    'as-desktop-env-data.h',
     'as-distro-extras.h',
+    'as-developer-private.h',
     'as-file-monitor.h',
     'as-icon-private.h',
     'as-image-private.h',
     'as-issue-private.h',
     'as-launchable-private.h',
+    'as-macros-private.h',
     'as-news-convert.h',
     'as-pool-private.h',
     'as-profile.h',
+    'as-reference-private.h',
     'as-relation-private.h',
+    'as-relation-check-result-private.h',
     'as-release-private.h',
+    'as-release-list-private.h',
     'as-review-private.h',
     'as-screenshot-private.h',
     'as-stemmer.h',
+    'as-spdx-data.h',
     'as-tag.h',
     'as-utils-private.h',
     'as-validator-issue-tag.h',
     'as-xml.h',
-    'as-yaml.h'
+    'as-yaml.h',
+    'as-zstd-decompressor.h',
 ]
 
 as_version_h = configure_file(
@@ -171,12 +186,12 @@ aslib_src = aslib_src + [aslib_gperf_xml, aslib_gperf_yaml]
 
 aslib_deps = [glib_dep,
               gobject_dep,
-              gio_unix_dep,
               curl_dep,
               xmlb_dep,
               xml2_dep,
               yaml_dep,
-              libsystemd_dep]
+              libsystemd_dep,
+              zstd_dep]
 if get_option ('stemming')
     aslib_deps += [stemmer_lib]
 endif
@@ -208,6 +223,8 @@ appstream_dep = declare_dependency(
     include_directories: [appstream_lib_inc]
 )
 
+meson.override_dependency('appstream', appstream_dep)
+
 pkgc.generate(
     appstream_lib,
     version: as_version,
@@ -222,9 +239,9 @@ pkgc.generate(
 # builds using libappstream. Fix this issue by post-processing the file.
 sed_prog = find_program('sed')
 pc_fixup = run_command(sed_prog,
-                       '-i',
+                       '-i.old',
                        '/^Requires.private\|^Libs.private/ d',
-                       join_paths(meson.project_build_root(), 'meson-private', 'appstream.pc'),
+                       meson.global_build_root() / 'meson-private' / 'appstream.pc',
                        check: false)
 if pc_fixup.returncode() != 0
     error('Unable to fix up the .pc file:\n' + pc_fixup.stderr())

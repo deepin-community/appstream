@@ -1,3 +1,67 @@
+appstream (1.0.3-1) unstable; urgency=medium
+
+  * New upstream version: 1.0.3
+  * Allow compose builds on loong64 (Closes: #1058989)
+    - Thanks to yalingfang for the patch!
+
+ -- Matthias Klumpp <mak@debian.org>  Wed, 24 Apr 2024 20:08:14 +0200
+
+appstream (1.0.2-1) unstable; urgency=medium
+
+  * New upstream version: 1.0.2
+  * Drop all patches: Applied upstream
+  * Update d/copyright
+  * Add build-dep on gobject-introspection-bin for GIR debhelper
+
+ -- Matthias Klumpp <mak@debian.org>  Sat, 24 Feb 2024 22:32:30 +0100
+
+appstream (1.0.1-2) unstable; urgency=medium
+
+  * Build libraries for Qt5 as well as Qt6 in one go
+
+ -- Matthias Klumpp <mak@debian.org>  Mon, 18 Dec 2023 22:12:42 +0100
+
+appstream (1.0.1-1) unstable; urgency=medium
+
+  * Upload to unstable
+  * New upstream version 1.0.1
+  * Fix package tests
+  * Update symbols file
+
+ -- Matthias Klumpp <mak@debian.org>  Sat, 16 Dec 2023 18:26:45 +0100
+
+appstream (1.0.0-1) experimental; urgency=medium
+
+  * New upstream version: 1.0.0
+    - This release contains API breaks for the shared libraries
+      among many other feature changes.
+
+ -- Matthias Klumpp <mak@debian.org>  Sat, 11 Nov 2023 22:20:10 +0100
+
+appstream (0.16.4-1) unstable; urgency=medium
+
+  * New upstream version: 0.16.4
+
+ -- Matthias Klumpp <mak@debian.org>  Fri, 10 Nov 2023 21:38:24 +0100
+
+appstream (0.16.3-1) unstable; urgency=medium
+
+  * New upstream version: 0.16.3
+  * Bump dependency on libxmlb
+  * Drop all patches: Applied upstream
+
+ -- Matthias Klumpp <mak@debian.org>  Tue, 22 Aug 2023 23:44:54 +0200
+
+appstream (0.16.2-1) unstable; urgency=medium
+
+  * New upstream version: 0.16.2
+  * Drop all patches: Applied upstream
+  * Add fix-default-priority-override.patch
+    - Resolves a test failure (Closes: #1008687)
+  * Update d/symbols file
+
+ -- Matthias Klumpp <mak@debian.org>  Sun, 18 Jun 2023 10:38:22 +0200
+
 appstream (0.16.1-2) unstable; urgency=medium
 
   * Add add-missing-is-hidden-attribute.patch:

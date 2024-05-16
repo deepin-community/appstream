@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -33,10 +33,9 @@
 #include "config.h"
 #include "as-bundle-private.h"
 
-typedef struct
-{
-	AsBundleKind	kind;
-	gchar		*id;
+typedef struct {
+	AsBundleKind kind;
+	gchar *id;
 } AsBundlePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AsBundle, as_bundle, G_TYPE_OBJECT)
@@ -52,7 +51,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (AsBundle, as_bundle, G_TYPE_OBJECT)
  *
  * Since: 0.8.0
  **/
-const gchar*
+const gchar *
 as_bundle_kind_to_string (AsBundleKind kind)
 {
 	if (kind == AS_BUNDLE_KIND_PACKAGE)
@@ -69,6 +68,8 @@ as_bundle_kind_to_string (AsBundleKind kind)
 		return "tarball";
 	if (kind == AS_BUNDLE_KIND_CABINET)
 		return "cabinet";
+	if (kind == AS_BUNDLE_KIND_LINGLONG)
+		return "linglong";
 	return "unknown";
 }
 
@@ -97,6 +98,8 @@ as_bundle_kind_from_string (const gchar *bundle_str)
 		return AS_BUNDLE_KIND_TARBALL;
 	if (g_strcmp0 (bundle_str, "cabinet") == 0)
 		return AS_BUNDLE_KIND_CABINET;
+	if (g_strcmp0 (bundle_str, "linglong") == 0)
+		return AS_BUNDLE_KIND_LINGLONG;
 	return AS_BUNDLE_KIND_UNKNOWN;
 }
 
@@ -133,7 +136,7 @@ as_bundle_class_init (AsBundleClass *klass)
  *
  * Since: 0.10
  **/
-const gchar*
+const gchar *
 as_bundle_get_id (AsBundle *bundle)
 {
 	AsBundlePrivate *priv = GET_PRIVATE (bundle);
@@ -289,14 +292,10 @@ as_bundle_emit_yaml (AsBundle *bundle, AsContext *ctx, yaml_emitter_t *emitter)
 	as_yaml_mapping_start (emitter);
 
 	/* type */
-	as_yaml_emit_entry (emitter,
-			    "type",
-			    as_bundle_kind_to_string (priv->kind));
+	as_yaml_emit_entry (emitter, "type", as_bundle_kind_to_string (priv->kind));
 
 	/* ID */
-	as_yaml_emit_entry (emitter,
-			    "id",
-			    priv->id);
+	as_yaml_emit_entry (emitter, "id", priv->id);
 
 	/* end mapping for the bundle */
 	as_yaml_mapping_end (emitter);
@@ -311,7 +310,7 @@ as_bundle_emit_yaml (AsBundle *bundle, AsContext *ctx, yaml_emitter_t *emitter)
  *
  * Since: 0.10
  **/
-AsBundle*
+AsBundle *
 as_bundle_new (void)
 {
 	AsBundle *bundle;

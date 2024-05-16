@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -18,7 +18,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined (__APPSTREAM_H) && !defined (AS_COMPILATION)
+#if !defined(__APPSTREAM_H) && !defined(AS_COMPILATION)
 #error "Only <appstream.h> can be included directly."
 #endif
 
@@ -58,7 +58,8 @@ G_BEGIN_DECLS
  * @AS_TAG_METADATA_LICENSE:		`metadata_license` / `MetadataLicense`
  * @AS_TAG_PROJECT_LICENSE:		`project_license` / `ProjectLicense`
  * @AS_TAG_PROJECT_GROUP:		`project_group` / `ProjectGroup`
- * @AS_TAG_DEVELOPER_NAME:		`developer_name` / `DeveloperName`
+ * @AS_TAG_DEVELOPER:			`developer` / `Developer`
+ * @AS_TAG_DEVELOPER_NAME:		[deprecated] `developer_name` / `DeveloperName`
  * @AS_TAG_COMPULSORY_FOR_DESKTOP:	`compulsory_for_desktop` / `CompulsoryForDesktops`
  * @AS_TAG_RELEASES:			`releases` / `Releases`
  * @AS_TAG_LANGUAGES:			`languages` / `Languages`
@@ -73,6 +74,7 @@ G_BEGIN_DECLS
  * @AS_TAG_NAME_VARIANT_SUFFIX:		`name_variant_suffix` / `NameVariantSuffix`
  * @AS_TAG_TAGS:			`tags` / `Tags`
  * @AS_TAG_BRANDING:			`branding` / `Branding`
+ * @AS_TAG_REFERENCES:			`references` / `References`
  * @AS_TAG_P:				Description markup `p`
  * @AS_TAG_LI:				Description markup `li`
  * @AS_TAG_OL:				Description markup `ol`
@@ -107,6 +109,7 @@ typedef enum {
 	AS_TAG_METADATA_LICENSE,
 	AS_TAG_PROJECT_LICENSE,
 	AS_TAG_PROJECT_GROUP,
+	AS_TAG_DEVELOPER,
 	AS_TAG_DEVELOPER_NAME,
 	AS_TAG_COMPULSORY_FOR_DESKTOP,
 	AS_TAG_RELEASES,
@@ -122,6 +125,7 @@ typedef enum {
 	AS_TAG_NAME_VARIANT_SUFFIX,
 	AS_TAG_TAGS,
 	AS_TAG_BRANDING,
+	AS_TAG_REFERENCES,
 	AS_TAG_P,
 	AS_TAG_LI,
 	AS_TAG_UL,
@@ -135,9 +139,9 @@ typedef enum {
 	AS_TAG_LAST
 } AsTag;
 
-AsTag			as_xml_tag_from_string (const gchar *tag);
+AsTag		       as_xml_tag_from_string (const gchar *tag);
 
-AsTag			as_yaml_tag_from_string (const gchar *tag);
+AsTag		       as_yaml_tag_from_string (const gchar *tag);
 
 #pragma GCC visibility pop
 G_END_DECLS

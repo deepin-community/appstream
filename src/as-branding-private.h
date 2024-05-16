@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2014-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2014-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -28,21 +28,17 @@
 G_BEGIN_DECLS
 #pragma GCC visibility push(hidden)
 
-gboolean	as_branding_load_from_xml (AsBranding *branding,
-					   AsContext *ctx,
-					   xmlNode *node,
-					   GError **error);
-void		as_branding_to_xml_node (AsBranding *branding,
-				         AsContext *ctx,
-				         xmlNode *root);
+gboolean	       as_branding_load_from_xml (AsBranding *branding,
+						  AsContext  *ctx,
+						  xmlNode    *node,
+						  GError    **error);
+void	 as_branding_to_xml_node (AsBranding *branding, AsContext *ctx, xmlNode *root);
 
-gboolean	as_branding_load_from_yaml (AsBranding *branding,
-					    AsContext *ctx,
-					    GNode *node,
-					    GError **error);
-void		as_branding_emit_yaml (AsBranding *branding,
-					AsContext *ctx,
-					yaml_emitter_t *emitter);
+gboolean as_branding_load_from_yaml (AsBranding *branding,
+				     AsContext	*ctx,
+				     GNode	*node,
+				     GError    **error);
+void	 as_branding_emit_yaml (AsBranding *branding, AsContext *ctx, yaml_emitter_t *emitter);
 
 #pragma GCC visibility pop
 G_END_DECLS

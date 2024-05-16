@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -21,38 +21,28 @@
 #ifndef __AS_RELEASE_PRIVATE_H
 #define __AS_RELEASE_PRIVATE_H
 
+#include "as-macros-private.h"
 #include "as-release.h"
 #include "as-xml.h"
 #include "as-yaml.h"
 
-G_BEGIN_DECLS
-#pragma GCC visibility push(hidden)
+AS_BEGIN_PRIVATE_DECLS
 
-AsContext		*as_release_get_context (AsRelease *release);
-void			as_release_set_context (AsRelease *release,
-						AsContext *context);
+gboolean as_release_description_translatable (AsRelease *release);
+void	 as_release_set_description_translatable (AsRelease *release, gboolean translatable);
 
-gboolean		as_release_description_translatable (AsRelease *release);
-void			as_release_set_description_translatable (AsRelease *release,
-								 gboolean translatable);
+gboolean as_release_load_from_xml (AsRelease *release,
+				   AsContext *ctx,
+				   xmlNode   *node,
+				   GError   **error);
+void	 as_release_to_xml_node (AsRelease *release, AsContext *ctx, xmlNode *root);
 
-gboolean		as_release_load_from_xml (AsRelease *release,
-						  AsContext *ctx,
-						  xmlNode *node,
-						  GError **error);
-void			as_release_to_xml_node (AsRelease *release,
-						AsContext *ctx,
-						xmlNode *root);
+gboolean as_release_load_from_yaml (AsRelease *release,
+				    AsContext *ctx,
+				    GNode     *node,
+				    GError   **error);
+void	 as_release_emit_yaml (AsRelease *release, AsContext *ctx, yaml_emitter_t *emitter);
 
-gboolean		as_release_load_from_yaml (AsRelease *release,
-						   AsContext *ctx,
-						   GNode *node,
-						   GError **error);
-void			as_release_emit_yaml (AsRelease *release,
-						AsContext *ctx,
-						yaml_emitter_t *emitter);
-
-#pragma GCC visibility pop
-G_END_DECLS
+AS_END_PRIVATE_DECLS
 
 #endif /* __AS_RELEASE_PRIVATE_H */

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -21,26 +21,24 @@
 #pragma once
 
 #include <glib-object.h>
-#include "as-settings-private.h"
+#include "as-macros-private.h"
 #include "asc-canvas.h"
 #include "asc-font.h"
 
-G_BEGIN_DECLS
-#pragma GCC visibility push(hidden)
+AS_BEGIN_PRIVATE_DECLS
 
 AS_INTERNAL_VISIBLE
-gboolean	asc_canvas_draw_text_line (AscCanvas *canvas,
-					   AscFont *font,
-					   const gchar *text,
-					   gint border_width,
-					   GError **error);
+gboolean asc_canvas_draw_text_line (AscCanvas	*canvas,
+				    AscFont	*font,
+				    const gchar *text,
+				    gint	 border_width,
+				    GError     **error);
 AS_INTERNAL_VISIBLE
-gboolean	asc_canvas_draw_text (AscCanvas *canvas,
-					AscFont *font,
-					const gchar *text,
-					gint border_width,
-					gint line_pad,
-					GError **error);
+gboolean asc_canvas_draw_text (AscCanvas   *canvas,
+			       AscFont	   *font,
+			       const gchar *text,
+			       gint	    border_width,
+			       gint	    line_pad,
+			       GError	  **error);
 
-#pragma GCC visibility pop
-G_END_DECLS
+AS_END_PRIVATE_DECLS

@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -24,15 +24,15 @@
 #define __APPSTREAM_H_INSIDE__
 
 #include <as-version.h>
+#include <as-macros.h>
 #include <as-context.h>
 #include <as-component.h>
-#include <as-enums.h>
 #include <as-enum-types.h>
 #include <as-provided.h>
 #include <as-metadata.h>
 #include <as-pool.h>
 #include <as-category.h>
-#include <as-distro-details.h>
+#include <as-developer.h>
 #include <as-icon.h>
 #include <as-screenshot.h>
 #include <as-image.h>
@@ -40,15 +40,20 @@
 #include <as-branding.h>
 #include <as-bundle.h>
 #include <as-release.h>
+#include <as-release-list.h>
 #include <as-artifact.h>
 #include <as-checksum.h>
 #include <as-translation.h>
 #include <as-suggested.h>
 #include <as-content-rating.h>
+#include <as-agreement.h>
+#include <as-agreement-section.h>
 #include <as-launchable.h>
 #include <as-relation.h>
+#include <as-relation-check-result.h>
 #include <as-issue.h>
 #include <as-review.h>
+#include <as-component-box.h>
 
 #include <as-validator.h>
 #include <as-validator-issue.h>
@@ -59,8 +64,7 @@
 #include <as-system-info.h>
 
 /* Helpers for languages using GIR */
-#include <as-category-gir.h>
-#include <as-pool-gir.h>
+#include <as-category-gi.h>
 
 #undef __APPSTREAM_H_INSIDE__
 

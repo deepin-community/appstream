@@ -1,6 +1,6 @@
-etc/appstream.conf
 etc/apt/apt.conf.d/*
 usr/bin/*
+usr/share/appstream/appstream.conf
 usr/share/gettext/*
 usr/share/installed-tests/appstream/metainfo-validate.test
 usr/share/locale/*

@@ -123,12 +123,16 @@
 		<itemizedlist>
 			<listitem><para><literal>stable</literal></para></listitem>
 			<listitem><para><literal>development</literal></para></listitem>
+			<listitem><para><literal>snapshot</literal></para></listitem>
 		</itemizedlist>
 		<para>
 			By default, if no release type is defined, <code>stable</code> is assumed.
 			A software displaying a listing of releases should only show stable releases and
 			discard any development release if the current version is itself stable. It can
-			show all versions when development versions of the software are also distributed.
+			show both <code>stable</code> and <code>development</code> versions when
+			development versions of the software are also distributed.
+			Instead, a <code>snapshot</code> release identifies an automated snapshot of
+			the current development status. It should not be shown unless instructed to.
 		</para>
 
 		<para>
@@ -144,7 +148,7 @@
 					The <literal>description</literal> tag supports child tags as described in <xref linkend="tag-description"/>.
 				</para>
 				<para>
-					It is recommended to not link to issue trackers or bug reports, as these typically make no sense to users.
+					Descriptions must not contain embedded web links to issue trackers or bug reports, as these typically make no sense to users.
 					If particular issues need to be highlighted (for example, CVEs fixed in this release), they should be listed in the <literal>issues</literal> tag.
 				</para>
 			</listitem>
@@ -245,8 +249,10 @@
 						<para>
 							At least one <literal>checksum</literal> child must be present to contain the checksum of the released artifact.
 							The <code>&lt;checksum/&gt;</code> tag has a <code>type</code> attribute, containing the name of the hash function that was used to create it.
-							Currently aupported values (and hash sums) are: <literal>sha1</literal>, <literal>sha256</literal>, <literal>blake2b</literal> and <literal>blake2s</literal>.
-							For most purposes (on 64-bit machines), using <ulink url="https://blake2.net">BLAKE2b</ulink> via the <command>b2sum</command> utility from GNU Coreutils is a good choice.
+							Currently aupported values (and hash sums) are: <literal>sha1</literal>, <literal>sha256</literal>, <literal>sha512</literal>,
+							<literal>blake2b</literal> and <literal>blake3</literal>.
+							For most purposes (on 64-bit machines), using <ulink url="https://blake2.net">BLAKE2b</ulink> via <command>cksum -ablake2b [FILE]</command>
+							from GNU Coreutils is a good choice.
 						</para>
 						</listitem>
 					</varlistentry>
@@ -257,8 +263,9 @@
 						<para>
 							One or multiple <literal>size</literal> tags may also be present, which define the installed and download size
 							of this component release artifact.
-							The size type is defined via a <literal>type</literal> property on the <literal>size</literal> tag, and may assume the value <code>download</code> or <code>installed</code>.
-                            The size itself is set as the value and must be given in bytes.
+							The size type is defined via a <literal>type</literal> property on the <literal>size</literal> tag, and may assume the value
+							<code>download</code> or <code>installed</code>.
+							The size itself is set as the value and must be given in bytes.
 						</para>
 						</listitem>
 					</varlistentry>
@@ -276,6 +283,16 @@
 					</varlistentry>
 
 				</variablelist>
+			</listitem>
+			</varlistentry>
+
+			<varlistentry id="tag-release-tags">
+			<term>&lt;tags/&gt;</term>
+			<listitem>
+				<para>
+					The <literal>tags</literal> element can be used to tag releases with user-defined tags.
+					It follows the same semantics as the one for components, as described in <xref linkend="tag-tags"/>.
+				</para>
 			</listitem>
 			</varlistentry>
 		</variablelist>

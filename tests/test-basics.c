@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -22,6 +22,7 @@
 #include <glib.h>
 #include "appstream.h"
 #include "as-component-private.h"
+#include "as-component-box-private.h"
 #include "as-system-info-private.h"
 #include "as-utils-private.h"
 
@@ -101,7 +102,7 @@ test_safe_assign (void)
 	/* assign new literal */
 	tmp = member1;
 	as_assign_string_safe (member1, "Literal");
-	g_assert_cmpstr (member1, ==, (const gchar*) "Literal");
+	g_assert_cmpstr (member1, ==, (const gchar *) "Literal");
 
 	/* assign new value */
 	tmp = member1;
@@ -136,6 +137,51 @@ test_verify_int_str (void)
 }
 
 /**
+ * test_locale_conversion:
+ */
+static void
+test_locale_conversion (void)
+{
+	g_autofree gchar *tmp = NULL;
+
+	tmp = as_utils_posix_locale_to_bcp47 ("de_DE");
+	g_assert_cmpstr (tmp, ==, "de-DE");
+	g_free (g_steal_pointer (&tmp));
+
+	tmp = as_utils_posix_locale_to_bcp47 ("uz_UZ@cyrillic");
+	g_assert_cmpstr (tmp, ==, "uz-UZ-Cyrl");
+	g_free (g_steal_pointer (&tmp));
+
+	tmp = as_utils_posix_locale_to_bcp47 ("en_UK@euro");
+	g_assert_cmpstr (tmp, ==, "en-UK");
+	g_free (g_steal_pointer (&tmp));
+
+	tmp = as_utils_posix_locale_to_bcp47 ("en");
+	g_assert_cmpstr (tmp, ==, "en");
+	g_free (g_steal_pointer (&tmp));
+
+	tmp = as_utils_posix_locale_to_bcp47 ("ca@valencia");
+	g_assert_cmpstr (tmp, ==, "ca-valencia");
+	g_free (g_steal_pointer (&tmp));
+
+	tmp = as_utils_posix_locale_to_bcp47 ("sr@latin");
+	g_assert_cmpstr (tmp, ==, "sr-Latn");
+	g_free (g_steal_pointer (&tmp));
+
+	g_assert_true (as_locale_is_posix ("de_DE"));
+	g_assert_true (as_locale_is_posix ("en"));
+	g_assert_true (as_locale_is_posix ("ca@valencia"));
+	g_assert_true (as_locale_is_posix (NULL));
+	g_assert_false (as_locale_is_posix ("de-DE"));
+
+	g_assert_false (as_locale_is_bcp47 ("de_DE"));
+	g_assert_false (as_locale_is_bcp47 ("ca@valencia"));
+	g_assert_true (as_locale_is_bcp47 ("en"));
+	g_assert_true (as_locale_is_bcp47 ("de-DE"));
+	g_assert_true (as_locale_is_bcp47 (NULL));
+}
+
+/**
  * test_categories:
  *
  * Test #AsCategory properties.
@@ -159,36 +205,42 @@ test_simplemarkup (void)
 	g_autofree gchar *str = NULL;
 	g_autoptr(GError) error = NULL;
 
-	str = as_markup_convert_simple ("<p>Test!</p><p>Blah.</p><ul><li>A</li><li>B</li></ul><p>End.</p>", &error);
+	str = as_markup_convert ("<p>Test!</p><p>Blah.</p><ul><li>A</li><li>B</li></ul><p>End.</p>",
+				 AS_MARKUP_KIND_TEXT,
+				 &error);
 	g_assert_no_error (error);
 	g_assert_true (g_strcmp0 (str, "Test!\n\nBlah.\n • A\n • B\n\nEnd.") == 0);
 	g_free (str);
 
-	str = as_markup_convert_simple ("<p>Paragraph using all allowed markup, "
-					"like an <em>emphasis</em> or <code>some code</code>.</p>"
-					"<p>Second paragraph.</p>"
-					"<ul>"
-					"<li>List item, <em>emphasized</em></li>"
-					"<li>Item with <code>a bit of code</code></li>"
-					"</ul>"
-					"<p>Last paragraph.</p>", &error);
+	str = as_markup_convert ("<p>Paragraph using all allowed markup, "
+				 "like an <em>emphasis</em> or <code>some code</code>.</p>"
+				 "<p>Second paragraph.</p>"
+				 "<ul>"
+				 "<li>List item, <em>emphasized</em></li>"
+				 "<li>Item with <code>a bit of code</code></li>"
+				 "</ul>"
+				 "<p>Last paragraph.</p>",
+				 AS_MARKUP_KIND_TEXT,
+				 &error);
 	g_assert_no_error (error);
-	g_assert_true (g_strcmp0 (str, "Paragraph using all allowed markup, like an emphasis or some code.\n\n"
-				  "Second paragraph.\n"
-				  " • List item, emphasized\n"
-				  " • Item with a bit of code\n\n"
-				  "Last paragraph.") == 0);
+	g_assert_true (
+	    g_strcmp0 (str,
+		       "Paragraph using all allowed markup, like an emphasis or some code.\n\n"
+		       "Second paragraph.\n"
+		       " • List item, emphasized\n"
+		       " • Item with a bit of code\n\n"
+		       "Last paragraph.") == 0);
 }
 
 /**
  * _get_dummy_strv:
  */
-static gchar**
+static gchar **
 _get_dummy_strv (const gchar *value)
 {
 	gchar **strv;
 
-	strv = g_new0 (gchar*, 1 + 2);
+	strv = g_new0 (gchar *, 1 + 2);
 	strv[0] = g_strdup (value);
 	strv[1] = NULL;
 
@@ -225,22 +277,88 @@ test_component (void)
 	str2 = as_metadata_components_to_catalog (metad, AS_FORMAT_KIND_XML, NULL);
 	g_debug ("%s", str2);
 
-	g_assert_cmpstr (str, ==, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-				  "<component type=\"desktop-application\">\n"
-				  "  <id>org.example.test.desktop</id>\n"
-				  "  <name>Test</name>\n"
-				  "  <summary>It does things</summary>\n"
-				  "  <pkgname>fedex</pkgname>\n"
-				  "</component>\n");
-	g_assert_cmpstr (str2, ==, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-				   "<components version=\"0.16\">\n"
-				   "  <component type=\"desktop-application\">\n"
-				   "    <id>org.example.test.desktop</id>\n"
-				   "    <name>Test</name>\n"
-				   "    <summary>It does things</summary>\n"
-				   "    <pkgname>fedex</pkgname>\n"
-				   "  </component>\n"
-				   "</components>\n");
+	g_assert_cmpstr (str,
+			 ==,
+			 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+			 "<component type=\"desktop-application\">\n"
+			 "  <id>org.example.test.desktop</id>\n"
+			 "  <name>Test</name>\n"
+			 "  <summary>It does things</summary>\n"
+			 "  <pkgname>fedex</pkgname>\n"
+			 "</component>\n");
+	g_assert_cmpstr (str2,
+			 ==,
+			 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+			 "<components version=\"1.0\">\n"
+			 "  <component type=\"desktop-application\">\n"
+			 "    <id>org.example.test.desktop</id>\n"
+			 "    <name>Test</name>\n"
+			 "    <summary>It does things</summary>\n"
+			 "    <pkgname>fedex</pkgname>\n"
+			 "  </component>\n"
+			 "</components>\n");
+}
+
+/**
+ * test_component_box:
+ *
+ * Test container for components.
+ */
+static void
+test_component_box (void)
+{
+	g_autoptr(GError) error = NULL;
+	gboolean ret;
+	g_autoptr(AsComponent) cpt = NULL;
+	g_autoptr(AsComponentBox) cbox = NULL;
+
+	cbox = as_component_box_new (AS_COMPONENT_BOX_FLAG_NONE);
+	cpt = as_component_new ();
+	as_component_set_kind (cpt, AS_COMPONENT_KIND_DESKTOP_APP);
+	as_component_set_id (cpt, "org.example.AComponent");
+
+	/* try to add new component */
+	ret = as_component_box_add (cbox, cpt, &error);
+	g_assert_no_error (error);
+	g_assert_true (ret);
+	g_assert_cmpint (as_component_box_len (cbox), ==, 1);
+
+	/* try adding the same component again */
+	ret = as_component_box_add (cbox, cpt, &error);
+	g_assert_error (error, G_IO_ERROR, G_IO_ERROR_EXISTS);
+	g_assert_false (ret);
+	g_clear_error (&error);
+	g_assert_cmpint (as_component_box_len (cbox), ==, 1);
+
+	/* test box that can hold duplicates */
+	g_clear_pointer (&cbox, g_object_unref);
+	cbox = as_component_box_new (AS_COMPONENT_BOX_FLAG_NO_CHECKS);
+
+	ret = as_component_box_add (cbox, cpt, &error);
+	g_assert_no_error (error);
+	g_assert_true (ret);
+	g_assert_cmpint (as_component_box_len (cbox), ==, 1);
+
+	ret = as_component_box_add (cbox, cpt, &error);
+	g_assert_no_error (error);
+	g_assert_true (ret);
+	g_assert_cmpint (as_component_box_len (cbox), ==, 2);
+
+	ret = as_component_box_add (cbox, cpt, &error);
+	g_assert_no_error (error);
+	g_assert_true (ret);
+	g_assert_cmpint (as_component_box_len (cbox), ==, 3);
+
+	/* verify */
+	for (guint i = 0; i < as_component_box_len (cbox); i++) {
+		AsComponent *c = as_component_box_index (cbox, i);
+		g_assert_cmpstr (as_component_get_id (c), ==, "org.example.AComponent");
+	}
+
+	/* remove at index */
+	g_assert_cmpint (as_component_box_len (cbox), ==, 3);
+	as_component_box_remove_at (cbox, 1);
+	g_assert_cmpint (as_component_box_len (cbox), ==, 2);
 }
 
 /**
@@ -252,26 +370,29 @@ static void
 test_translation_fallback (void)
 {
 	g_autoptr(AsComponent) cpt = NULL;
+	g_autoptr(AsContext) ctx = NULL;
 	AsValueFlags flags;
 
 	cpt = as_component_new ();
+	ctx = as_context_new ();
+	as_component_set_context (cpt, ctx);
 	as_component_set_kind (cpt, AS_COMPONENT_KIND_DESKTOP_APP);
 	as_component_set_id (cpt, "org.example.ATargetComponent");
 	as_component_set_description (cpt, "<p>It's broken!</p>", "C");
-	flags = as_component_get_value_flags (cpt);
+	flags = as_context_get_value_flags (ctx);
 
 	/* there is no de translation */
-	as_component_set_active_locale (cpt, "de");
+	as_context_set_locale (ctx, "de");
 	g_assert_nonnull (as_component_get_description (cpt));
 
 	/* if the flag is set, we don't fall back to C */
 	as_flags_add (flags, AS_VALUE_FLAG_NO_TRANSLATION_FALLBACK);
-	as_component_set_value_flags (cpt, flags);
+	as_context_set_value_flags (ctx, flags);
 	g_assert_null (as_component_get_description (cpt));
 
 	/* ...but after removing it, again we do */
 	as_flags_remove (flags, AS_VALUE_FLAG_NO_TRANSLATION_FALLBACK);
-	as_component_set_value_flags (cpt, flags);
+	as_context_set_value_flags (ctx, flags);
 	g_assert_nonnull (as_component_get_description (cpt));
 }
 
@@ -282,12 +403,12 @@ static void
 test_locale_compat (void)
 {
 	g_assert_true (as_utils_locale_is_compatible ("de_DE", "de_DE"));
-	g_assert_true (!as_utils_locale_is_compatible ("de_DE", "en"));
+	g_assert_false (as_utils_locale_is_compatible ("de_DE", "en"));
 	g_assert_true (as_utils_locale_is_compatible ("de_DE", "de"));
 	g_assert_true (as_utils_locale_is_compatible ("ca_ES@valencia", "ca"));
 	g_assert_true (as_utils_locale_is_compatible ("ca@valencia", "ca"));
-	g_assert_true (!as_utils_locale_is_compatible ("ca@valencia", "de"));
-	g_assert_true (!as_utils_locale_is_compatible ("de_CH", "de_DE"));
+	g_assert_false (as_utils_locale_is_compatible ("ca@valencia", "de"));
+	g_assert_false (as_utils_locale_is_compatible ("de_CH", "de_DE"));
 	g_assert_true (as_utils_locale_is_compatible ("de", "de_CH"));
 	g_assert_true (as_utils_locale_is_compatible ("C", "C"));
 }
@@ -427,11 +548,12 @@ test_spdx (void)
 	g_assert_true (as_is_spdx_license_expression ("CC-BY-SA-3.0+"));
 	g_assert_true (as_is_spdx_license_expression ("CC-BY-SA-3.0+ AND Zlib"));
 	g_assert_true (as_is_spdx_license_expression ("GPL-3.0-or-later WITH GCC-exception-3.1"));
-	g_assert_true (as_is_spdx_license_expression ("GPL-3.0-or-later WITH Font-exception-2.0 AND OFL-1.1"));
+	g_assert_true (
+	    as_is_spdx_license_expression ("GPL-3.0-or-later WITH Font-exception-2.0 AND OFL-1.1"));
 	g_assert_true (as_is_spdx_license_expression ("NOASSERTION"));
-	g_assert_true (!as_is_spdx_license_expression ("CC0 dave"));
-	g_assert_true (!as_is_spdx_license_expression (""));
-	g_assert_true (!as_is_spdx_license_expression (NULL));
+	g_assert_false (as_is_spdx_license_expression ("CC0 dave"));
+	g_assert_false (as_is_spdx_license_expression (""));
+	g_assert_false (as_is_spdx_license_expression (NULL));
 
 	/* importing non-SPDX formats */
 	tmp = as_license_to_spdx_id ("CC0 and (Public Domain and GPLv3+ with exceptions)");
@@ -443,7 +565,7 @@ test_spdx (void)
 	g_assert_true (as_license_is_metadata_license ("CC0-1.0"));
 	g_assert_true (as_license_is_metadata_license ("0BSD"));
 	g_assert_true (as_license_is_metadata_license ("MIT AND FSFAP"));
-	g_assert_true (!as_license_is_metadata_license ("GPL-2.0 AND FSFAP"));
+	g_assert_false (as_license_is_metadata_license ("GPL-2.0 AND FSFAP"));
 	g_assert_true (as_license_is_metadata_license ("GPL-2.0+ OR GFDL-1.3-only"));
 
 	/* check license URL generation */
@@ -470,12 +592,44 @@ test_spdx (void)
 	/* licenses are free-as-in-freedom */
 	g_assert_true (as_license_is_free_license ("CC0"));
 	g_assert_true (as_license_is_free_license ("GPL-2.0 AND FSFAP"));
-	g_assert_true (as_license_is_free_license ("OFL-1.1 OR (GPL-3.0-or-later WITH Font-exception-2.0)"));
-	g_assert_true (!as_license_is_free_license ("NOASSERTION"));
-	g_assert_true (!as_license_is_free_license ("LicenseRef-proprietary=https://example.com/mylicense.txt"));
-	g_assert_true (!as_license_is_free_license ("MIT AND LicenseRef-proprietary=https://example.com/lic.txt"));
-	g_assert_true (!as_license_is_free_license ("ADSL"));
-	g_assert_true (!as_license_is_free_license ("JSON AND GPL-3.0-or-later"));
+	g_assert_true (
+	    as_license_is_free_license ("OFL-1.1 OR (GPL-3.0-or-later WITH Font-exception-2.0)"));
+	g_assert_true (as_is_spdx_license_expression (
+	    "OFL-1.1 OR (GPL-3.0-or-later WITH Font-exception-2.0)"));
+	g_assert_false (as_license_is_free_license ("NOASSERTION"));
+	g_assert_false (as_license_is_free_license (
+	    "LicenseRef-proprietary=https://example.com/mylicense.txt"));
+	g_assert_false (as_license_is_free_license (
+	    "MIT AND LicenseRef-proprietary=https://example.com/lic.txt"));
+	g_assert_false (as_license_is_free_license ("ADSL"));
+	g_assert_false (as_license_is_free_license ("JSON AND GPL-3.0-or-later"));
+
+	/* license names */
+	tmp = as_get_license_name ("GPL-2.0+");
+	g_assert_cmpstr (tmp, ==, "GNU General Public License v2.0 or later");
+	g_free (tmp);
+
+	tmp = as_get_license_name ("CERN-OHL-W-2.0");
+	g_assert_cmpstr (tmp, ==, "CERN Open Hardware Licence Version 2 - Weakly Reciprocal");
+	g_free (tmp);
+}
+
+/**
+ * test_desktop_env:
+ *
+ * Test desktop environment and style validation.
+ */
+static void
+test_desktop_env (void)
+{
+	g_assert_false (as_utils_is_desktop_environment (NULL));
+	g_assert_false (as_utils_is_desktop_environment ("Linux"));
+	g_assert_true (as_utils_is_desktop_environment ("GNOME"));
+
+	g_assert_false (as_utils_is_gui_environment_style (NULL));
+	g_assert_false (as_utils_is_gui_environment_style ("Linux"));
+	g_assert_true (as_utils_is_gui_environment_style ("plasma"));
+	g_assert_true (as_utils_is_gui_environment_style ("gnome:dark"));
 }
 
 /**
@@ -486,14 +640,13 @@ test_spdx (void)
 static void
 test_read_desktop_entry_simple (void)
 {
-	static const gchar *desktop_entry_data =
-		"[Desktop Entry]\n"
-		"Type=Application\n"
-		"Name=FooBar\n"
-		"Name[de_DE]=FööBär\n"
-		"Comment=A foo-ish bar.\n"
-		"Keywords=Hobbes;Bentham;Locke;\n"
-		"Keywords[de_DE]=Heidegger;Kant;Hegel;\n";
+	static const gchar *desktop_entry_data = "[Desktop Entry]\n"
+						 "Type=Application\n"
+						 "Name=FooBar\n"
+						 "Name[de_DE]=FööBär\n"
+						 "Comment=A foo-ish bar.\n"
+						 "Keywords=Hobbes;Bentham;Locke;\n"
+						 "Keywords[de_DE]=Heidegger;Kant;Hegel;\n";
 
 	gboolean ret;
 	g_autoptr(AsMetadata) metad = NULL;
@@ -505,22 +658,26 @@ test_read_desktop_entry_simple (void)
 
 	metad = as_metadata_new ();
 
-	ret = as_metadata_parse_desktop_data (metad, desktop_entry_data, "foobar.desktop", &error);
+	ret = as_metadata_parse_desktop_data (metad,
+					      "foobar.desktop",
+					      desktop_entry_data,
+					      -1,
+					      &error);
 	g_assert_no_error (error);
 	g_assert_true (ret);
 
 	cpt = as_metadata_get_component (metad);
 	g_assert_nonnull (cpt);
-	as_component_set_active_locale (cpt, "C.UTF-8");
+	as_component_set_context_locale (cpt, "C.UTF-8");
 	g_assert_cmpstr (as_component_get_id (cpt), ==, "foobar.desktop");
 	g_assert_cmpstr (as_component_get_name (cpt), ==, "FooBar");
-	tmp = g_strjoinv (", ", as_component_get_keywords (cpt));
+	tmp = as_ptr_array_strjoin (as_component_get_keywords (cpt), ", ");
 	g_assert_cmpstr (tmp, ==, "Hobbes, Bentham, Locke");
 	g_free (tmp);
 
-	as_component_set_active_locale (cpt, "de_DE");
+	as_component_set_context_locale (cpt, "de_DE");
 	g_assert_cmpstr (as_component_get_name (cpt), ==, "FööBär");
-	tmp = g_strjoinv (", ", as_component_get_keywords (cpt));
+	tmp = as_ptr_array_strjoin (as_component_get_keywords (cpt), ", ");
 	g_assert_cmpstr (tmp, ==, "Heidegger, Kant, Hegel");
 	g_free (tmp);
 
@@ -529,17 +686,21 @@ test_read_desktop_entry_simple (void)
 	g_assert_cmpint (as_launchable_get_kind (launch), ==, AS_LAUNCHABLE_KIND_DESKTOP_ID);
 	entries = as_launchable_get_entries (launch);
 	g_assert_cmpint (entries->len, ==, 1);
-	g_assert_cmpstr ((const gchar*) g_ptr_array_index (entries, 0), ==, "foobar.desktop");
+	g_assert_cmpstr ((const gchar *) g_ptr_array_index (entries, 0), ==, "foobar.desktop");
 
 	/* test component-id trimming */
 	as_metadata_clear_components (metad);
-	ret = as_metadata_parse_desktop_data (metad, desktop_entry_data, "org.example.foobar.desktop", &error);
+	ret = as_metadata_parse_desktop_data (metad,
+					      "org.example.foobar.desktop",
+					      desktop_entry_data,
+					      -1,
+					      &error);
 	g_assert_no_error (error);
 	g_assert_true (ret);
 	cpt = as_metadata_get_component (metad);
 	g_assert_nonnull (cpt);
 
-	as_component_set_active_locale (cpt, "C.UTF-8");
+	as_component_set_context_locale (cpt, "C.UTF-8");
 	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.example.foobar");
 
 	launch = as_component_get_launchable (cpt, AS_LAUNCHABLE_KIND_DESKTOP_ID);
@@ -547,7 +708,9 @@ test_read_desktop_entry_simple (void)
 	g_assert_cmpint (as_launchable_get_kind (launch), ==, AS_LAUNCHABLE_KIND_DESKTOP_ID);
 	entries = as_launchable_get_entries (launch);
 	g_assert_cmpint (entries->len, ==, 1);
-	g_assert_cmpstr ((const gchar*) g_ptr_array_index (entries, 0), ==, "org.example.foobar.desktop");
+	g_assert_cmpstr ((const gchar *) g_ptr_array_index (entries, 0),
+			 ==,
+			 "org.example.foobar.desktop");
 }
 
 /**
@@ -565,7 +728,7 @@ test_desktop_entry_convert (void)
 	g_autoptr(GFile) file = NULL;
 	g_autoptr(GError) error = NULL;
 	AsComponent *cpt;
-	GPtrArray *cpts;
+	AsComponentBox *cbox;
 	guint i;
 	gchar *tmp;
 
@@ -583,10 +746,10 @@ test_desktop_entry_convert (void)
 	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.gnome.Nautilus");
 	g_assert_cmpint (as_component_get_kind (cpt), ==, AS_COMPONENT_KIND_DESKTOP_APP);
 
-	as_component_set_active_locale (cpt, "C");
+	as_component_set_context_locale (cpt, "C");
 	g_assert_cmpstr (as_component_get_name (cpt), ==, "Files");
 
-	as_component_set_active_locale (cpt, "lt");
+	as_component_set_context_locale (cpt, "lt");
 	g_assert_cmpstr (as_component_get_name (cpt), ==, "Failai");
 
 	/* clear */
@@ -603,7 +766,7 @@ test_desktop_entry_convert (void)
 	g_assert_cmpstr (as_component_get_id (cpt), ==, "org.kde.ksysguard");
 	g_assert_cmpint (as_component_get_kind (cpt), ==, AS_COMPONENT_KIND_DESKTOP_APP);
 
-	as_component_set_active_locale (cpt, "C");
+	as_component_set_context_locale (cpt, "C");
 	g_assert_cmpstr (as_component_get_name (cpt), ==, "KSysGuard");
 
 	/* validate everything */
@@ -615,9 +778,9 @@ test_desktop_entry_convert (void)
 	g_assert_no_error (error);
 
 	/* adjust the priority */
-	cpts = as_metadata_get_components (metad);
-	for (i = 0; i < cpts->len; i++) {
-		cpt = AS_COMPONENT (g_ptr_array_index (cpts, i));
+	cbox = as_metadata_get_components (metad);
+	for (i = 0; i < as_component_box_len (cbox); i++) {
+		cpt = as_component_box_index (cbox, i);
 		as_component_set_priority (cpt, -1);
 	}
 
@@ -715,12 +878,18 @@ test_version_compare (void)
 	g_assert_cmpint (as_vercmp_simple ("9.5", "10"), <, 0);
 
 	/* test match */
-	g_assert_true (as_vercmp_test_match ("1", AS_RELATION_COMPARE_LT, "2", AS_VERCMP_FLAG_NONE));
-	g_assert_true (as_vercmp_test_match ("2", AS_RELATION_COMPARE_GT, "1", AS_VERCMP_FLAG_NONE));
-	g_assert_true (as_vercmp_test_match ("3", AS_RELATION_COMPARE_EQ, "3", AS_VERCMP_FLAG_NONE));
-	g_assert_true (as_vercmp_test_match ("4", AS_RELATION_COMPARE_NE, "3", AS_VERCMP_FLAG_NONE));
-	g_assert_true (as_vercmp_test_match ("4", AS_RELATION_COMPARE_GE, "3", AS_VERCMP_FLAG_NONE));
-	g_assert_false (as_vercmp_test_match ("5", AS_RELATION_COMPARE_GE, "6", AS_VERCMP_FLAG_NONE));
+	g_assert_true (
+	    as_vercmp_test_match ("1", AS_RELATION_COMPARE_LT, "2", AS_VERCMP_FLAG_NONE));
+	g_assert_true (
+	    as_vercmp_test_match ("2", AS_RELATION_COMPARE_GT, "1", AS_VERCMP_FLAG_NONE));
+	g_assert_true (
+	    as_vercmp_test_match ("3", AS_RELATION_COMPARE_EQ, "3", AS_VERCMP_FLAG_NONE));
+	g_assert_true (
+	    as_vercmp_test_match ("4", AS_RELATION_COMPARE_NE, "3", AS_VERCMP_FLAG_NONE));
+	g_assert_true (
+	    as_vercmp_test_match ("4", AS_RELATION_COMPARE_GE, "3", AS_VERCMP_FLAG_NONE));
+	g_assert_false (
+	    as_vercmp_test_match ("5", AS_RELATION_COMPARE_GE, "6", AS_VERCMP_FLAG_NONE));
 }
 
 /**
@@ -754,7 +923,10 @@ test_system_info (void)
 
 	/* We can't properly test this as most build environments lack the udev hardware database.
 	 * We still run the code for potential leak detection etc. */
-	dev_name = as_system_info_get_device_name_for_modalias (sysinfo, "usb:v1130p0202d*", FALSE, &error);
+	dev_name = as_system_info_get_device_name_for_modalias (sysinfo,
+								"usb:v1130p0202d*",
+								FALSE,
+								&error);
 	if (error != NULL)
 		g_error_free (g_steal_pointer (&error));
 }
@@ -851,11 +1023,21 @@ test_content_rating_mappings (void)
 		}
 
 		g_assert_cmpuint (max_age, >, 0);
-		g_assert_cmpuint (as_content_rating_attribute_to_csm_age (ids[i], AS_CONTENT_RATING_VALUE_UNKNOWN), ==, 0);
-		g_assert_cmpuint (as_content_rating_attribute_to_csm_age (ids[i], AS_CONTENT_RATING_VALUE_LAST), ==, 0);
+		g_assert_cmpuint (
+		    as_content_rating_attribute_to_csm_age (ids[i],
+							    AS_CONTENT_RATING_VALUE_UNKNOWN),
+		    ==,
+		    0);
+		g_assert_cmpuint (
+		    as_content_rating_attribute_to_csm_age (ids[i], AS_CONTENT_RATING_VALUE_LAST),
+		    ==,
+		    0);
 	}
 
-	g_assert_cmpuint (as_content_rating_attribute_to_csm_age ("not-valid-id", AS_CONTENT_RATING_VALUE_INTENSE), ==, 0);
+	g_assert_cmpuint (as_content_rating_attribute_to_csm_age ("not-valid-id",
+								  AS_CONTENT_RATING_VALUE_INTENSE),
+			  ==,
+			  0);
 }
 
 /* Test that gs_utils_content_rating_system_from_locale() returns the correct
@@ -865,47 +1047,51 @@ test_content_rating_mappings (void)
 static void
 as_test_content_rating_from_locale (void)
 {
+	/* clang-format off */
 	const struct {
 		const gchar *locale;
 		AsContentRatingSystem expected_system;
 	} vectors[] = {
 		/* Simple tests to get coverage of each rating system: */
-		{ "es_AR", AS_CONTENT_RATING_SYSTEM_INCAA },
-		{ "en_AU", AS_CONTENT_RATING_SYSTEM_ACB },
-		{ "pt_BR", AS_CONTENT_RATING_SYSTEM_DJCTQ },
-		{ "zh_TW", AS_CONTENT_RATING_SYSTEM_GSRR },
-		{ "en_GB", AS_CONTENT_RATING_SYSTEM_PEGI },
-		{ "hy_AM", AS_CONTENT_RATING_SYSTEM_PEGI },
-		{ "bg_BG", AS_CONTENT_RATING_SYSTEM_PEGI },
-		{ "fi_FI", AS_CONTENT_RATING_SYSTEM_KAVI },
-		{ "de_DE", AS_CONTENT_RATING_SYSTEM_USK },
-		{ "az_IR", AS_CONTENT_RATING_SYSTEM_ESRA },
-		{ "jp_JP", AS_CONTENT_RATING_SYSTEM_CERO },
-		{ "en_NZ", AS_CONTENT_RATING_SYSTEM_OFLCNZ },
-		{ "ru_RU", AS_CONTENT_RATING_SYSTEM_RUSSIA },
-		{ "en_SQ", AS_CONTENT_RATING_SYSTEM_MDA },
-		{ "ko_KR", AS_CONTENT_RATING_SYSTEM_GRAC },
-		{ "en_US", AS_CONTENT_RATING_SYSTEM_ESRB },
-		{ "en_US", AS_CONTENT_RATING_SYSTEM_ESRB },
-		{ "en_CA", AS_CONTENT_RATING_SYSTEM_ESRB },
-		{ "es_MX", AS_CONTENT_RATING_SYSTEM_ESRB },
+		{ "es_AR",		  AS_CONTENT_RATING_SYSTEM_INCAA },
+		{ "en_AU",		  AS_CONTENT_RATING_SYSTEM_ACB	},
+		{ "pt_BR",		  AS_CONTENT_RATING_SYSTEM_DJCTQ },
+		{ "zh_TW",		  AS_CONTENT_RATING_SYSTEM_GSRR },
+		{ "en_GB",		  AS_CONTENT_RATING_SYSTEM_PEGI },
+		{ "hy_AM",		  AS_CONTENT_RATING_SYSTEM_PEGI },
+		{ "bg_BG",		  AS_CONTENT_RATING_SYSTEM_PEGI },
+		{ "fi_FI",		  AS_CONTENT_RATING_SYSTEM_KAVI },
+		{ "de_DE",		  AS_CONTENT_RATING_SYSTEM_USK	},
+		{ "az_IR",		  AS_CONTENT_RATING_SYSTEM_ESRA },
+		{ "jp_JP",		  AS_CONTENT_RATING_SYSTEM_CERO },
+		{ "en_NZ",		  AS_CONTENT_RATING_SYSTEM_OFLCNZ },
+		{ "ru_RU",		  AS_CONTENT_RATING_SYSTEM_RUSSIA },
+		{ "en_SQ",		  AS_CONTENT_RATING_SYSTEM_MDA	},
+		{ "ko_KR",		  AS_CONTENT_RATING_SYSTEM_GRAC },
+		{ "en_US",		  AS_CONTENT_RATING_SYSTEM_ESRB },
+		{ "en_US",		  AS_CONTENT_RATING_SYSTEM_ESRB },
+		{ "en_CA",		  AS_CONTENT_RATING_SYSTEM_ESRB },
+		{ "es_MX",		  AS_CONTENT_RATING_SYSTEM_ESRB },
 		/* Fallback (arbitrarily chosen Venezuela since it seems to use IARC): */
-		{ "es_VE", AS_CONTENT_RATING_SYSTEM_IARC },
+		{ "es_VE",		  AS_CONTENT_RATING_SYSTEM_IARC },
 		/* Locale with a codeset: */
-		{ "nl_NL.iso88591", AS_CONTENT_RATING_SYSTEM_PEGI },
+		{ "nl_NL.iso88591",	  AS_CONTENT_RATING_SYSTEM_PEGI },
 		/* Locale with a codeset and modifier: */
-		{ "nl_NL.iso885915@euro", AS_CONTENT_RATING_SYSTEM_PEGI },
+		{ "nl_NL.iso885915@euro", AS_CONTENT_RATING_SYSTEM_PEGI	},
 		/* Locale with a less esoteric codeset: */
-		{ "en_GB.UTF-8", AS_CONTENT_RATING_SYSTEM_PEGI },
+		{ "en_GB.UTF-8",	  AS_CONTENT_RATING_SYSTEM_PEGI },
 		/* Locale with a modifier but no codeset: */
-		{ "fi_FI@euro", AS_CONTENT_RATING_SYSTEM_KAVI },
+		{ "fi_FI@euro",		  AS_CONTENT_RATING_SYSTEM_KAVI },
 		/* Invalid locale: */
-		{ "_invalid", AS_CONTENT_RATING_SYSTEM_IARC },
+		{ "_invalid",		  AS_CONTENT_RATING_SYSTEM_IARC },
 	};
+	/* clang-format on */
 
 	for (gsize i = 0; i < G_N_ELEMENTS (vectors); i++) {
 		g_test_message ("Test %" G_GSIZE_FORMAT ": %s", i, vectors[i].locale);
-		g_assert_cmpint (as_content_rating_system_from_locale (vectors[i].locale), ==, vectors[i].expected_system);
+		g_assert_cmpint (as_content_rating_system_from_locale (vectors[i].locale),
+				 ==,
+				 vectors[i].expected_system);
 	}
 }
 
@@ -926,12 +1112,14 @@ test_utils_data_id_hash (void)
 	cpt1 = as_component_new ();
 	as_component_set_id (cpt1, "org.gnome.Software.desktop");
 	as_component_set_branch (cpt1, "master");
-	g_assert_cmpstr (as_component_get_data_id (cpt1), ==,
+	g_assert_cmpstr (as_component_get_data_id (cpt1),
+			 ==,
 			 "*/*/*/org.gnome.Software.desktop/master");
 	cpt2 = as_component_new ();
 	as_component_set_id (cpt2, "org.gnome.Software.desktop");
 	as_component_set_branch (cpt2, "stable");
-	g_assert_cmpstr (as_component_get_data_id (cpt2), ==,
+	g_assert_cmpstr (as_component_get_data_id (cpt2),
+			 ==,
 			 "*/*/*/org.gnome.Software.desktop/stable");
 
 	/* add to hash table using the data ID as a key */
@@ -965,7 +1153,8 @@ test_utils_data_id_hash (void)
 	g_assert_true (found == NULL);
 
 	/* check hash function */
-	g_assert_cmpint (as_utils_data_id_hash ("*/*/*/gimp.desktop/master"), ==,
+	g_assert_cmpint (as_utils_data_id_hash ("*/*/*/gimp.desktop/master"),
+			 ==,
 			 as_utils_data_id_hash ("system/*/*/gimp.desktop/stable"));
 }
 
@@ -1020,6 +1209,34 @@ test_utils_platform_triplet (void)
 	g_assert_false (as_utils_is_platform_triplet ("x86-lunix-gna"));
 }
 
+/**
+ * test_utils_untar:
+ */
+static void
+test_utils_untar (void)
+{
+	g_autoptr(GError) error = NULL;
+	g_autofree gchar *tar_fname = NULL;
+	g_autofree gchar *test_fname = NULL;
+	gboolean ret;
+	const gchar *tar_target;
+	gchar tmpdir_tmpl[] = "/tmp/tartarus.XXXXXX";
+
+	tar_fname = g_build_filename (datadir, "dummy.tar.zst", NULL);
+	tar_target = g_mkdtemp (tmpdir_tmpl);
+	g_assert_nonnull (tar_target);
+
+	ret = as_utils_extract_tarball (tar_fname, tar_target, &error);
+	g_assert_no_error (error);
+	g_assert_true (ret);
+
+	test_fname = g_build_filename (tar_target, "org.example.pomidaq.metainfo.xml", NULL);
+	g_assert_true (g_file_test (test_fname, G_FILE_TEST_EXISTS));
+
+	/* cleanup */
+	as_utils_delete_dir_recursive (tar_target);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -1044,10 +1261,13 @@ main (int argc, char **argv)
 	g_test_add_func ("/AppStream/Random", test_random);
 	g_test_add_func ("/AppStream/SafeAssign", test_safe_assign);
 	g_test_add_func ("/AppStream/VerifyIntStr", test_verify_int_str);
+	g_test_add_func ("/AppStream/LocaleConvert", test_locale_conversion);
 	g_test_add_func ("/AppStream/Categories", test_categories);
 	g_test_add_func ("/AppStream/SimpleMarkupConvert", test_simplemarkup);
 	g_test_add_func ("/AppStream/Component", test_component);
+	g_test_add_func ("/AppStream/ComponentBox", test_component_box);
 	g_test_add_func ("/AppStream/SPDX", test_spdx);
+	g_test_add_func ("/AppStream/DesktopEnv", test_desktop_env);
 	g_test_add_func ("/AppStream/TranslationFallback", test_translation_fallback);
 	g_test_add_func ("/AppStream/LocaleCompat", test_locale_compat);
 	g_test_add_func ("/AppStream/ReadDesktopEntry", test_read_desktop_entry_simple);
@@ -1057,12 +1277,14 @@ main (int argc, char **argv)
 	g_test_add_func ("/AppStream/rDNSConvert", test_rdns_convert);
 	g_test_add_func ("/AppStream/URIToBasename", test_filebasename_from_uri);
 	g_test_add_func ("/AppStream/ContentRating/Mapings", test_content_rating_mappings);
-	g_test_add_func ("/AppStream/ContentRating/from-locale", as_test_content_rating_from_locale);
+	g_test_add_func ("/AppStream/ContentRating/from-locale",
+			 as_test_content_rating_from_locale);
 
 	g_test_add_func ("/AppStream/DataID/hash", test_utils_data_id_hash);
 	g_test_add_func ("/AppStream/DataID/hash-str", test_utils_data_id_hash_str);
 
 	g_test_add_func ("/AppStream/PlatformTriplets", test_utils_platform_triplet);
+	g_test_add_func ("/AppStream/TarExtract", test_utils_untar);
 
 	ret = g_test_run ();
 	g_free (datadir);

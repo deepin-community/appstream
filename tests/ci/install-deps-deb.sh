@@ -33,9 +33,9 @@ eatmydata apt-get install -yq --no-install-recommends \
     libzstd-dev \
     libcurl4-gnutls-dev \
     libsystemd-dev \
-    gtk-doc-tools \
+    gi-docgen \
     libgirepository1.0-dev \
-    qtbase5-dev \
+    qt6-base-dev \
     xmlto \
     daps \
     gobject-introspection \

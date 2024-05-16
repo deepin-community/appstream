@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -23,7 +23,6 @@
 
 #include <glib.h>
 #include <glib-object.h>
-#include <fnmatch.h>
 
 #include "as-utils.h"
 #include "as-utils-private.h"
@@ -34,7 +33,7 @@
 #include "as-icon-private.h"
 #include "as-screenshot-private.h"
 #include "as-bundle-private.h"
-#include "as-release-private.h"
+#include "as-release-list-private.h"
 #include "as-translation-private.h"
 #include "as-suggested-private.h"
 #include "as-content-rating-private.h"
@@ -44,8 +43,10 @@
 #include "as-agreement-private.h"
 #include "as-review-private.h"
 #include "as-branding-private.h"
+#include "as-developer-private.h"
+#include "as-reference-private.h"
 #include "as-desktop-entry.h"
-
+#include "as-relation-check-result.h"
 
 /**
  * SECTION:as-component
@@ -64,81 +65,76 @@
  * See also: #AsProvidesKind, #AsDatabase
  */
 
-typedef struct
-{
-	AsComponentKind 	kind;
-	AsComponentScope	scope;
-	AsOriginKind		origin_kind;
-	AsContext		*context; /* the document context associated with this component */
-	GRefString		*active_locale_override;
-	gchar			*date_eol;
+typedef struct {
+	AsComponentKind kind;
+	AsComponentScope scope;
+	AsOriginKind origin_kind;
+	AsContext *context; /* the document context associated with this component */
+	gchar *date_eol;
 
-	gchar			*id;
-	gchar			*data_id;
-	gchar			**pkgnames;
-	gchar			*source_pkgname;
-	GRefString		*origin;
-	GRefString		*branch;
-	gchar			*releases_url;
-	AsReleasesKind		releases_kind;
+	gchar *id;
+	gchar *data_id;
+	gchar **pkgnames;
+	gchar *source_pkgname;
+	GRefString *origin;
+	GRefString *branch;
 
-	GHashTable		*name; /* localized entry */
-	GHashTable		*summary; /* localized entry */
-	GHashTable		*description; /* localized entry */
-	GHashTable		*keywords; /* localized entry, value:strv */
-	GHashTable		*developer_name; /* localized entry */
+	GHashTable *name;	 /* localized entry */
+	GHashTable *summary;	 /* localized entry */
+	GHashTable *description; /* localized entry */
+	GHashTable *keywords;	 /* localized entry, value:strv */
 
-	GRefString		*metadata_license;
-	GRefString		*project_license;
-	GRefString		*project_group;
+	GRefString *metadata_license;
+	GRefString *project_license;
+	GRefString *project_group;
 
-	GPtrArray		*launchables; /* of #AsLaunchable */
-	GPtrArray		*categories; /* of utf8 */
-	GPtrArray		*compulsory_for_desktops; /* of utf8 */
-	GPtrArray		*extends; /* of utf8 */
-	GPtrArray		*addons; /* of AsComponent */
-	GPtrArray		*screenshots; /* of AsScreenshot elements */
-	GPtrArray		*releases; /* of AsRelease elements */
-	GPtrArray		*provided; /* of AsProvided */
-	GPtrArray		*bundles; /* of AsBundle */
-	GPtrArray		*suggestions; /* of AsSuggested elements */
-	GPtrArray		*content_ratings; /* of AsContentRating */
-	GPtrArray		*requires; /* of AsRelation */
-	GPtrArray		*recommends; /* of AsRelation */
-	GPtrArray		*supports; /* of AsRelation */
-	GPtrArray		*replaces; /* of utf8 */
-	GPtrArray		*agreements; /* of AsAgreement */
-	GHashTable		*urls; /* of int:utf8 */
+	AsReleaseList *releases;
+	GPtrArray *launchables;		    /* of #AsLaunchable */
+	GPtrArray *categories;		    /* of utf8 */
+	GPtrArray *compulsory_for_desktops; /* of utf8 */
+	GPtrArray *extends;		    /* of utf8 */
+	GPtrArray *addons;		    /* of AsComponent */
+	GPtrArray *screenshots;		    /* of AsScreenshot elements */
+	GPtrArray *provided;		    /* of AsProvided */
+	GPtrArray *bundles;		    /* of AsBundle */
+	GPtrArray *suggestions;		    /* of AsSuggested elements */
+	GPtrArray *content_ratings;	    /* of AsContentRating */
+	GPtrArray *requires;		    /* of AsRelation */
+	GPtrArray *recommends;		    /* of AsRelation */
+	GPtrArray *supports;		    /* of AsRelation */
+	GPtrArray *replaces;		    /* of utf8 */
+	GPtrArray *agreements;		    /* of AsAgreement */
+	GHashTable *urls;		    /* of int:utf8 */
 
-	GHashTable		*languages; /* of utf8:utf8 */
-	GPtrArray		*translations; /* of AsTranslation */
+	GHashTable *languages;	 /* of utf8:utf8 */
+	GPtrArray *translations; /* of AsTranslation */
 
-	GPtrArray		*icons; /* of AsIcon elements */
-	GPtrArray		*reviews; /* of AsReview */
+	GPtrArray *icons;   /* of AsIcon elements */
+	GPtrArray *reviews; /* of AsReview */
 
-	AsBranding		*branding;
+	AsDeveloper *developer;
+	AsBranding *branding;
 
-	GRefString		*arch; /* the architecture this data was generated from */
-	gint			priority; /* used internally */
-	AsMergeKind		merge_kind; /* whether and how the component data should be merged */
+	GRefString *arch;	/* the architecture this data was generated from */
+	gint priority;		/* used internally */
+	AsMergeKind merge_kind; /* whether and how the component data should be merged */
 
-	guint			sort_score; /* used to priorize components in listings */
-	gsize			token_cache_valid;
-	GHashTable		*token_cache; /* of RefString:AsTokenType* */
+	guint sort_score; /* used to priorize components in listings */
+	gsize token_cache_valid;
+	GHashTable *token_cache; /* of RefString:AsTokenType* */
 
-	AsValueFlags		value_flags;
+	gboolean ignored; /* whether we should ignore this component */
 
-	gboolean		ignored; /* whether we should ignore this component */
-
-	GPtrArray		*tags;
-	GHashTable		*name_variant_suffix; /* variant suffix for component name */
-	GHashTable		*custom; /* of RefString:RefString, free-form user-defined custom data */
+	GPtrArray *tags;
+	GPtrArray *references;
+	GHashTable *name_variant_suffix; /* variant suffix for component name */
+	GHashTable *custom; /* of RefString:RefString, free-form user-defined custom data */
 } AsComponentPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AsComponent, as_component, G_TYPE_OBJECT)
 #define GET_PRIVATE(o) (as_component_get_instance_private (o))
 
-enum  {
+enum {
 	AS_COMPONENT_DUMMY_PROPERTY,
 	AS_COMPONENT_KIND,
 	AS_COMPONENT_PKGNAMES,
@@ -152,7 +148,6 @@ enum  {
 	AS_COMPONENT_CATEGORIES,
 	AS_COMPONENT_PROJECT_LICENSE,
 	AS_COMPONENT_PROJECT_GROUP,
-	AS_COMPONENT_DEVELOPER_NAME,
 	AS_COMPONENT_SCREENSHOTS
 };
 
@@ -164,7 +159,7 @@ enum  {
  *
  * Returns: string version of @kind
  **/
-const gchar*
+const gchar *
 as_component_kind_to_string (AsComponentKind kind)
 {
 	if (kind == AS_COMPONENT_KIND_GENERIC)
@@ -248,10 +243,8 @@ as_component_kind_from_string (const gchar *kind_str)
 	if (g_strcmp0 (kind_str, "runtime") == 0)
 		return AS_COMPONENT_KIND_RUNTIME;
 
-	/* legacy */
+	/* legacy compatibility */
 	if (g_strcmp0 (kind_str, "desktop") == 0)
-		return AS_COMPONENT_KIND_DESKTOP_APP;
-	if (g_strcmp0 (kind_str, "desktop-app") == 0)
 		return AS_COMPONENT_KIND_DESKTOP_APP;
 
 	return AS_COMPONENT_KIND_UNKNOWN;
@@ -265,7 +258,7 @@ as_component_kind_from_string (const gchar *kind_str)
  *
  * Returns: string version of @kind
  **/
-const gchar*
+const gchar *
 as_merge_kind_to_string (AsMergeKind kind)
 {
 	if (kind == AS_MERGE_KIND_NONE)
@@ -309,7 +302,7 @@ as_merge_kind_from_string (const gchar *kind_str)
  *
  * Returns: string version of @scope
  **/
-const gchar*
+const gchar *
 as_component_scope_to_string (AsComponentScope scope)
 {
 	if (scope == AS_COMPONENT_SCOPE_SYSTEM)
@@ -338,45 +331,67 @@ as_component_scope_from_string (const gchar *scope_str)
 }
 
 /**
- * as_releases_kind_to_string:
- * @kind: the #AsReleaseKind.
+ * as_url_kind_to_string:
+ * @url_kind: the %AsUrlKind.
  *
  * Converts the enumerated value to an text representation.
  *
- * Returns: string version of @kind
- *
- * Since: 0.16.0
+ * Returns: string version of @url_kind
  **/
-const gchar*
-as_releases_kind_to_string (AsReleasesKind kind)
+const gchar *
+as_url_kind_to_string (AsUrlKind url_kind)
 {
-	if (kind == AS_RELEASES_KIND_EMBEDDED)
-		return "embedded";
-	if (kind == AS_RELEASES_KIND_EXTERNAL)
-		return "external";
+	if (url_kind == AS_URL_KIND_HOMEPAGE)
+		return "homepage";
+	if (url_kind == AS_URL_KIND_BUGTRACKER)
+		return "bugtracker";
+	if (url_kind == AS_URL_KIND_FAQ)
+		return "faq";
+	if (url_kind == AS_URL_KIND_HELP)
+		return "help";
+	if (url_kind == AS_URL_KIND_DONATION)
+		return "donation";
+	if (url_kind == AS_URL_KIND_TRANSLATE)
+		return "translate";
+	if (url_kind == AS_URL_KIND_CONTACT)
+		return "contact";
+	if (url_kind == AS_URL_KIND_VCS_BROWSER)
+		return "vcs-browser";
+	if (url_kind == AS_URL_KIND_CONTRIBUTE)
+		return "contribute";
 	return "unknown";
 }
 
 /**
- * as_releases_kind_from_string:
- * @kind_str: the string.
+ * as_url_kind_from_string:
+ * @url_kind: the string.
  *
  * Converts the text representation to an enumerated value.
  *
- * Returns: an #AsReleaseKind or %AS_RELEASE_KIND_UNKNOWN for unknown
- *
- * Since: 0.16.0
+ * Returns: a #AsUrlKind or %AS_URL_KIND_UNKNOWN for unknown
  **/
-AsReleasesKind
-as_releases_kind_from_string (const gchar *kind_str)
+AsUrlKind
+as_url_kind_from_string (const gchar *url_kind)
 {
-	if (as_is_empty (kind_str))
-		return AS_RELEASES_KIND_EMBEDDED;
-	if (as_str_equal0 (kind_str, "embedded"))
-		return AS_RELEASES_KIND_EMBEDDED;
-	if (as_str_equal0 (kind_str, "external"))
-		return AS_RELEASES_KIND_EXTERNAL;
-	return AS_RELEASES_KIND_UNKNOWN;
+	if (g_strcmp0 (url_kind, "homepage") == 0)
+		return AS_URL_KIND_HOMEPAGE;
+	if (g_strcmp0 (url_kind, "bugtracker") == 0)
+		return AS_URL_KIND_BUGTRACKER;
+	if (g_strcmp0 (url_kind, "faq") == 0)
+		return AS_URL_KIND_FAQ;
+	if (g_strcmp0 (url_kind, "help") == 0)
+		return AS_URL_KIND_HELP;
+	if (g_strcmp0 (url_kind, "donation") == 0)
+		return AS_URL_KIND_DONATION;
+	if (g_strcmp0 (url_kind, "translate") == 0)
+		return AS_URL_KIND_TRANSLATE;
+	if (g_strcmp0 (url_kind, "contact") == 0)
+		return AS_URL_KIND_CONTACT;
+	if (g_strcmp0 (url_kind, "vcs-browser") == 0)
+		return AS_URL_KIND_VCS_BROWSER;
+	if (g_strcmp0 (url_kind, "contribute") == 0)
+		return AS_URL_KIND_CONTRIBUTE;
+	return AS_URL_KIND_UNKNOWN;
 }
 
 /**
@@ -388,28 +403,29 @@ as_component_init (AsComponent *cpt)
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 
 	/* translatable entities */
-	priv->name = g_hash_table_new_full (g_str_hash, g_str_equal,
+	priv->name = g_hash_table_new_full (g_str_hash,
+					    g_str_equal,
 					    (GDestroyNotify) as_ref_string_release,
 					    g_free);
-	priv->summary = g_hash_table_new_full (g_str_hash, g_str_equal,
+	priv->summary = g_hash_table_new_full (g_str_hash,
+					       g_str_equal,
 					       (GDestroyNotify) as_ref_string_release,
 					       g_free);
-	priv->description = g_hash_table_new_full (g_str_hash, g_str_equal,
+	priv->description = g_hash_table_new_full (g_str_hash,
+						   g_str_equal,
 						   (GDestroyNotify) as_ref_string_release,
 						   g_free);
-	priv->developer_name = g_hash_table_new_full (g_str_hash, g_str_equal,
-						      (GDestroyNotify) as_ref_string_release,
-						      g_free);
-	priv->keywords = g_hash_table_new_full (g_str_hash, g_str_equal,
+	priv->keywords = g_hash_table_new_full (g_str_hash,
+						g_str_equal,
 						(GDestroyNotify) as_ref_string_release,
-						(GDestroyNotify) g_strfreev);
+						(GDestroyNotify) g_ptr_array_unref);
 
 	/* lists */
+	priv->releases = as_release_list_new ();
 	priv->launchables = g_ptr_array_new_with_free_func (g_object_unref);
 	priv->categories = g_ptr_array_new_with_free_func (g_free);
 	priv->compulsory_for_desktops = g_ptr_array_new_with_free_func (g_free);
 	priv->screenshots = g_ptr_array_new_with_free_func (g_object_unref);
-	priv->releases = g_ptr_array_new_with_free_func (g_object_unref);
 	priv->provided = g_ptr_array_new_with_free_func (g_object_unref);
 	priv->bundles = g_ptr_array_new_with_free_func (g_object_unref);
 	priv->extends = g_ptr_array_new_with_free_func (g_free);
@@ -425,25 +441,27 @@ as_component_init (AsComponent *cpt)
 
 	/* others */
 	priv->tags = g_ptr_array_new_with_free_func (g_free);
+	priv->references = g_ptr_array_new_with_free_func (g_object_unref);
 	priv->urls = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, g_free);
 	priv->languages = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-	priv->custom = g_hash_table_new_full (g_str_hash, g_str_equal,
+	priv->custom = g_hash_table_new_full (g_str_hash,
+					      g_str_equal,
 					      (GDestroyNotify) g_ref_string_release,
 					      (GDestroyNotify) g_ref_string_release);
 
-	priv->token_cache = g_hash_table_new_full (g_str_hash, g_str_equal,
+	priv->token_cache = g_hash_table_new_full (g_str_hash,
+						   g_str_equal,
 						   (GDestroyNotify) g_ref_string_release,
 						   g_free);
 
 	priv->priority = 0;
-	priv->releases_kind = AS_RELEASES_KIND_EMBEDDED;
 }
 
 /**
  * as_component_finalize:
  */
 static void
-as_component_finalize (GObject* object)
+as_component_finalize (GObject *object)
 {
 	AsComponent *cpt = AS_COMPONENT (object);
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -456,24 +474,21 @@ as_component_finalize (GObject* object)
 	as_ref_string_release (priv->metadata_license);
 	as_ref_string_release (priv->project_license);
 	as_ref_string_release (priv->project_group);
-	as_ref_string_release (priv->active_locale_override);
 	as_ref_string_release (priv->arch);
 	as_ref_string_release (priv->origin);
 	as_ref_string_release (priv->branch);
-	g_free (priv->releases_url);
 
 	g_hash_table_unref (priv->name);
 	g_hash_table_unref (priv->summary);
 	g_hash_table_unref (priv->description);
-	g_hash_table_unref (priv->developer_name);
 	g_hash_table_unref (priv->keywords);
 
+	g_object_unref (priv->releases);
 	g_ptr_array_unref (priv->launchables);
 	g_ptr_array_unref (priv->categories);
 	g_ptr_array_unref (priv->compulsory_for_desktops);
 
 	g_ptr_array_unref (priv->screenshots);
-	g_ptr_array_unref (priv->releases);
 	g_ptr_array_unref (priv->provided);
 	g_ptr_array_unref (priv->bundles);
 	g_ptr_array_unref (priv->extends);
@@ -485,6 +500,7 @@ as_component_finalize (GObject* object)
 	g_ptr_array_unref (priv->content_ratings);
 	g_ptr_array_unref (priv->icons);
 	g_ptr_array_unref (priv->tags);
+	g_ptr_array_unref (priv->references);
 
 	g_ptr_array_unref (priv->requires);
 	g_ptr_array_unref (priv->recommends);
@@ -495,6 +511,8 @@ as_component_finalize (GObject* object)
 	if (priv->replaces != NULL)
 		g_ptr_array_unref (priv->replaces);
 
+	if (priv->developer != NULL)
+		g_object_unref (priv->developer);
 	if (priv->branding != NULL)
 		g_object_unref (priv->branding);
 
@@ -554,10 +572,8 @@ as_component_is_valid (AsComponent *cpt)
 
 	cname = as_component_get_name (cpt);
 	csummary = as_component_get_summary (cpt);
-	if ((!as_is_empty (priv->id)) &&
-		(!as_is_empty (cname)) &&
-		(!as_is_empty (csummary))) {
-			return TRUE;
+	if ((!as_is_empty (priv->id)) && (!as_is_empty (cname)) && (!as_is_empty (csummary))) {
+		return TRUE;
 	}
 
 	return FALSE;
@@ -572,10 +588,10 @@ as_component_is_valid (AsComponent *cpt)
  *
  * Returns: (transfer full): A descriptive string
  **/
-gchar*
+gchar *
 as_component_to_string (AsComponent *cpt)
 {
-	gchar* res = NULL;
+	gchar *res = NULL;
 	g_autofree gchar *pkgs = NULL;
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 
@@ -585,11 +601,11 @@ as_component_to_string (AsComponent *cpt)
 		pkgs = g_strdup ("<none>");
 
 	res = g_strdup_printf ("[%s::%s]> name: %s | summary: %s | package: %s",
-				as_component_kind_to_string (priv->kind),
-				as_component_get_data_id (cpt),
-				as_component_get_name (cpt),
-				as_component_get_summary (cpt),
-				pkgs);
+			       as_component_kind_to_string (priv->kind),
+			       as_component_get_data_id (cpt),
+			       as_component_get_name (cpt),
+			       as_component_get_summary (cpt),
+			       pkgs);
 
 	return res;
 }
@@ -602,168 +618,63 @@ as_component_to_string (AsComponent *cpt)
  * Add an #AsScreenshot to this component.
  **/
 void
-as_component_add_screenshot (AsComponent *cpt, AsScreenshot* sshot)
+as_component_add_screenshot (AsComponent *cpt, AsScreenshot *sshot)
 {
-	GPtrArray* sslist;
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	g_return_if_fail (sshot != NULL);
 
-	sslist = as_component_get_screenshots (cpt);
-	g_ptr_array_add (sslist, g_object_ref (sshot));
+	g_ptr_array_add (priv->screenshots, g_object_ref (sshot));
 }
 
 /**
- * as_component_load_releases_from_bytes:
+ * as_component_get_releases_plain:
  * @cpt: a #AsComponent instance.
- * @bytes: the release XML data as #GBytes
- * @error: a #GError.
  *
- * Load release information from XML bytes.
+ * Get release information for this component,
+ * without downloading or loading any data from external sources.
  *
- * Returns: %TRUE on success.
- *
- * Since: 0.16.0
+ * Returns: (transfer none): Release information as #AsReleaseList
  **/
-gboolean
-as_component_load_releases_from_bytes (AsComponent *cpt, GBytes *bytes, GError **error)
+AsReleaseList *
+as_component_get_releases_plain (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	const gchar *rel_data = NULL;
-	gsize rel_data_len;
-	xmlDoc *xdoc;
-	xmlNode *xroot;
-	GError *tmp_error = NULL;
-
-	rel_data = g_bytes_get_data (bytes, &rel_data_len);
-	xdoc = as_xml_parse_document (rel_data, rel_data_len, &tmp_error);
-	if (xdoc == NULL) {
-		g_propagate_prefixed_error (error,
-					    tmp_error,
-					    "Unable to parse external release data: ");
-		return FALSE;
-	}
-
-	/* load releases */
-	xroot = xmlDocGetRootElement (xdoc);
-	for (xmlNode *iter = xroot->children; iter != NULL; iter = iter->next) {
-		if (iter->type != XML_ELEMENT_NODE)
-			continue;
-		if (as_str_equal0 (iter->name, "release")) {
-			g_autoptr(AsRelease) release = as_release_new ();
-			if (as_release_load_from_xml (release, priv->context, iter, NULL))
-				g_ptr_array_add (priv->releases, g_steal_pointer (&release));
-		}
-	}
-	xmlFreeDoc (xdoc);
-
-	return TRUE;
+	return priv->releases;
 }
 
 /**
  * as_component_load_releases:
  * @cpt: a #AsComponent instance.
- * @reload: set to %TRUE to discard existing data and reload.
- * @allow_net: allow fetching release data from the internet.
- * @error: a #GError.
  *
- * Load data from an external source, possibly a local file
- * or a network resource.
+ * Get release information for this component, download it
+ * if necessary.
  *
- * Returns: %TRUE on success.
- *
- * Since: 0.16.0
+ * Returns: (nullable) (transfer none): Release information as #AsReleaseList, or %NULL if loading failed.
  **/
-gboolean
-as_component_load_releases (AsComponent *cpt, gboolean reload, gboolean allow_net, GError **error)
+AsReleaseList *
+as_component_load_releases (AsComponent *cpt, gboolean allow_net, GError **error)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_autoptr(GBytes) reldata_bytes = NULL;
-	GError *tmp_error = NULL;
 
-	if (priv->releases_kind != AS_RELEASES_KIND_EXTERNAL)
-		return TRUE;
-	if (priv->releases->len != 0 && !reload)
-		return TRUE;
-
-	/* we need context data for this to work properly */
-	if (priv->context == NULL) {
-		g_set_error_literal (error,
-				     AS_UTILS_ERROR,
-				     AS_UTILS_ERROR_FAILED,
-				     "Unable to read external release information from a component without metadata context.");
-		return FALSE;
-	}
-
-	if (reload)
-		g_ptr_array_set_size (priv->releases, 0);
-
-	if (allow_net && priv->releases_url != NULL) {
-		/* grab release data from a remote source */
-		g_autoptr(AsCurl) curl = NULL;
-
-		curl = as_context_get_curl (priv->context, error);
-		if (curl == NULL)
-			return FALSE;
-
-		reldata_bytes = as_curl_download_bytes (curl, priv->releases_url, &tmp_error);
-		if (reldata_bytes == NULL) {
-			g_propagate_prefixed_error (error,
-						    tmp_error,
-						    "Unable to obtain remote external release data: ");
-			return FALSE;
-		}
-	} else {
-		/* read release data from a local source */
-		g_autofree gchar *relfile_path = NULL;
-		g_autofree gchar *relfile_name = NULL;
-		g_autofree gchar *tmp = NULL;
-		gchar *rel_data = NULL;
-		gsize rel_data_len;
-		const gchar *mi_fname = NULL;
-
-		mi_fname = as_context_get_filename (priv->context);
-		if (mi_fname == NULL) {
-			g_set_error_literal (error,
-					     AS_UTILS_ERROR,
-					     AS_UTILS_ERROR_FAILED,
-					     "Unable to read external release information: Component has no known metainfo filename.");
-			return FALSE;
-		}
-		relfile_name = g_strconcat (priv->id, ".releases.xml", NULL);
-		tmp = g_path_get_dirname (mi_fname);
-		relfile_path = g_build_filename (tmp, "releases", relfile_name, NULL);
-
-		if (!g_file_get_contents (relfile_path, &rel_data, &rel_data_len, &tmp_error)) {
-			g_propagate_prefixed_error (error,
-						    tmp_error,
-						    "Unable to read local external release data: ");
-			return FALSE;
-		}
-
-		reldata_bytes = g_bytes_new_take (rel_data, rel_data_len);
-	}
-
-	return as_component_load_releases_from_bytes (cpt, reldata_bytes, error);
+	if (!as_release_list_load (priv->releases, cpt, FALSE, allow_net, error))
+		return NULL;
+	return priv->releases;
 }
 
 /**
- * as_component_get_releases:
+ * as_component_set_releases:
  * @cpt: a #AsComponent instance.
+ * @releases: the #AsReleaseList to use.
  *
- * Get an array of the #AsRelease items this component
- * provides.
+ * Set a new set of releases for this component.
  *
- * Returns: (element-type AsRelease) (transfer none): A list of releases
- **/
-GPtrArray*
-as_component_get_releases (AsComponent *cpt)
+ */
+void
+as_component_set_releases (AsComponent *cpt, AsReleaseList *releases)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_autoptr(GError) error = NULL;
-
-	if (!as_component_load_releases (cpt, FALSE, FALSE, &error))
-		g_debug ("Error loading data for %s: %s",
-			   as_component_get_data_id (cpt), error->message);
-	return priv->releases;
+	g_object_unref (priv->releases);
+	priv->releases = g_object_ref (releases);
 }
 
 /**
@@ -774,78 +685,10 @@ as_component_get_releases (AsComponent *cpt)
  * Add an #AsRelease to this component.
  **/
 void
-as_component_add_release (AsComponent *cpt, AsRelease* release)
+as_component_add_release (AsComponent *cpt, AsRelease *release)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_ptr_array_add (priv->releases, g_object_ref (release));
-}
-
-/**
- * as_component_get_releases_kind:
- * @cpt: a #AsComponent instance.
- *
- * Returns the #AsReleasesKind of the release metadata
- * associated with this component.
- *
- * Returns: The kind.
- *
- * Since: 0.16.0
- */
-AsReleasesKind
-as_component_get_releases_kind (AsComponent *cpt)
-{
-	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	return priv->releases_kind;
-}
-
-/**
- * as_component_set_releases_kind:
- * @cpt: a #AsComponent instance.
- * @kind: the #AsComponentKind.
- *
- * Sets the #AsReleasesKind of the release metadata
- * associated with this component.
- *
- * Since: 0.16.0
- */
-void
-as_component_set_releases_kind (AsComponent *cpt, AsReleasesKind kind)
-{
-	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	priv->releases_kind = kind;
-}
-
-/**
- * as_component_get_releases_url:
- * @cpt: a #AsComponent instance.
- *
- * Get a remote URL to obtain release information for the component.
- *
- * Returns: The URL of external release data.
- *
- * Since: 0.16.0
- **/
-const gchar*
-as_component_get_releases_url (AsComponent *cpt)
-{
-	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	return priv->releases_url;
-}
-
-/**
- * as_component_set_releases_url:
- * @cpt: a #AsComponent instance.
- * @url: the web URL where release data is found.
- *
- * Set a remote URL pointing to an AppStream release info file.
- *
- * Since: 0.16.0
- **/
-void
-as_component_set_releases_url (AsComponent *cpt, const gchar *url)
-{
-	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	as_assign_string_safe (priv->releases_url, url);
+	as_release_list_add (priv->releases, release);
 }
 
 /**
@@ -859,12 +702,11 @@ as_component_set_releases_url (AsComponent *cpt, const gchar *url)
  *
  * Since: 0.6.2
  **/
-const gchar*
+const gchar *
 as_component_get_url (AsComponent *cpt, AsUrlKind url_kind)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	return g_hash_table_lookup (priv->urls,
-				    GINT_TO_POINTER (url_kind));
+	return g_hash_table_lookup (priv->urls, GINT_TO_POINTER (url_kind));
 }
 
 /**
@@ -881,9 +723,7 @@ void
 as_component_add_url (AsComponent *cpt, AsUrlKind url_kind, const gchar *url)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_hash_table_insert (priv->urls,
-			     GINT_TO_POINTER (url_kind),
-			     g_strdup (url));
+	g_hash_table_insert (priv->urls, GINT_TO_POINTER (url_kind), g_strdup (url));
 }
 
 /**
@@ -899,11 +739,26 @@ as_component_add_url (AsComponent *cpt, AsUrlKind url_kind, const gchar *url)
   *
   * Since: 0.15.5
 **/
-GPtrArray*
+GPtrArray *
 as_component_get_extends (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	return priv->extends;
+}
+
+/**
+ * as_component_check_value_flags:
+ *
+ * Test for the presence of a value flag.
+ */
+static gboolean
+as_component_check_value_flags (AsComponent *cpt, AsValueFlags test_flags)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+
+	if (priv->context == NULL)
+		return FALSE;
+	return as_flags_contains (as_context_get_value_flags (priv->context), test_flags);
 }
 
 /**
@@ -916,17 +771,16 @@ as_component_get_extends (AsComponent *cpt)
  * Since: 0.15.5
  **/
 void
-as_component_add_extends (AsComponent* cpt, const gchar* cpt_id)
+as_component_add_extends (AsComponent *cpt, const gchar *cpt_id)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 
-	if (as_flags_contains (priv->value_flags, AS_VALUE_FLAG_DUPLICATE_CHECK)) {
+	if (as_component_check_value_flags (cpt, AS_VALUE_FLAG_DUPLICATE_CHECK)) {
 		/* check for duplicates */
 		if (as_ptr_array_find_string (priv->extends, cpt_id) != NULL)
 			return;
 	}
-	g_ptr_array_add (priv->extends,
-			 g_strdup (cpt_id));
+	g_ptr_array_add (priv->extends, g_strdup (cpt_id));
 }
 
 /**
@@ -942,7 +796,7 @@ as_component_add_extends (AsComponent* cpt, const gchar* cpt_id)
   *
   * Since: 0.9.2
 **/
-GPtrArray*
+GPtrArray *
 as_component_get_addons (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -959,7 +813,7 @@ as_component_get_addons (AsComponent *cpt)
  * Since: 0.9.2
  **/
 void
-as_component_add_addon (AsComponent* cpt, AsComponent *addon)
+as_component_add_addon (AsComponent *cpt, AsComponent *addon)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	g_ptr_array_add (priv->addons, g_object_ref (addon));
@@ -975,7 +829,7 @@ as_component_add_addon (AsComponent* cpt, AsComponent *addon)
  *
  * Since: 0.10
  **/
-GPtrArray*
+GPtrArray *
 as_component_get_bundles (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1007,7 +861,7 @@ as_component_set_bundles_array (AsComponent *cpt, GPtrArray *bundles)
  *
  * Since: 0.8.0
  **/
-AsBundle*
+AsBundle *
 as_component_get_bundle (AsComponent *cpt, AsBundleKind bundle_kind)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1035,8 +889,7 @@ void
 as_component_add_bundle (AsComponent *cpt, AsBundle *bundle)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_ptr_array_add (priv->bundles,
-			 g_object_ref (bundle));
+	g_ptr_array_add (priv->bundles, g_object_ref (bundle));
 	as_component_invalidate_data_id (cpt);
 }
 
@@ -1119,7 +972,7 @@ as_component_set_kind (AsComponent *cpt, AsComponentKind value)
  *
  * Since: 0.15.2
  **/
-const gchar*
+const gchar *
 as_component_get_date_eol (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1167,7 +1020,8 @@ as_component_get_timestamp_eol (AsComponent *cpt)
 	if (time != NULL) {
 		return g_date_time_to_unix (time);
 	} else {
-		g_warning ("Unable to retrieve EOL timestamp from component EOL date: %s", priv->date_eol);
+		g_warning ("Unable to retrieve EOL timestamp from component EOL date: %s",
+			   priv->date_eol);
 		return 0;
 	}
 }
@@ -1175,7 +1029,7 @@ as_component_get_timestamp_eol (AsComponent *cpt)
 /**
  * as_component_sanitize_date_eol:
  */
-static gchar*
+static gchar *
 as_component_sanitize_date_eol (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1196,7 +1050,7 @@ as_component_sanitize_date_eol (AsComponent *cpt)
  *
  * Returns: (transfer none): String array of package names
  */
-gchar**
+gchar **
 as_component_get_pkgnames (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1218,7 +1072,7 @@ as_component_get_pkgnames (AsComponent *cpt)
  *
  * Returns: (transfer none): String array of package names
  */
-gchar*
+gchar *
 as_component_get_pkgname (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1261,7 +1115,7 @@ as_component_set_pkgname (AsComponent *cpt, const gchar *pkgname)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	g_strfreev (priv->pkgnames);
-	priv->pkgnames = g_new0 (gchar*, 2);
+	priv->pkgnames = g_new0 (gchar *, 2);
 	priv->pkgnames[0] = g_strdup (pkgname);
 	g_object_notify ((GObject *) cpt, "pkgnames");
 }
@@ -1272,7 +1126,7 @@ as_component_set_pkgname (AsComponent *cpt, const gchar *pkgname)
  *
  * Returns: the source package name.
  */
-const gchar*
+const gchar *
 as_component_get_source_pkgname (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1285,7 +1139,7 @@ as_component_get_source_pkgname (AsComponent *cpt)
  * @spkgname: the source package name.
  */
 void
-as_component_set_source_pkgname (AsComponent *cpt, const gchar* spkgname)
+as_component_set_source_pkgname (AsComponent *cpt, const gchar *spkgname)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	as_assign_string_safe (priv->source_pkgname, spkgname);
@@ -1304,7 +1158,7 @@ as_component_set_source_pkgname (AsComponent *cpt, const gchar* spkgname)
  *
  * Returns: the unique AppStream identifier.
  */
-const gchar*
+const gchar *
 as_component_get_id (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1319,7 +1173,7 @@ as_component_get_id (AsComponent *cpt)
  * Set the AppStream identifier for this component.
  */
 void
-as_component_set_id (AsComponent *cpt, const gchar* value)
+as_component_set_id (AsComponent *cpt, const gchar *value)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 
@@ -1345,7 +1199,7 @@ as_component_set_id (AsComponent *cpt, const gchar* value)
  *
  * Returns: the unique session-specific identifier.
  */
-const gchar*
+const gchar *
 as_component_get_data_id (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1366,7 +1220,7 @@ as_component_get_data_id (AsComponent *cpt)
  * the same component type.
  */
 void
-as_component_set_data_id (AsComponent *cpt, const gchar* value)
+as_component_set_data_id (AsComponent *cpt, const gchar *value)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	as_assign_string_safe (priv->data_id, value);
@@ -1376,7 +1230,7 @@ as_component_set_data_id (AsComponent *cpt, const gchar* value)
  * as_component_get_origin:
  * @cpt: a #AsComponent instance.
  */
-const gchar*
+const gchar *
 as_component_get_origin (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1408,7 +1262,7 @@ as_component_set_origin (AsComponent *cpt, const gchar *origin)
  *
  * Since: 0.14.0
  */
-const gchar*
+const gchar *
 as_component_get_branch (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1438,7 +1292,7 @@ as_component_set_branch (AsComponent *cpt, const gchar *branch)
  *
  * The architecture of the software component this data was generated from.
  */
-const gchar*
+const gchar *
 as_component_get_architecture (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1460,6 +1314,31 @@ as_component_set_architecture (AsComponent *cpt, const gchar *arch)
 }
 
 /**
+ * as_component_set_context_locale:
+ * @cpt: a #AsComponent instance.
+ * @locale: the new locale.
+ *
+ * Set the active locale on the context assoaiacted with this component,
+ * creating a new context for the component if none exists yet.
+ *
+ * Please not that this will flip the locale of all other components and
+ * entities that use the same context as well!
+ * This function is just a convenience method, and does not replace
+ * proper #AsContext management.
+ */
+void
+as_component_set_context_locale (AsComponent *cpt, const gchar *locale)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+
+	if (priv->context == NULL) {
+		priv->context = as_context_new ();
+		as_context_set_origin (priv->context, priv->origin);
+	}
+	as_context_set_locale (priv->context, locale);
+}
+
+/**
  * as_component_get_active_locale:
  * @cpt: a #AsComponent instance.
  *
@@ -1468,40 +1347,23 @@ as_component_set_architecture (AsComponent *cpt, const gchar *arch)
  *
  * Returns: the current active locale.
  */
-const gchar*
+static const gchar *
 as_component_get_active_locale (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	const GRefString *locale;
 
-	/* return context locale, if the locale isn't explicitly overridden for this component */
-	if ((priv->context != NULL) && (priv->active_locale_override == NULL)) {
-		locale = as_context_get_locale (priv->context);
-	} else {
-		locale = priv->active_locale_override;
+	/* create empty context if none exists yet */
+	if (priv->context == NULL) {
+		priv->context = as_context_new ();
+		as_context_set_origin (priv->context, priv->origin);
 	}
 
+	locale = as_context_get_locale (priv->context);
 	if (locale == NULL)
 		return "C";
 	else
 		return locale;
-}
-
-/**
- * as_component_set_active_locale:
- * @cpt: a #AsComponent instance.
- * @locale: (nullable): the locale, or %NULL. e.g. "en_GB"
- *
- * Set the current active locale for this component, which
- * is used to get localized messages.
- * If the #AsComponent was fetched from a localized database, usually only
- * one locale is available.
- */
-void
-as_component_set_active_locale (AsComponent *cpt, const gchar *locale)
-{
-	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	as_ref_string_assign_safe (&priv->active_locale_override, locale);
 }
 
 /**
@@ -1512,33 +1374,27 @@ as_component_set_active_locale (AsComponent *cpt, const gchar *locale)
  *
  * Returns: the name.
  */
-const gchar*
+const gchar *
 as_component_get_name (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	return as_context_localized_ht_get (priv->context,
-					    priv->name,
-					    priv->active_locale_override,
-					    priv->value_flags);
+	return as_context_localized_ht_get (priv->context, priv->name, NULL /* locale override */);
 }
 
 /**
  * as_component_set_name:
  * @cpt: A valid #AsComponent
  * @value: The name
- * @locale: (nullable): The locale the used for this value, or %NULL to use the current active one.
+ * @locale: (nullable): The BCP47 locale for this value, or %NULL to use the current active one.
  *
  * Set a human-readable name for this component.
  */
 void
-as_component_set_name (AsComponent *cpt, const gchar* value, const gchar *locale)
+as_component_set_name (AsComponent *cpt, const gchar *value, const gchar *locale)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 
-	as_context_localized_ht_set (priv->context,
-				     priv->name,
-				     value,
-				     locale);
+	as_context_localized_ht_set (priv->context, priv->name, value, locale);
 	g_object_notify ((GObject *) cpt, "name");
 }
 
@@ -1550,33 +1406,29 @@ as_component_set_name (AsComponent *cpt, const gchar* value, const gchar *locale
  *
  * Returns: the summary.
  */
-const gchar*
+const gchar *
 as_component_get_summary (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	return as_context_localized_ht_get (priv->context,
 					    priv->summary,
-					    priv->active_locale_override,
-					    priv->value_flags);
+					    NULL /* locale override */);
 }
 
 /**
  * as_component_set_summary:
  * @cpt: A valid #AsComponent
  * @value: The summary
- * @locale: (nullable): The locale the used for this value, or %NULL to use the current active one.
+ * @locale: (nullable): The BCP47 locale for this value, or %NULL to use the current active one.
  *
  * Set a short description for this component.
  */
 void
-as_component_set_summary (AsComponent *cpt, const gchar* value, const gchar *locale)
+as_component_set_summary (AsComponent *cpt, const gchar *value, const gchar *locale)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 
-	as_context_localized_ht_set (priv->context,
-				     priv->summary,
-				     value,
-				     locale);
+	as_context_localized_ht_set (priv->context, priv->summary, value, locale);
 	g_object_notify ((GObject *) cpt, "summary");
 }
 
@@ -1588,33 +1440,29 @@ as_component_set_summary (AsComponent *cpt, const gchar* value, const gchar *loc
  *
  * Returns: the description.
  */
-const gchar*
+const gchar *
 as_component_get_description (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	return as_context_localized_ht_get (priv->context,
 					    priv->description,
-					    priv->active_locale_override,
-					    priv->value_flags);
+					    NULL /* locale override */);
 }
 
 /**
  * as_component_set_description:
  * @cpt: A valid #AsComponent
  * @value: The long description
- * @locale: (nullable): The locale the used for this value, or %NULL to use the current active one.
+ * @locale: (nullable): The BCP47 locale for this value, or %NULL to use the current active one.
  *
  * Set long description for this component.
  */
 void
-as_component_set_description (AsComponent *cpt, const gchar* value, const gchar *locale)
+as_component_set_description (AsComponent *cpt, const gchar *value, const gchar *locale)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 
-	as_context_localized_ht_set (priv->context,
-				     priv->description,
-				     value,
-				     locale);
+	as_context_localized_ht_set (priv->context, priv->description, value, locale);
 	g_object_notify ((GObject *) cpt, "description");
 }
 
@@ -1622,21 +1470,29 @@ as_component_set_description (AsComponent *cpt, const gchar* value, const gchar 
  * as_component_get_keywords:
  * @cpt: a #AsComponent instance.
  *
- * Returns: (transfer none): String array of keywords
+ * Returns: (transfer none) (element-type utf8): String array of keywords
  */
-gchar**
+GPtrArray *
 as_component_get_keywords (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	gchar **strv;
+	GPtrArray *keywords;
 
-	strv = g_hash_table_lookup (priv->keywords, as_component_get_active_locale (cpt));
-	if (strv == NULL) {
+	keywords = g_hash_table_lookup (priv->keywords, as_component_get_active_locale (cpt));
+	if (keywords == NULL) {
 		/* fall back to untranslated */
-		strv = g_hash_table_lookup (priv->keywords, "C");
+		keywords = g_hash_table_lookup (priv->keywords, "C");
+	}
+	if (keywords == NULL) {
+		/* add an empty list to return, so checking for "no keywords" is easier
+		 * for the callers of this method. */
+		keywords = g_ptr_array_new_with_free_func (g_free);
+		g_hash_table_insert (priv->keywords,
+				     g_ref_string_new_intern (as_component_get_active_locale (cpt)),
+				     keywords);
 	}
 
-	return strv;
+	return keywords;
 }
 
 /**
@@ -1648,7 +1504,7 @@ as_component_get_keywords (AsComponent *cpt)
  *
  * Returns: (transfer none): Hash table locale->keyword arrays
  */
-GHashTable*
+GHashTable *
 as_component_get_keywords_table (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1658,13 +1514,17 @@ as_component_get_keywords_table (AsComponent *cpt)
 /**
  * as_component_set_keywords:
  * @cpt: a #AsComponent instance.
- * @value: (array zero-terminated=1): String-array of keywords
- * @locale: (nullable): Locale of the values, or %NULL to use current locale.
+ * @new_keywords: (element-type utf8): Array of keywords
+ * @locale: (nullable): BCP47 locale of the values, or %NULL to use current locale.
+ * @deep_copy: Set to %TRUE if the keywords array should be copied, %FALSE to set by reference.
  *
- * Set keywords for this component.
+ * Set keywords for this component, replacing all existing ones for the selected locale.
  */
 void
-as_component_set_keywords (AsComponent *cpt, gchar **value, const gchar *locale)
+as_component_set_keywords (AsComponent *cpt,
+			   GPtrArray *new_keywords,
+			   const gchar *locale,
+			   gboolean deep_copy)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	g_autoptr(GPtrArray) keywords = NULL;
@@ -1673,26 +1533,71 @@ as_component_set_keywords (AsComponent *cpt, gchar **value, const gchar *locale)
 	if (locale == NULL)
 		locale = as_component_get_active_locale (cpt);
 
-	keywords = g_ptr_array_new ();
-
-	if (value != NULL) {
-		for (guint i = 0; value[i] != NULL; ++i) {
-			if (g_strcmp0 (value[i], "") != 0)
-				g_ptr_array_add (keywords, g_strdup (value[i]));
+	if (deep_copy) {
+		keywords = g_ptr_array_new_with_free_func (g_free);
+		for (guint i = 0; i < new_keywords->len; ++i) {
+			const gchar *value = g_ptr_array_index (new_keywords, i);
+			if (!as_is_empty (value))
+				g_ptr_array_add (keywords, g_strdup (value));
 		}
+	} else {
+		keywords = g_ptr_array_ref (new_keywords);
 	}
-	g_ptr_array_add (keywords, NULL);
 
-#if GLIB_CHECK_VERSION(2,64,0)
 	g_hash_table_insert (priv->keywords,
-				g_ref_string_new_intern (locale),
-				(gchar **) (g_ptr_array_steal (keywords, NULL)));
-#else
-	g_hash_table_insert (priv->keywords,
-				g_ref_string_new_intern (locale),
-				(gchar **) g_ptr_array_free (g_steal_pointer (&keywords), FALSE));
-#endif
+			     g_ref_string_new_intern (locale),
+			     g_steal_pointer (&keywords));
+	g_object_notify ((GObject *) cpt, "keywords");
+}
 
+/**
+ * as_component_add_keyword:
+ * @cpt: an #AsComponent instance.
+ * @keyword: The new keyword to add.
+ * @locale: (nullable): BCP47 locale of the values, or %NULL to use current locale.
+ *
+ * Add a new keyword to the keywords list for the given locale. This function does not
+ * check for duplicate keywords.
+ */
+void
+as_component_add_keyword (AsComponent *cpt, const gchar *keyword, const gchar *locale)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+	GPtrArray *keywords = NULL;
+
+	if (as_is_empty (keyword))
+		return;
+
+	/* if no locale was specified, we assume the default locale */
+	if (locale == NULL)
+		locale = as_component_get_active_locale (cpt);
+
+	keywords = g_hash_table_lookup (priv->keywords, locale);
+	if (keywords == NULL) {
+		keywords = g_ptr_array_new_with_free_func (g_free);
+		g_hash_table_insert (priv->keywords, g_ref_string_new_intern (locale), keywords);
+	}
+
+	g_ptr_array_add (keywords, g_strdup (keyword));
+}
+
+/**
+ * as_component_clear_keywords:
+ * @cpt: an #AsComponent instance.
+ * @locale: (nullable): BCP47 locale of the values, or %NULL to use current locale.
+ *
+ * Remove all keywords for the given locale.
+ */
+void
+as_component_clear_keywords (AsComponent *cpt, const gchar *locale)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+
+	/* if no locale was specified, we assume the default locale */
+	if (locale == NULL)
+		locale = as_component_get_active_locale (cpt);
+
+	g_hash_table_remove (priv->keywords, locale);
 	g_object_notify ((GObject *) cpt, "keywords");
 }
 
@@ -1702,7 +1607,7 @@ as_component_set_keywords (AsComponent *cpt, gchar **value, const gchar *locale)
  *
  * Returns: (element-type AsIcon) (transfer none): A #GPtrArray of all icons for this component.
  */
-GPtrArray*
+GPtrArray *
 as_component_get_icons (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1726,7 +1631,7 @@ as_component_get_icons (AsComponent *cpt)
  *
  * Returns: (transfer none) (nullable): An icon matching the given width/height, or %NULL if not found.
  */
-AsIcon*
+AsIcon *
 as_component_get_icon_by_size (AsComponent *cpt, guint width, guint height)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1754,7 +1659,7 @@ as_component_get_icon_by_size (AsComponent *cpt, guint width, guint height)
  *
  * Returns: (transfer none) (nullable): An stock icon, or %NULL if none found.
  */
-AsIcon*
+AsIcon *
 as_component_get_icon_stock (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1789,7 +1694,7 @@ as_component_add_icon (AsComponent *cpt, AsIcon *icon)
  *
  * Returns: (transfer none) (element-type utf8): String array of categories
  */
-GPtrArray*
+GPtrArray *
 as_component_get_categories (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1808,13 +1713,12 @@ as_component_add_category (AsComponent *cpt, const gchar *category)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 
-	if (as_flags_contains (priv->value_flags, AS_VALUE_FLAG_DUPLICATE_CHECK)) {
+	if (as_component_check_value_flags (cpt, AS_VALUE_FLAG_DUPLICATE_CHECK)) {
 		/* check for duplicates */
 		if (as_ptr_array_find_string (priv->categories, category) != NULL)
 			return;
 	}
-	g_ptr_array_add (priv->categories,
-			 g_strdup (category));
+	g_ptr_array_add (priv->categories, g_strdup (category));
 }
 
 /**
@@ -1841,7 +1745,7 @@ as_component_has_category (AsComponent *cpt, const gchar *category)
  *
  * Returns: the license.
  */
-const gchar*
+const gchar *
 as_component_get_metadata_license (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1870,7 +1774,7 @@ as_component_set_metadata_license (AsComponent *cpt, const gchar *value)
  *
  * Returns: the license.
  */
-const gchar*
+const gchar *
 as_component_get_project_license (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1900,7 +1804,7 @@ as_component_set_project_license (AsComponent *cpt, const gchar *value)
  *
  * Returns: the project group.
  */
-const gchar*
+const gchar *
 as_component_get_project_group (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -1922,39 +1826,78 @@ as_component_set_project_group (AsComponent *cpt, const gchar *value)
 }
 
 /**
- * as_component_get_developer_name:
+ * as_component_get_developer:
  * @cpt: a #AsComponent instance.
  *
- * Get the component's developer or development team name.
+ * Get information about the component's developer or development team.
+ * The returned object may be empty if no developer information was
+ * available.
  *
- * Returns: the developer name.
+ * Returns: (transfer none): the developer as #AsDeveloper.
  */
-const gchar*
-as_component_get_developer_name (AsComponent *cpt)
+AsDeveloper *
+as_component_get_developer (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	return as_context_localized_ht_get (priv->context,
-					    priv->developer_name,
-					    priv->active_locale_override,
-					    priv->value_flags);
+	if (priv->developer == NULL)
+		priv->developer = as_developer_new_with_context (priv->context);
+	return priv->developer;
 }
 
 /**
- * as_component_set_developer_name:
+ * as_component_set_developer:
  * @cpt: a #AsComponent instance.
- * @value: the developer or developer team name
- * @locale: (nullable): the locale, or %NULL. e.g. "en_GB"
+ * @developer: the new #AsDeveloper
  *
- * Set the the component's developer or development team name.
+ * Set the the component's developer.
  */
 void
-as_component_set_developer_name (AsComponent *cpt, const gchar *value, const gchar *locale)
+as_component_set_developer (AsComponent *cpt, AsDeveloper *developer)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	as_context_localized_ht_set (priv->context,
-				     priv->developer_name,
-				     value,
-				     locale);
+	if (priv->developer == developer)
+		return;
+	if (priv->developer != NULL)
+		g_object_unref (priv->developer);
+	priv->developer = g_object_ref (developer);
+	as_developer_set_context (priv->developer, priv->context);
+}
+
+/**
+ * as_component_is_floss:
+ * @cpt: a #AsComponent instance.
+ *
+ * Returns %TRUE if this component is free and open source software.
+ * To determine this status, this function will check if it comes
+ * from a vetted free-software-only source or whether its licenses
+ * are only free software licenses.
+ *
+ * Returns: %TRUE if this component is free software.
+ *
+ * Since: 0.15.5
+ */
+gboolean
+as_component_is_floss (AsComponent *cpt)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+	gboolean is_free = as_license_is_free_license (priv->project_license);
+	if (is_free)
+		return TRUE;
+
+	/* The license check yielded a non-free license, which is also returned
+	 * if no license was set. We also need to check the repository origin
+	 * for packaged components. */
+	if (as_is_empty (priv->origin))
+		return FALSE;
+	if (as_utils_get_component_bundle_kind (cpt) == AS_BUNDLE_KIND_PACKAGE) {
+		if (priv->context == NULL) {
+			priv->context = as_context_new ();
+			as_context_set_origin (priv->context, priv->origin);
+		}
+		return as_context_os_origin_is_free (priv->context, priv->origin);
+	}
+
+	return is_free;
 }
 
 /**
@@ -1988,7 +1931,7 @@ gboolean
 as_component_add_tag (AsComponent *cpt, const gchar *ns, const gchar *tag)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_autofree gchar *tag_full = g_strconcat (ns, "::", tag, NULL);
+	g_autofree gchar *tag_full = as_make_usertag_key (ns, tag);
 
 	/* sanity check */
 	if (g_strstr_len (tag, -1, "::") != NULL)
@@ -2000,8 +1943,7 @@ as_component_add_tag (AsComponent *cpt, const gchar *ns, const gchar *tag)
 			return TRUE;
 	}
 
-	g_ptr_array_add (priv->tags,
-			 g_steal_pointer (&tag_full));
+	g_ptr_array_add (priv->tags, g_steal_pointer (&tag_full));
 	return TRUE;
 }
 
@@ -2021,7 +1963,7 @@ gboolean
 as_component_remove_tag (AsComponent *cpt, const gchar *ns, const gchar *tag)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_autofree gchar *tag_full = g_strconcat (ns, "::", tag, NULL);
+	g_autofree gchar *tag_full = as_make_usertag_key (ns, tag);
 
 	for (guint i = 0; i < priv->tags->len; i++) {
 		const gchar *tag_iter = g_ptr_array_index (priv->tags, i);
@@ -2051,7 +1993,7 @@ gboolean
 as_component_has_tag (AsComponent *cpt, const gchar *ns, const gchar *tag)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_autofree gchar *tag_full = g_strconcat (ns, "::", tag, NULL);
+	g_autofree gchar *tag_full = as_make_usertag_key (ns, tag);
 
 	for (guint i = 0; i < priv->tags->len; i++) {
 		const gchar *tag_iter = g_ptr_array_index (priv->tags, i);
@@ -2059,6 +2001,39 @@ as_component_has_tag (AsComponent *cpt, const gchar *ns, const gchar *tag)
 			return TRUE;
 	}
 	return FALSE;
+}
+
+/**
+ * as_component_get_references:
+ * @cpt: an #AsComponent instance.
+ *
+ * Get a list of external references and citation information for this component.
+ *
+ * Returns: (transfer none) (element-type AsReference): An array of #AsReference.
+ *
+ * Since: 1.0.0
+ **/
+GPtrArray *
+as_component_get_references (AsComponent *cpt)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+	return priv->references;
+}
+
+/**
+ * as_component_add_reference:
+ * @cpt: a #AsComponent instance.
+ * @reference: an #AsReference instance.
+ *
+ * Adds an external reference to the software component.
+ *
+ * Since: 1.0.0
+ **/
+void
+as_component_add_reference (AsComponent *cpt, AsReference *reference)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+	g_ptr_array_add (priv->references, g_object_ref (reference));
 }
 
 /**
@@ -2072,7 +2047,7 @@ as_component_has_tag (AsComponent *cpt, const gchar *ns, const gchar *tag)
  *
  * Since: 0.12.10
  */
-const gchar*
+const gchar *
 as_component_get_name_variant_suffix (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -2080,15 +2055,14 @@ as_component_get_name_variant_suffix (AsComponent *cpt)
 		return NULL;
 	return as_context_localized_ht_get (priv->context,
 					    priv->name_variant_suffix,
-					    priv->active_locale_override,
-					    priv->value_flags);
+					    NULL /* locale override */);
 }
 
 /**
  * as_component_set_name_variant_suffix:
  * @cpt: a #AsComponent instance.
  * @value: the developer or developer team name
- * @locale: (nullable): the locale, or %NULL. e.g. "en_GB"
+ * @locale: (nullable): the BCP47 locale, or %NULL. e.g. "en-GB"
  *
  * Set a variant suffix for the component name
  * (only to be displayed if components have the same name).
@@ -2100,28 +2074,131 @@ as_component_set_name_variant_suffix (AsComponent *cpt, const gchar *value, cons
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	if (priv->name_variant_suffix == NULL)
-		priv->name_variant_suffix = g_hash_table_new_full (g_str_hash, g_str_equal,
-								   (GDestroyNotify) as_ref_string_release,
-								   g_free);
-	as_context_localized_ht_set (priv->context,
-				     priv->name_variant_suffix,
-				     value,
-				     locale);
+		priv->name_variant_suffix = g_hash_table_new_full (
+		    g_str_hash,
+		    g_str_equal,
+		    (GDestroyNotify) as_ref_string_release,
+		    g_free);
+	as_context_localized_ht_set (priv->context, priv->name_variant_suffix, value, locale);
 }
 
 /**
- * as_component_get_screenshots:
+ * as_component_get_screenshots_all:
  * @cpt: a #AsComponent instance.
  *
- * Get a list of associated screenshots.
+ * Get a list of all associated screenshots, for all environments.
  *
  * Returns: (element-type AsScreenshot) (transfer none): an array of #AsScreenshot instances
  */
-GPtrArray*
-as_component_get_screenshots (AsComponent *cpt)
+GPtrArray *
+as_component_get_screenshots_all (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	return priv->screenshots;
+}
+
+typedef struct {
+	const gchar *env_id;
+	const gchar *style;
+	const gchar *environment;
+	gboolean prioritize_style;
+} AsScreenshotSortHelper;
+
+static gint
+as_screenshot_order_score_helper (AsScreenshot *scr, AsScreenshotSortHelper *helper)
+{
+	const gchar *scr_env = as_screenshot_get_environment (scr);
+
+	if (as_str_equal0 (scr_env, helper->env_id))
+		return -2 * as_screenshot_get_position (scr);
+
+	if (helper->prioritize_style) {
+		if (scr_env != NULL && g_str_has_suffix (scr_env, helper->style))
+			return -1 * as_screenshot_get_position (scr);
+	}
+
+	if (scr_env != NULL && g_str_has_prefix (scr_env, helper->environment))
+		return -1 * as_screenshot_get_position (scr);
+
+	return as_screenshot_get_position (scr);
+}
+
+static gint
+as_screenshots_sort_cb (gconstpointer a, gconstpointer b, gpointer user_data)
+{
+	AsScreenshotSortHelper *helper = user_data;
+	AsScreenshot *scr1 = *((AsScreenshot **) a);
+	AsScreenshot *scr2 = *((AsScreenshot **) b);
+
+	return as_screenshot_order_score_helper (scr1, helper) -
+	       as_screenshot_order_score_helper (scr2, helper);
+}
+
+static gint
+as_screenshots_sort_defaults_cb (gconstpointer a, gconstpointer b)
+{
+	AsScreenshot *scr1 = *((AsScreenshot **) a);
+	AsScreenshot *scr2 = *((AsScreenshot **) b);
+	return as_screenshot_get_position (scr1) - as_screenshot_get_position (scr2);
+}
+
+/**
+ * as_component_sort_screenshots:
+ * @cpt: a #AsComponent instance.
+ * @environment: (nullable): a GUI environment string, e.g. "plasma" or "gnome"
+ * @style: (nullable): and environment style string, e.g. "light" or "dark"
+ * @prioritize_style: if %TRUE, order screenshots of the given style earlier than ones of the given environment.
+ *
+ * Reorder the screenshots to prioritize a certain environment or style, instead of using the default
+ * screenshot order.
+ *
+ * If both "environment" and "style" are %NULL, the previous default order is restored.
+ */
+void
+as_component_sort_screenshots (AsComponent *cpt,
+			       const gchar *environment,
+			       const gchar *style,
+			       gboolean prioritize_style)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+	g_autofree gchar *env_id = NULL;
+	AsScreenshotSortHelper helper;
+
+	if (priv->screenshots == 0)
+		return;
+
+	/* restore defaults if both specifiers are NULL */
+	if (environment == NULL && style == NULL) {
+		/* restore the default order, but only if we changed the order before */
+		if (as_screenshot_get_position (
+			AS_SCREENSHOT (g_ptr_array_index (priv->screenshots, 0))) < 0)
+			return;
+		g_ptr_array_sort (priv->screenshots, as_screenshots_sort_defaults_cb);
+		return;
+	}
+
+	if (environment == NULL)
+		environment = "";
+
+	/* ensure screenshot ordering positions are set */
+	for (guint i = 0; i < priv->screenshots->len; i++) {
+		AsScreenshot *scr = AS_SCREENSHOT (g_ptr_array_index (priv->screenshots, i));
+		if (as_screenshot_get_position (scr) < 0)
+			as_screenshot_set_position (scr, i);
+	}
+
+	/* construct the environment ID to sort by */
+	env_id = (style == NULL) ? g_strdup (environment)
+				 : g_strconcat (environment, ":", style, NULL);
+
+	/* set helper */
+	helper.environment = environment;
+	helper.style = style;
+	helper.env_id = env_id;
+	helper.prioritize_style = prioritize_style;
+
+	/* sort screenshots */
+	g_ptr_array_sort_with_data (priv->screenshots, as_screenshots_sort_cb, &helper);
 }
 
 /**
@@ -2130,7 +2207,7 @@ as_component_get_screenshots (AsComponent *cpt)
  *
  * Return value: (transfer none) (element-type utf8): A list of desktops where this component is compulsory
  **/
-GPtrArray*
+GPtrArray *
 as_component_get_compulsory_for_desktops (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -2150,13 +2227,12 @@ as_component_set_compulsory_for_desktop (AsComponent *cpt, const gchar *desktop)
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	g_return_if_fail (desktop != NULL);
 
-	if (as_flags_contains (priv->value_flags, AS_VALUE_FLAG_DUPLICATE_CHECK)) {
+	if (as_component_check_value_flags (cpt, AS_VALUE_FLAG_DUPLICATE_CHECK)) {
 		/* check for duplicates */
 		if (as_ptr_array_find_string (priv->compulsory_for_desktops, desktop) != NULL)
 			return;
 	}
-	g_ptr_array_add (priv->compulsory_for_desktops,
-			 g_strdup (desktop));
+	g_ptr_array_add (priv->compulsory_for_desktops, g_strdup (desktop));
 }
 
 /**
@@ -2178,7 +2254,7 @@ as_component_is_compulsory_for_desktop (AsComponent *cpt, const gchar *desktop)
 /**
  * as_component_get_provided_for_kind:
  * @cpt: a #AsComponent instance.
- * @kind: kind of the provided item, e.g. %AS_PROVIDED_KIND_MIMETYPE
+ * @kind: kind of the provided item, e.g. %AS_PROVIDED_KIND_MEDIATYPE
  *
  * Get an #AsProvided object for the given interface type,
  * containing information about the public interfaces (mimetypes, firmware, DBus services, ...)
@@ -2186,7 +2262,7 @@ as_component_is_compulsory_for_desktop (AsComponent *cpt, const gchar *desktop)
  *
  * Returns: (transfer none) (nullable): #AsProvided containing the items this component provides, or %NULL.
  **/
-AsProvided*
+AsProvided *
 as_component_get_provided_for_kind (AsComponent *cpt, AsProvidedKind kind)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -2207,7 +2283,7 @@ as_component_get_provided_for_kind (AsComponent *cpt, AsProvidedKind kind)
  *
  * Returns: (transfer none) (element-type AsProvided): A list of #AsProvided objects.
  **/
-GPtrArray*
+GPtrArray *
 as_component_get_provided (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -2229,22 +2305,20 @@ as_component_add_provided (AsComponent *cpt, AsProvided *prov)
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	g_return_if_fail (prov != NULL);
 
-	if (as_flags_contains (priv->value_flags, AS_VALUE_FLAG_DUPLICATE_CHECK)) {
+	if (as_component_check_value_flags (cpt, AS_VALUE_FLAG_DUPLICATE_CHECK)) {
 		guint i;
 		for (i = 0; i < priv->provided->len; i++) {
 			AsProvided *eprov = AS_PROVIDED (g_ptr_array_index (priv->provided, i));
 			if (as_provided_get_kind (prov) == as_provided_get_kind (eprov)) {
 				/* replace existing entry */
 				g_ptr_array_remove_index (priv->provided, i);
-				g_ptr_array_add (priv->provided,
-						 g_object_ref (prov));
+				g_ptr_array_add (priv->provided, g_object_ref (prov));
 				return;
 			}
 		}
 	}
 
-	g_ptr_array_add (priv->provided,
-			 g_object_ref (prov));
+	g_ptr_array_add (priv->provided, g_object_ref (prov));
 }
 
 /**
@@ -2287,8 +2361,7 @@ void
 as_component_add_suggested (AsComponent *cpt, AsSuggested *suggested)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_ptr_array_add (priv->suggestions,
-			 g_object_ref (suggested));
+	g_ptr_array_add (priv->suggestions, g_object_ref (suggested));
 }
 
 /**
@@ -2299,7 +2372,7 @@ as_component_add_suggested (AsComponent *cpt, AsSuggested *suggested)
  *
  * Returns: (transfer none) (element-type AsSuggested): an array of #AsSuggested instances
  */
-GPtrArray*
+GPtrArray *
 as_component_get_suggested (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -2418,7 +2491,7 @@ as_component_set_sort_score (AsComponent *cpt, guint score)
 /**
  * as_component_add_language:
  * @cpt: an #AsComponent instance.
- * @locale: (nullable): the locale, or %NULL. e.g. "en_GB"
+ * @locale: (nullable): the BCP47 locale, or %NULL. e.g. "en-GB"
  * @percentage: the percentage completion of the translation, 0 for locales with unknown amount of translation
  *
  * Adds a language to the component.
@@ -2432,15 +2505,13 @@ as_component_add_language (AsComponent *cpt, const gchar *locale, gint percentag
 
 	if (locale == NULL)
 		locale = "C";
-	g_hash_table_insert (priv->languages,
-				g_strdup (locale),
-				GINT_TO_POINTER (percentage));
+	g_hash_table_insert (priv->languages, g_strdup (locale), GINT_TO_POINTER (percentage));
 }
 
 /**
  * as_component_get_language:
  * @cpt: an #AsComponent instance.
- * @locale: (nullable): the locale, or %NULL. e.g. "en_GB"
+ * @locale: (nullable): the BCP47 locale, or %NULL. e.g. "en-GB"
  *
  * Gets the translation coverage in percent for a specific locale
  *
@@ -2457,8 +2528,7 @@ as_component_get_language (AsComponent *cpt, const gchar *locale)
 
 	if (locale == NULL)
 		locale = "C";
-	ret = g_hash_table_lookup_extended (priv->languages,
-					    locale, NULL, &value);
+	ret = g_hash_table_lookup_extended (priv->languages, locale, NULL, &value);
 	if (!ret)
 		return -1;
 	return GPOINTER_TO_INT (value);
@@ -2474,7 +2544,7 @@ as_component_get_language (AsComponent *cpt, const gchar *locale)
  *
  * Since: 0.7.0
  **/
-GList*
+GList *
 as_component_get_languages (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -2506,7 +2576,7 @@ as_component_clear_languages (AsComponent *cpt)
  *
  * Since: 0.7.0
  **/
-GHashTable*
+GHashTable *
 as_component_get_languages_table (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -2522,7 +2592,7 @@ as_component_get_languages_table (AsComponent *cpt)
  *
  * Returns: (transfer none): locale->names map
  **/
-GHashTable*
+GHashTable *
 as_component_get_name_table (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -2538,7 +2608,7 @@ as_component_get_name_table (AsComponent *cpt)
  *
  * Returns: (transfer none): locale->summary map
  **/
-GHashTable*
+GHashTable *
 as_component_get_summary_table (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -2559,7 +2629,7 @@ as_component_get_summary_table (AsComponent *cpt)
  *
  * Since: 0.9.2
  */
-GPtrArray*
+GPtrArray *
 as_component_get_translations (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -2651,7 +2721,10 @@ as_component_set_origin_kind (AsComponent *cpt, AsOriginKind okind)
  * Internal helper function for as_component_refine_icons()
  */
 static void
-as_component_add_icon_full (AsComponent *cpt, AsIconKind kind, const gchar *size_str, const gchar *fname)
+as_component_add_icon_full (AsComponent *cpt,
+			    AsIconKind kind,
+			    const gchar *size_str,
+			    const gchar *fname)
 {
 	g_autoptr(AsIcon) icon = NULL;
 
@@ -2683,13 +2756,7 @@ as_component_add_icon_full (AsComponent *cpt, AsIconKind kind, const gchar *size
 static void
 as_component_refine_icons (AsComponent *cpt, GPtrArray *icon_paths)
 {
-	const gchar *extensions[] = { "png",
-				      "svg",
-				      "svgz",
-				      "gif",
-				      "ico",
-				      "xcf",
-				      NULL };
+	const gchar *extensions[] = { "png", "svg", "svgz", "gif", "ico", "xcf", NULL };
 	const gchar *sizes[] = { "", "64x64", "128x128", NULL };
 	const gchar *icon_fname = NULL;
 	const gchar *origin;
@@ -2725,7 +2792,8 @@ as_component_refine_icons (AsComponent *cpt, GPtrArray *icon_paths)
 
 		if ((ikind != AS_ICON_KIND_CACHED) && (ikind != AS_ICON_KIND_LOCAL)) {
 			g_warning ("Found icon of unknown type '%s' in '%s', skipping it.",
-				   as_icon_kind_to_string (ikind), as_component_get_data_id (cpt));
+				   as_icon_kind_to_string (ikind),
+				   as_component_get_data_id (cpt));
 			continue;
 		}
 
@@ -2751,23 +2819,27 @@ as_component_refine_icons (AsComponent *cpt, GPtrArray *icon_paths)
 		if ((ikind == AS_ICON_KIND_CACHED) && (as_icon_get_width (icon) > 0)) {
 			for (l = 0; l < icon_paths->len; l++) {
 				g_autofree gchar *tmp_icon_path_wh = NULL;
-				const gchar *icon_path = (const gchar*) g_ptr_array_index (icon_paths, l);
+				const gchar *icon_path = (const gchar *) g_ptr_array_index (
+				    icon_paths,
+				    l);
 
 				if (as_icon_get_scale (icon) <= 1) {
-					tmp_icon_path_wh = g_strdup_printf ("%s/%s/%ix%i/%s",
-										icon_path,
-										origin,
-										as_icon_get_width (icon),
-										as_icon_get_height (icon),
-										icon_fname);
+					tmp_icon_path_wh = g_strdup_printf (
+					    "%s/%s/%ix%i/%s",
+					    icon_path,
+					    origin,
+					    as_icon_get_width (icon),
+					    as_icon_get_height (icon),
+					    icon_fname);
 				} else {
-					tmp_icon_path_wh = g_strdup_printf ("%s/%s/%ix%i@%i/%s",
-										icon_path,
-										origin,
-										as_icon_get_width (icon),
-										as_icon_get_height (icon),
-										as_icon_get_scale (icon),
-										icon_fname);
+					tmp_icon_path_wh = g_strdup_printf (
+					    "%s/%s/%ix%i@%i/%s",
+					    icon_path,
+					    origin,
+					    as_icon_get_width (icon),
+					    as_icon_get_height (icon),
+					    as_icon_get_scale (icon),
+					    icon_fname);
 				}
 
 				if (g_file_test (tmp_icon_path_wh, G_FILE_TEST_EXISTS)) {
@@ -2785,16 +2857,16 @@ as_component_refine_icons (AsComponent *cpt, GPtrArray *icon_paths)
 
 		/* search local icon path */
 		for (l = 0; l < icon_paths->len; l++) {
-			const gchar *icon_path = (const gchar*) g_ptr_array_index (icon_paths, l);
+			const gchar *icon_path = (const gchar *) g_ptr_array_index (icon_paths, l);
 
 			for (j = 0; sizes[j] != NULL; j++) {
 				g_autofree gchar *tmp_icon_path = NULL;
 				/* sometimes, the file already has an extension */
 				tmp_icon_path = g_strdup_printf ("%s/%s/%s/%s",
-								icon_path,
-								origin,
-								sizes[j],
-								icon_fname);
+								 icon_path,
+								 origin,
+								 sizes[j],
+								 icon_fname);
 
 				if (g_file_test (tmp_icon_path, G_FILE_TEST_EXISTS)) {
 					/* we have an icon! */
@@ -2817,25 +2889,27 @@ as_component_refine_icons (AsComponent *cpt, GPtrArray *icon_paths)
 				for (k = 0; extensions[k] != NULL; k++) {
 					g_autofree gchar *tmp_icon_path_ext = NULL;
 					tmp_icon_path_ext = g_strdup_printf ("%s/%s/%s/%s.%s",
-								icon_path,
-								origin,
-								sizes[j],
-								icon_fname,
-								extensions[k]);
+									     icon_path,
+									     origin,
+									     sizes[j],
+									     icon_fname,
+									     extensions[k]);
 
 					if (g_file_test (tmp_icon_path_ext, G_FILE_TEST_EXISTS)) {
 						/* we have an icon! */
 						if (g_strcmp0 (sizes[j], "") == 0) {
 							/* old icon directory, so assume 64x64 */
-							as_component_add_icon_full (cpt,
-									    as_icon_get_kind (icon),
-									    "64x64",
-									    tmp_icon_path_ext);
+							as_component_add_icon_full (
+							    cpt,
+							    as_icon_get_kind (icon),
+							    "64x64",
+							    tmp_icon_path_ext);
 						} else {
-							as_component_add_icon_full (cpt,
-									    as_icon_get_kind (icon),
-									    sizes[j],
-									    tmp_icon_path_ext);
+							as_component_add_icon_full (
+							    cpt,
+							    as_icon_get_kind (icon),
+							    sizes[j],
+							    tmp_icon_path_ext);
 						}
 					}
 				}
@@ -2847,7 +2921,6 @@ as_component_refine_icons (AsComponent *cpt, GPtrArray *icon_paths)
 /**
  * as_component_complete:
  * @cpt: a #AsComponent instance.
- * @scr_service_url: Base url for screenshot-service, obtain via #AsDistroDetails
  * @icon_paths: String array of possible (cached) icon locations
  *
  * Private function to complete a AsComponent with
@@ -2856,7 +2929,7 @@ as_component_refine_icons (AsComponent *cpt, GPtrArray *icon_paths)
  * INTERNAL
  */
 void
-as_component_complete (AsComponent *cpt, gchar *scr_service_url, GPtrArray *icon_paths)
+as_component_complete (AsComponent *cpt, GPtrArray *icon_paths)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 
@@ -2873,56 +2946,6 @@ as_component_complete (AsComponent *cpt, gchar *scr_service_url, GPtrArray *icon
 			as_component_add_launchable (cpt, launchable);
 		}
 	}
-
-	/* if there is no screenshot service URL, there is nothing left to do for us */
-	if (scr_service_url == NULL)
-		return;
-
-	/* we want screenshot data from 3rd-party screenshot servers, if the component doesn't have screenshots defined already */
-	if ((priv->screenshots->len == 0) && (as_component_has_package (cpt))) {
-		gchar *url;
-		AsImage *img;
-		g_autoptr(AsScreenshot) sshot = NULL;
-
-		url = g_build_filename (scr_service_url, "screenshot", priv->pkgnames[0], NULL);
-
-		/* screenshots.debian.net-like services dont specify a size, so we choose the default sizes
-		 * (800x600 for source-type images, 160x120 for thumbnails)
-		 */
-
-		/* add main image */
-		img = as_image_new ();
-		as_image_set_url (img, url);
-		as_image_set_width (img, 800);
-		as_image_set_height (img, 600);
-		as_image_set_kind (img, AS_IMAGE_KIND_SOURCE);
-
-		sshot = as_screenshot_new ();
-
-		/* propagate locale */
-		as_screenshot_set_active_locale (sshot, as_component_get_active_locale (cpt));
-
-		as_screenshot_add_image (sshot, img);
-		as_screenshot_set_kind (sshot, AS_SCREENSHOT_KIND_DEFAULT);
-
-		g_object_unref (img);
-		g_free (url);
-
-		/* add thumbnail */
-		url = g_build_filename (scr_service_url, "thumbnail", priv->pkgnames[0], NULL);
-		img = as_image_new ();
-		as_image_set_url (img, url);
-		as_image_set_width (img, 160);
-		as_image_set_height (img, 120);
-		as_image_set_kind (img, AS_IMAGE_KIND_THUMBNAIL);
-		as_screenshot_add_image (sshot, img);
-
-		/* add screenshot to component */
-		as_component_add_screenshot (cpt, sshot);
-
-		g_object_unref (img);
-		g_free (url);
-	}
 }
 
 /**
@@ -2930,10 +2953,10 @@ as_component_complete (AsComponent *cpt, gchar *scr_service_url, GPtrArray *icon
  */
 static void
 as_component_add_token_helper (AsComponent *cpt,
-				const gchar *value,
-				AsSearchTokenMatch match_flag,
-				AsStemmer *stemmer,
-				GPtrArray *tokens_out)
+			       const gchar *value,
+			       AsSearchTokenMatch match_flag,
+			       AsStemmer *stemmer,
+			       GPtrArray *tokens_out)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	AsTokenType *match_pval;
@@ -2960,8 +2983,7 @@ as_component_add_token_helper (AsComponent *cpt,
 	if (match_pval != NULL) {
 		/* add token to the output array only if it was more important than the cached one */
 		if (tokens_out != NULL && *match_pval < match_flag)
-			g_ptr_array_add (tokens_out,
-					g_steal_pointer (&token_stemmed));
+			g_ptr_array_add (tokens_out, g_steal_pointer (&token_stemmed));
 
 		*match_pval |= match_flag;
 		return;
@@ -2976,8 +2998,7 @@ as_component_add_token_helper (AsComponent *cpt,
 
 	/* add to the token output array, if we have one */
 	if (tokens_out != NULL)
-		g_ptr_array_add (tokens_out,
-				 g_steal_pointer (&token_stemmed));
+		g_ptr_array_add (tokens_out, g_steal_pointer (&token_stemmed));
 }
 
 /**
@@ -2991,7 +3012,7 @@ as_component_add_token (AsComponent *cpt,
 			GPtrArray *tokens_out)
 {
 	/* get global stemmer instance (it's threadsafe and should survive this invocation) */
-	AsStemmer *stemmer = as_stemmer_get ();
+	AsStemmer *stemmer = as_stemmer_get (as_component_get_active_locale (cpt));
 
 	/* add extra tokens for names like x-plane or half-life */
 	if (allow_split && g_strstr_len (value, -1, "-") != NULL) {
@@ -2999,18 +3020,14 @@ as_component_add_token (AsComponent *cpt,
 		g_auto(GStrv) split = g_strsplit (value, "-", -1);
 		for (i = 0; split[i] != NULL; i++)
 			as_component_add_token_helper (cpt,
-							split[i],
-							match_flag,
-							stemmer,
-							tokens_out);
+						       split[i],
+						       match_flag,
+						       stemmer,
+						       tokens_out);
 	}
 
 	/* add the whole token always, even when we split on hyphen */
-	as_component_add_token_helper (cpt,
-					value,
-					match_flag,
-					stemmer,
-					tokens_out);
+	as_component_add_token_helper (cpt, value, match_flag, stemmer, tokens_out);
 }
 
 /**
@@ -3019,11 +3036,13 @@ as_component_add_token (AsComponent *cpt,
  * Split a component value string into tokens.
  */
 static gboolean
-as_component_value_tokenize (AsComponent *cpt, const gchar *value, gchar ***tokens_utf8, gchar ***tokens_ascii)
+as_component_value_tokenize (AsComponent *cpt,
+			     const gchar *value,
+			     gchar ***tokens_utf8,
+			     gchar ***tokens_ascii)
 {
 	/* tokenize with UTF-8 fallbacks */
-	if (g_strstr_len (value, -1, "+") == NULL &&
-	    g_strstr_len (value, -1, "-") == NULL) {
+	if (g_strstr_len (value, -1, "+") == NULL && g_strstr_len (value, -1, "-") == NULL) {
 		(*tokens_utf8) = g_str_tokenize_and_fold (value,
 							  as_component_get_active_locale (cpt),
 							  tokens_ascii);
@@ -3059,8 +3078,7 @@ as_component_add_tokens (AsComponent *cpt,
 
 	/* sanity check */
 	if (value == NULL) {
-		g_critical ("trying to add NULL search token to %s",
-			    as_component_get_id (cpt));
+		g_critical ("trying to add NULL search token to %s", as_component_get_id (cpt));
 		return;
 	}
 
@@ -3079,20 +3097,19 @@ as_component_add_tokens (AsComponent *cpt,
  * as_component_create_token_cache_target:
  */
 static void
-as_component_create_token_cache_target (AsComponent *cpt, AsComponent *donor, guint flags, GPtrArray *tokens_out)
+as_component_create_token_cache_target (AsComponent *cpt,
+					AsComponent *donor,
+					guint flags,
+					GPtrArray *tokens_out)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (donor);
 	const gchar *tmp;
-	gchar **keywords;
+	GPtrArray *keywords;
 	AsProvided *prov;
 
 	/* tokenize all the data we have */
 	if (priv->id != NULL && as_flags_contains (flags, AS_SEARCH_TOKEN_MATCH_ID)) {
-		as_component_add_token (cpt,
-					priv->id,
-					FALSE,
-					AS_SEARCH_TOKEN_MATCH_ID,
-					tokens_out);
+		as_component_add_token (cpt, priv->id, FALSE, AS_SEARCH_TOKEN_MATCH_ID, tokens_out);
 	}
 
 	tmp = as_component_get_name (cpt);
@@ -3100,7 +3117,11 @@ as_component_create_token_cache_target (AsComponent *cpt, AsComponent *donor, gu
 		const gchar *name_c = g_hash_table_lookup (priv->name, "C");
 		as_component_add_tokens (cpt, tmp, TRUE, AS_SEARCH_TOKEN_MATCH_NAME, tokens_out);
 		if (name_c != NULL && g_strcmp0 (tmp, name_c) != 0)
-			as_component_add_tokens (cpt, name_c, TRUE, AS_SEARCH_TOKEN_MATCH_NAME, tokens_out);
+			as_component_add_tokens (cpt,
+						 name_c,
+						 TRUE,
+						 AS_SEARCH_TOKEN_MATCH_NAME,
+						 tokens_out);
 	}
 
 	tmp = as_component_get_summary (cpt);
@@ -3110,21 +3131,29 @@ as_component_create_token_cache_target (AsComponent *cpt, AsComponent *donor, gu
 
 	tmp = as_component_get_description (cpt);
 	if (tmp != NULL && as_flags_contains (flags, AS_SEARCH_TOKEN_MATCH_DESCRIPTION)) {
-		as_component_add_tokens (cpt, tmp, TRUE, AS_SEARCH_TOKEN_MATCH_DESCRIPTION, tokens_out);
+		as_component_add_tokens (cpt,
+					 tmp,
+					 TRUE,
+					 AS_SEARCH_TOKEN_MATCH_DESCRIPTION,
+					 tokens_out);
 	}
 
 	keywords = as_component_get_keywords (cpt);
-	if (keywords != NULL && as_flags_contains (flags, AS_SEARCH_TOKEN_MATCH_KEYWORD)) {
-		for (guint i = 0; keywords[i] != NULL; i++)
-			as_component_add_tokens (cpt, keywords[i], FALSE, AS_SEARCH_TOKEN_MATCH_KEYWORD, tokens_out);
+	if (keywords->len > 0 && as_flags_contains (flags, AS_SEARCH_TOKEN_MATCH_KEYWORD)) {
+		for (guint i = 0; i < keywords->len; i++)
+			as_component_add_tokens (cpt,
+						 (const gchar *) g_ptr_array_index (keywords, i),
+						 FALSE,
+						 AS_SEARCH_TOKEN_MATCH_KEYWORD,
+						 tokens_out);
 	}
 
-	prov = as_component_get_provided_for_kind (donor, AS_PROVIDED_KIND_MIMETYPE);
+	prov = as_component_get_provided_for_kind (donor, AS_PROVIDED_KIND_MEDIATYPE);
 	if (prov != NULL && as_flags_contains (flags, AS_SEARCH_TOKEN_MATCH_MEDIATYPE)) {
 		GPtrArray *items = as_provided_get_items (prov);
 		for (guint i = 0; i < items->len; i++)
 			as_component_add_token (cpt,
-						(const gchar*) g_ptr_array_index (items, i),
+						(const gchar *) g_ptr_array_index (items, i),
 						FALSE,
 						AS_SEARCH_TOKEN_MATCH_MEDIATYPE,
 						tokens_out);
@@ -3155,14 +3184,10 @@ as_component_create_token_cache (AsComponent *cpt)
 	if (!g_once_init_enter (&priv->token_cache_valid))
 		return;
 
-	flags = AS_SEARCH_TOKEN_MATCH_MEDIATYPE |
-		AS_SEARCH_TOKEN_MATCH_PKGNAME |
-		AS_SEARCH_TOKEN_MATCH_ORIGIN |
-		AS_SEARCH_TOKEN_MATCH_DESCRIPTION |
-		AS_SEARCH_TOKEN_MATCH_SUMMARY |
-		AS_SEARCH_TOKEN_MATCH_KEYWORD |
-		AS_SEARCH_TOKEN_MATCH_NAME |
-		AS_SEARCH_TOKEN_MATCH_ID;
+	flags = AS_SEARCH_TOKEN_MATCH_MEDIATYPE | AS_SEARCH_TOKEN_MATCH_PKGNAME |
+		AS_SEARCH_TOKEN_MATCH_ORIGIN | AS_SEARCH_TOKEN_MATCH_DESCRIPTION |
+		AS_SEARCH_TOKEN_MATCH_SUMMARY | AS_SEARCH_TOKEN_MATCH_KEYWORD |
+		AS_SEARCH_TOKEN_MATCH_NAME | AS_SEARCH_TOKEN_MATCH_ID;
 
 	as_component_create_token_cache_target (cpt, cpt, flags, NULL);
 
@@ -3181,7 +3206,7 @@ as_component_create_token_cache (AsComponent *cpt)
  * Internal API to get tokens only for a specific aspect of this
  * component.
  */
-GPtrArray*
+GPtrArray *
 as_component_generate_tokens_for (AsComponent *cpt, AsSearchTokenMatch token_kind)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3295,7 +3320,7 @@ as_component_search_matches_all (AsComponent *cpt, gchar **terms)
  *
  * Since: 0.9.7
  */
-GPtrArray*
+GPtrArray *
 as_component_get_search_tokens (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3313,33 +3338,6 @@ as_component_get_search_tokens (AsComponent *cpt)
 		g_ptr_array_add (array, g_strdup (l->data));
 
 	return array;
-}
-
-/**
- * as_component_set_value_flags:
- * @cpt: a #AsComponent instance.
- * @flags: #AsValueFlags to set on @cpt.
- *
- */
-void
-as_component_set_value_flags (AsComponent *cpt, AsValueFlags flags)
-{
-	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	priv->value_flags = flags;
-}
-
-/**
- * as_component_get_value_flags:
- * @cpt: a #AsComponent instance.
- *
- * Returns: The #AsValueFlags that are set on @cpt.
- *
- */
-AsValueFlags
-as_component_get_value_flags (AsComponent *cpt)
-{
-	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	return priv->value_flags;
 }
 
 /**
@@ -3374,7 +3372,7 @@ as_component_is_member_of_category (AsComponent *cpt, AsCategory *category)
 
 	cdesktop_groups = as_category_get_desktop_groups (category);
 	for (i = 0; i < cdesktop_groups->len; i++) {
-		const gchar *cdg_name = (const gchar*) g_ptr_array_index (cdesktop_groups, i);
+		const gchar *cdg_name = (const gchar *) g_ptr_array_index (cdesktop_groups, i);
 		if (as_component_has_desktop_group (cpt, cdg_name))
 			return TRUE;
 	}
@@ -3419,7 +3417,7 @@ as_component_is_ignored (AsComponent *cpt)
  *
  * Since: 0.10.5
  */
-GHashTable*
+GHashTable *
 as_component_get_custom (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3435,7 +3433,7 @@ as_component_get_custom (AsComponent *cpt)
  *
  * Since: 0.10.5
  */
-const gchar*
+const gchar *
 as_component_get_custom_value (AsComponent *cpt, const gchar *key)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3477,7 +3475,7 @@ as_component_insert_custom_value (AsComponent *cpt, const gchar *key, const gcha
  *
  * Since: 0.14.0
  **/
-GPtrArray*
+GPtrArray *
 as_component_get_reviews (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3510,7 +3508,7 @@ as_component_add_review (AsComponent *cpt, AsReview *review)
  *
  * Since: 0.11.0
  **/
-GPtrArray*
+GPtrArray *
 as_component_get_content_ratings (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3528,14 +3526,15 @@ as_component_get_content_ratings (AsComponent *cpt)
  *
  * Since: 0.11.0
  **/
-AsContentRating*
+AsContentRating *
 as_component_get_content_rating (AsComponent *cpt, const gchar *kind)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	guint i;
 
 	for (i = 0; i < priv->content_ratings->len; i++) {
-		AsContentRating *content_rating = AS_CONTENT_RATING (g_ptr_array_index (priv->content_ratings, i));
+		AsContentRating *content_rating = AS_CONTENT_RATING (
+		    g_ptr_array_index (priv->content_ratings, i));
 		if (g_strcmp0 (as_content_rating_get_kind (content_rating), kind) == 0)
 			return content_rating;
 	}
@@ -3555,8 +3554,7 @@ void
 as_component_add_content_rating (AsComponent *cpt, AsContentRating *content_rating)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_ptr_array_add (priv->content_ratings,
-			 g_object_ref (content_rating));
+	g_ptr_array_add (priv->content_ratings, g_object_ref (content_rating));
 }
 
 /**
@@ -3571,7 +3569,7 @@ as_component_add_content_rating (AsComponent *cpt, AsContentRating *content_rati
  *
  * Since: 0.11.0
  **/
-AsLaunchable*
+AsLaunchable *
 as_component_get_launchable (AsComponent *cpt, AsLaunchableKind kind)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3593,7 +3591,7 @@ as_component_get_launchable (AsComponent *cpt, AsLaunchableKind kind)
  *
  * Since: 0.11.0
  **/
-GPtrArray*
+GPtrArray *
 as_component_get_launchables (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3614,8 +3612,7 @@ as_component_add_launchable (AsComponent *cpt, AsLaunchable *launchable)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	g_return_if_fail (launchable != NULL);
-	g_ptr_array_add (priv->launchables,
-			 g_object_ref (launchable));
+	g_ptr_array_add (priv->launchables, g_object_ref (launchable));
 }
 
 /**
@@ -3628,7 +3625,7 @@ as_component_add_launchable (AsComponent *cpt, AsLaunchable *launchable)
  *
  * Since: 0.12.0
  **/
-GPtrArray*
+GPtrArray *
 as_component_get_requires (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3645,7 +3642,7 @@ as_component_get_requires (AsComponent *cpt)
  *
  * Since: 0.12.0
  **/
-GPtrArray*
+GPtrArray *
 as_component_get_recommends (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3663,7 +3660,7 @@ as_component_get_recommends (AsComponent *cpt)
  *
  * Since: 0.15.0
  **/
-GPtrArray*
+GPtrArray *
 as_component_get_supports (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3687,17 +3684,206 @@ as_component_add_relation (AsComponent *cpt, AsRelation *relation)
 	AsRelationKind kind = as_relation_get_kind (relation);
 
 	if (kind == AS_RELATION_KIND_REQUIRES) {
-		g_ptr_array_add (priv->requires,
-				g_object_ref (relation));
+		g_ptr_array_add (priv->requires, g_object_ref (relation));
 	} else if (kind == AS_RELATION_KIND_RECOMMENDS) {
-		g_ptr_array_add (priv->recommends,
-				g_object_ref (relation));
+		g_ptr_array_add (priv->recommends, g_object_ref (relation));
 	} else if (kind == AS_RELATION_KIND_SUPPORTS) {
-		g_ptr_array_add (priv->supports,
-				g_object_ref (relation));
+		g_ptr_array_add (priv->supports, g_object_ref (relation));
 	} else {
 		g_warning ("Tried to add relation of unknown kind to component %s", priv->data_id);
 	}
+}
+
+/**
+ * as_component_make_implicit_relations_explicit:
+ *
+ * This is for compatibility with older metadata where we did not yet have
+ * the concept of device-requirements. Therefore, we make implicit assumptions
+ * that they are for desktop-style apps only.
+ *
+ * This function makes such assumptions explicit from being implicit before.
+ */
+static void
+as_component_make_implicit_relations_explicit (AsComponent *cpt)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+	g_autoptr(AsRelation) rel = NULL;
+
+	/* if we have any requirements set, we assume device requirements will have been set explicitly */
+	if (priv->requires->len != 0 || priv->recommends->len != 0 || priv->supports->len != 0)
+		return;
+
+	rel = as_relation_new ();
+	as_relation_set_kind (rel, AS_RELATION_KIND_REQUIRES);
+	as_relation_set_item_kind (rel, AS_RELATION_ITEM_KIND_DISPLAY_LENGTH);
+	as_relation_set_display_side_kind (rel, AS_DISPLAY_SIDE_KIND_SHORTEST);
+	as_relation_set_value_px (rel, 768);
+	as_relation_set_compare (rel, AS_RELATION_COMPARE_GE);
+	as_component_add_relation (cpt, rel);
+	g_clear_pointer (&rel, g_object_unref);
+
+	rel = as_relation_new ();
+	as_relation_set_kind (rel, AS_RELATION_KIND_REQUIRES);
+	as_relation_set_item_kind (rel, AS_RELATION_ITEM_KIND_CONTROL);
+	as_relation_set_value_control_kind (rel, AS_CONTROL_KIND_KEYBOARD);
+	as_component_add_relation (cpt, rel);
+	g_clear_pointer (&rel, g_object_unref);
+
+	rel = as_relation_new ();
+	as_relation_set_kind (rel, AS_RELATION_KIND_REQUIRES);
+	as_relation_set_item_kind (rel, AS_RELATION_ITEM_KIND_CONTROL);
+	as_relation_set_value_control_kind (rel, AS_CONTROL_KIND_POINTING);
+	as_component_add_relation (cpt, rel);
+	g_clear_pointer (&rel, g_object_unref);
+}
+
+/**
+ * as_component_check_relations_internal:
+ */
+static void
+as_component_check_relations_internal (AsComponent *cpt,
+				       AsSystemInfo *sysinfo,
+				       AsPool *pool,
+				       GPtrArray *relations,
+				       gboolean is_template,
+				       GPtrArray *result)
+{
+	for (guint i = 0; i < relations->len; i++) {
+		AsRelation *relation = AS_RELATION (g_ptr_array_index (relations, i));
+		g_autoptr(AsRelationCheckResult) rcr = NULL;
+		g_autoptr(GError) tmp_error = NULL;
+
+		if (is_template) {
+			/* we ignore anything that isn't in a template system info */
+
+			AsRelationItemKind item_kind = as_relation_get_item_kind (relation);
+			if (item_kind == AS_RELATION_ITEM_KIND_ID ||
+			    item_kind == AS_RELATION_ITEM_KIND_MODALIAS ||
+			    item_kind == AS_RELATION_ITEM_KIND_KERNEL ||
+			    item_kind == AS_RELATION_ITEM_KIND_FIRMWARE ||
+			    item_kind == AS_RELATION_ITEM_KIND_HARDWARE ||
+			    item_kind == AS_RELATION_ITEM_KIND_INTERNET)
+				continue;
+		}
+
+		rcr = as_relation_is_satisfied (relation, sysinfo, pool, &tmp_error);
+		if (rcr == NULL) {
+			rcr = as_relation_check_result_new ();
+			as_relation_check_result_set_status (rcr, AS_RELATION_STATUS_ERROR);
+			as_relation_check_result_set_relation (rcr, relation);
+
+			as_relation_check_result_set_error_code (rcr, tmp_error->code);
+			as_relation_check_result_set_message (rcr, "%s", tmp_error->message);
+		}
+
+		g_ptr_array_add (result, g_steal_pointer (&rcr));
+	}
+}
+
+/**
+ * as_component_check_relations:
+ * @cpt: a #AsComponent instance.
+ * @sysinfo: (nullable): an #AsSystemInfo to use for system information.
+ * @pool: (nullable): an #AsPool to find component dependencies in.
+ * @rel_kind: the kind of relations to check
+ *
+ * Verifies the respective relations and presents whether the system specified
+ * in #AsSystemInfo @sysinfo and data from @pool supply the requested facilities.
+ *
+ * Returns: (transfer container) (element-type AsRelationCheckResult): An array of #AsRelationCheckResult
+ *
+ * Since: 1.0.0
+ */
+GPtrArray *
+as_component_check_relations (AsComponent *cpt,
+			      AsSystemInfo *sysinfo,
+			      AsPool *pool,
+			      AsRelationKind rel_kind)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+	GPtrArray *result = g_ptr_array_new_with_free_func (g_object_unref);
+
+	/* compatibility for older metadata */
+	as_component_make_implicit_relations_explicit (cpt);
+
+	if (rel_kind == AS_RELATION_KIND_REQUIRES)
+		as_component_check_relations_internal (cpt,
+						       sysinfo,
+						       pool,
+						       priv->requires,
+						       FALSE,
+						       result);
+	else if (rel_kind == AS_RELATION_KIND_RECOMMENDS)
+		as_component_check_relations_internal (cpt,
+						       sysinfo,
+						       pool,
+						       priv->recommends,
+						       FALSE,
+						       result);
+	else if (rel_kind == AS_RELATION_KIND_SUPPORTS)
+		as_component_check_relations_internal (cpt,
+						       sysinfo,
+						       pool,
+						       priv->supports,
+						       FALSE,
+						       result);
+
+	return result;
+}
+
+/**
+ * as_component_get_system_compatibility_score:
+ * @cpt: a #AsComponent instance.
+ * @sysinfo: an #AsSystemInfo to use for system information.
+ * @is_template: if %TRUE, treat system info as neutral template, ignoring any peripheral devices or kernel relations.
+ * @results: (out callee-allocates) (optional) (element-type AsRelationCheckResult) (transfer container): Receive the resulting check results
+ *
+ * Return a score between 0 and 100 determining how compatible the component
+ * is with the system configuration provided as parameter.
+ *
+ * 0 means the componsnt will not work at all, while 100 is best compatibility.
+ *
+ * Returns: a compatibility score between 0 and 100
+ */
+gint
+as_component_get_system_compatibility_score (AsComponent *cpt,
+					     AsSystemInfo *sysinfo,
+					     gboolean is_template,
+					     GPtrArray **results)
+{
+	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+	gint score = 0;
+	g_autoptr(GPtrArray) rc_results = g_ptr_array_new_with_free_func (g_object_unref);
+
+	g_return_val_if_fail (sysinfo != NULL, 0);
+
+	/* compatibility for older metadata */
+	as_component_make_implicit_relations_explicit (cpt);
+
+	as_component_check_relations_internal (cpt,
+					       sysinfo,
+					       NULL,
+					       priv->requires,
+					       is_template,
+					       rc_results);
+	as_component_check_relations_internal (cpt,
+					       sysinfo,
+					       NULL,
+					       priv->recommends,
+					       is_template,
+					       rc_results);
+	as_component_check_relations_internal (cpt,
+					       sysinfo,
+					       NULL,
+					       priv->supports,
+					       is_template,
+					       rc_results);
+
+	score = as_relation_check_results_get_compatibility_score (rc_results);
+
+	if (results != NULL)
+		*results = g_steal_pointer (&rc_results);
+	return score;
 }
 
 /**
@@ -3708,7 +3894,7 @@ as_component_add_relation (AsComponent *cpt, AsRelation *relation)
  *
  * Returns: (transfer none) (element-type utf8): an array of component-IDs
  */
-GPtrArray*
+GPtrArray *
 as_component_get_replaces (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3732,8 +3918,7 @@ as_component_add_replaces (AsComponent *cpt, const gchar *cid)
 	if (priv->replaces == NULL)
 		priv->replaces = g_ptr_array_new_with_free_func (g_free);
 
-	g_ptr_array_add (priv->replaces,
-			 g_strdup (cid));
+	g_ptr_array_add (priv->replaces, g_strdup (cid));
 }
 
 /**
@@ -3746,7 +3931,7 @@ as_component_add_replaces (AsComponent *cpt, const gchar *cid)
  *
  * Since: 0.15.0
  **/
-GPtrArray*
+GPtrArray *
 as_component_get_agreements (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3780,7 +3965,7 @@ as_component_add_agreement (AsComponent *cpt, AsAgreement *agreement)
  *
  * Since: 0.12.1
  **/
-AsAgreement*
+AsAgreement *
 as_component_get_agreement_by_kind (AsComponent *cpt, AsAgreementKind kind)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3805,7 +3990,7 @@ as_component_get_agreement_by_kind (AsComponent *cpt, AsAgreementKind kind)
  *
  * Since: 0.15.2
  **/
-AsBranding*
+AsBranding *
 as_component_get_branding (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3833,67 +4018,6 @@ as_component_set_branding (AsComponent *cpt, AsBranding *branding)
 }
 
 /**
- * as_component_is_free:
- * @cpt: a #AsComponent instance.
- *
- * Returns %TRUE if this component is free and open source software.
- * To determine this status, this function will check if it comes
- * from a vetted free-software-only source or whether its licenses
- * are only free software licenses.
- *
- * Returns: %TRUE if this component is free software.
- *
- * Since: 0.15.5
- */
-gboolean
-as_component_is_free (AsComponent *cpt)
-{
-	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	gboolean is_free = as_license_is_free_license (priv->project_license);
-	if (is_free)
-		return TRUE;
-
-	/* The license check yielded a non-free license, which is also returned
-	 * if no license was set. We also need to check the repository origin
-	 * for packaged components
-	 * TODO: We probably want a lot of this logic in a singleton, so we don't parse
-	 * text files too often. */
-	if (as_is_empty (priv->origin))
-		return FALSE;
-	if (as_utils_get_component_bundle_kind (cpt) == AS_BUNDLE_KIND_PACKAGE) {
-		gboolean ret;
-		g_autofree gchar *distro_id = NULL;
-		g_auto(GStrv) origin_globs = NULL;
-		g_autoptr(GKeyFile) kf = g_key_file_new ();
-		ret = g_key_file_load_from_file (kf, AS_CONFIG_NAME, G_KEY_FILE_NONE, NULL);
-		if (!ret) {
-			g_debug ("Unable to read configuration file %s", AS_CONFIG_NAME);
-			return FALSE;
-		}
-#if GLIB_CHECK_VERSION(2,64,0)
-		distro_id = g_get_os_info (G_OS_INFO_KEY_ID);
-		if (distro_id == NULL) {
-			g_warning ("Unable to determine the ID for this operating system.");
-			return FALSE;
-		}
-#else
-		distro_id = g_strdup ("general");
-#endif
-		origin_globs = g_key_file_get_string_list (kf, distro_id, "FreeRepos", NULL, NULL);
-		if (origin_globs == NULL)
-			return FALSE;
-
-		/* return a free component if any of the origin wildcards matches */
-		for (guint i = 0; origin_globs[i] != NULL; i++) {
-			if (fnmatch (origin_globs[i], priv->origin, FNM_NOESCAPE) == 0)
-				return TRUE;
-		}
-	}
-
-	return is_free;
-}
-
-/**
  * as_component_get_context:
  * @cpt: a #AsComponent instance.
  *
@@ -3906,7 +4030,7 @@ as_component_is_free (AsComponent *cpt)
  *
  * Since: 0.11.2
  */
-AsContext*
+AsContext *
 as_component_get_context (AsComponent *cpt)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -3929,10 +4053,15 @@ as_component_set_context (AsComponent *cpt, AsContext *context)
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	if (priv->context != NULL)
 		g_object_unref (priv->context);
+
+	if (context == NULL) {
+		priv->context = NULL;
+		return;
+	}
+
 	priv->context = g_object_ref (context);
 
 	/* reset individual properties, so the new context overrides them */
-	as_ref_string_assign_safe (&priv->active_locale_override, NULL);
 	as_ref_string_assign_safe (&priv->origin, NULL);
 
 	g_free (g_steal_pointer (&priv->arch));
@@ -3944,7 +4073,7 @@ as_component_set_context (AsComponent *cpt, AsContext *context)
 static void
 as_copy_l10n_hashtable_hfunc (gpointer key, gpointer value, gpointer user_data)
 {
-	GHashTable *dest = (GHashTable*) user_data;
+	GHashTable *dest = (GHashTable *) user_data;
 	g_hash_table_insert (dest, g_ref_string_acquire (key), g_strdup (value));
 }
 
@@ -3964,9 +4093,7 @@ as_copy_l10n_hashtable (GHashTable *src, GHashTable *dest)
 	g_hash_table_remove_all (dest);
 
 	/* copy */
-	g_hash_table_foreach (src,
-			      &as_copy_l10n_hashtable_hfunc,
-			      dest);
+	g_hash_table_foreach (src, &as_copy_l10n_hashtable_hfunc, dest);
 }
 
 /**
@@ -3991,8 +4118,7 @@ as_copy_gobject_array (GPtrArray *src, GPtrArray *dest)
 	/* copy */
 	for (i = 0; i < src->len; i++) {
 		GObject *obj = G_OBJECT (g_ptr_array_index (src, i));
-		g_ptr_array_add (dest,
-				 g_object_ref (obj));
+		g_ptr_array_add (dest, g_object_ref (obj));
 	}
 }
 
@@ -4034,14 +4160,16 @@ as_component_merge_with_mode (AsComponent *cpt, AsComponent *source, AsMergeKind
 
 			cat_table = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 			for (i = 0; i < cats->len; i++) {
-				const gchar *cat = (const gchar*) g_ptr_array_index (cats, i);
+				const gchar *cat = (const gchar *) g_ptr_array_index (cats, i);
 				g_hash_table_add (cat_table, g_strdup (cat));
 			}
 
 			dest_categories = as_component_get_categories (dest_cpt);
 			if (dest_categories->len > 0) {
 				for (i = 0; i < dest_categories->len; i++) {
-					const gchar *cat = (const gchar*) g_ptr_array_index (dest_categories, i);
+					const gchar *cat = (const gchar *) g_ptr_array_index (
+					    dest_categories,
+					    i);
 					g_hash_table_add (cat_table, g_strdup (cat));
 				}
 			}
@@ -4054,8 +4182,9 @@ as_component_merge_with_mode (AsComponent *cpt, AsComponent *source, AsMergeKind
 		suggestions = as_component_get_suggested (src_cpt);
 		if (suggestions != NULL) {
 			for (i = 0; i < suggestions->len; i++) {
-				as_component_add_suggested (dest_cpt,
-						    AS_SUGGESTED (g_ptr_array_index (suggestions, i)));
+				as_component_add_suggested (
+				    dest_cpt,
+				    AS_SUGGESTED (g_ptr_array_index (suggestions, i)));
 			}
 		}
 
@@ -4097,7 +4226,8 @@ as_component_merge_with_mode (AsComponent *cpt, AsComponent *source, AsMergeKind
 
 		/* merge bundles */
 		if (as_component_has_bundle (src_cpt))
-			as_component_set_bundles_array (dest_cpt, as_component_get_bundles (src_cpt));
+			as_component_set_bundles_array (dest_cpt,
+							as_component_get_bundles (src_cpt));
 
 		/* merge icons */
 		as_copy_gobject_array (src_priv->icons, dest_priv->icons);
@@ -4107,8 +4237,10 @@ as_component_merge_with_mode (AsComponent *cpt, AsComponent *source, AsMergeKind
 	}
 
 	g_debug ("Merged data for '[%i] %s' <<- '[%i] %s'",
-		 as_component_get_origin_kind (dest_cpt), as_component_get_data_id (dest_cpt),
-		 as_component_get_origin_kind (src_cpt),  as_component_get_data_id (src_cpt));
+		 as_component_get_origin_kind (dest_cpt),
+		 as_component_get_data_id (dest_cpt),
+		 as_component_get_origin_kind (src_cpt),
+		 as_component_get_data_id (src_cpt));
 }
 
 /**
@@ -4167,7 +4299,7 @@ as_component_load_provides_from_xml (AsComponent *cpt, xmlNode *node)
 		if (iter->type != XML_ELEMENT_NODE)
 			continue;
 
-		node_name = (gchar*) iter->name;
+		node_name = (gchar *) iter->name;
 		content = as_xml_get_node_value (iter);
 		if (content == NULL)
 			continue;
@@ -4188,20 +4320,27 @@ as_component_load_provides_from_xml (AsComponent *cpt, xmlNode *node)
 			g_autofree gchar *fw_type = NULL;
 			fw_type = as_xml_get_prop_value (iter, "type");
 			if (g_strcmp0 (fw_type, "runtime") == 0)
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_FIRMWARE_RUNTIME, content);
+				as_component_add_provided_item (cpt,
+								AS_PROVIDED_KIND_FIRMWARE_RUNTIME,
+								content);
 			else if (g_strcmp0 (fw_type, "flashed") == 0)
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_FIRMWARE_FLASHED, content);
-		} else if (g_strcmp0 (node_name, "python2") == 0) {
-			as_component_add_provided_item (cpt, AS_PROVIDED_KIND_PYTHON_2, content);
+				as_component_add_provided_item (cpt,
+								AS_PROVIDED_KIND_FIRMWARE_FLASHED,
+								content);
 		} else if (g_strcmp0 (node_name, "python3") == 0) {
 			as_component_add_provided_item (cpt, AS_PROVIDED_KIND_PYTHON, content);
 		} else if (g_strcmp0 (node_name, "dbus") == 0) {
 			g_autofree gchar *dbus_type = as_xml_get_prop_value (iter, "type");
 
 			if (g_strcmp0 (dbus_type, "system") == 0)
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_DBUS_SYSTEM, content);
-			else if ((g_strcmp0 (dbus_type, "user") == 0) || (g_strcmp0 (dbus_type, "session") == 0))
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_DBUS_USER, content);
+				as_component_add_provided_item (cpt,
+								AS_PROVIDED_KIND_DBUS_SYSTEM,
+								content);
+			else if ((g_strcmp0 (dbus_type, "user") == 0) ||
+				 (g_strcmp0 (dbus_type, "session") == 0))
+				as_component_add_provided_item (cpt,
+								AS_PROVIDED_KIND_DBUS_USER,
+								content);
 		}
 	}
 }
@@ -4210,7 +4349,7 @@ as_component_load_provides_from_xml (AsComponent *cpt, xmlNode *node)
  * as_component_xml_parse_languages_node:
  */
 static void
-as_component_xml_parse_languages_node (AsComponent* cpt, xmlNode* node)
+as_component_xml_parse_languages_node (AsComponent *cpt, xmlNode *node)
 {
 	xmlNode *iter;
 
@@ -4219,7 +4358,7 @@ as_component_xml_parse_languages_node (AsComponent* cpt, xmlNode* node)
 		if (iter->type != XML_ELEMENT_NODE)
 			continue;
 
-		if (g_strcmp0 ((gchar*) iter->name, "lang") == 0) {
+		if (g_strcmp0 ((gchar *) iter->name, "lang") == 0) {
 			guint64 percentage = 0;
 			g_autofree gchar *locale = NULL;
 			g_autofree gchar *prop = NULL;
@@ -4270,7 +4409,10 @@ as_component_load_launchable_from_xml (AsComponent *cpt, xmlNode *node)
  * as_component_load_relations_from_xml:
  */
 static void
-as_component_load_relations_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, AsRelationKind kind)
+as_component_load_relations_from_xml (AsComponent *cpt,
+				      AsContext *ctx,
+				      xmlNode *node,
+				      AsRelationKind kind)
 {
 	for (xmlNode *iter = node->children; iter != NULL; iter = iter->next) {
 		g_autoptr(AsRelation) relation = NULL;
@@ -4293,20 +4435,10 @@ as_component_load_relations_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode 
 static void
 as_component_load_keywords_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node)
 {
-	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-
 	if (as_context_get_style (ctx) == AS_FORMAT_STYLE_METAINFO) {
-		GHashTableIter ht_iter;
-		gpointer ht_key;
-		gpointer ht_value;
-		g_autoptr(GHashTable) temp_kw = g_hash_table_new_full (g_str_hash,
-								       g_str_equal,
-								       NULL,
-								       (GDestroyNotify) g_ptr_array_unref);
-
 		for (xmlNode *iter = node->children; iter != NULL; iter = iter->next) {
 			g_autofree gchar *lang = NULL;
-			GPtrArray *array = NULL;
+			g_autofree gchar *keyword = NULL;
 
 			if (iter->type != XML_ELEMENT_NODE)
 				continue;
@@ -4314,75 +4446,17 @@ as_component_load_keywords_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *
 			if (lang == NULL)
 				continue;
 
-			array = g_hash_table_lookup (temp_kw, lang);
-			if (array == NULL) {
-				array = g_ptr_array_new ();
-				g_hash_table_insert (temp_kw,
-						     g_ref_string_new_intern (lang),
-						     array);
-			}
-
-			g_ptr_array_add (array,	as_xml_get_node_value (iter));
-		}
-
-		/* Deconstruct hash table and add contents to internal table.
-		 * We try to duplicate as little memory as possible, as this function
-		 * may be called quite often when processing many metainfo files.
-		 * Note the the PtrArray with the terms will not auto-free its contents,
-		 * and the hash table does not own its key and will not free it wither. */
-		g_hash_table_iter_init (&ht_iter, temp_kw);
-		while (g_hash_table_iter_next (&ht_iter, &ht_key, &ht_value)) {
-			GPtrArray *array = (GPtrArray*) ht_value;
-			gchar **strv = g_new0 (gchar*, array->len + 1);
-			for (guint i = 0; i < array->len; i++)
-				strv[i] = (gchar*) g_ptr_array_index (array, i);
-
-			g_hash_table_insert (priv->keywords,
-					     ht_key, /* GRefString */
-					     strv);
+			keyword = as_xml_get_node_value (iter);
+			as_component_add_keyword (cpt, keyword, lang);
 		}
 	} else {
 		g_autofree gchar *lang = as_xml_get_node_locale_match (ctx, node);
 		if (lang != NULL) {
-			g_auto(GStrv) kw_array = NULL;
-			kw_array = as_xml_get_children_as_strv (node, "keyword");
-			as_component_set_keywords (cpt, kw_array, lang);
+			g_autoptr(GPtrArray) keywords = NULL;
+			keywords = as_xml_get_children_as_string_list (node, "keyword");
+			as_component_set_keywords (cpt, keywords, lang, FALSE);
 		}
 	}
-}
-
-/**
- * as_component_releases_compare:
- *
- * Callback for releases #GPtrArray sorting.
- *
- * NOTE: We sort in descending order here, so the most recent
- * release ends up at the top of the list.
- */
-gint
-as_component_releases_compare (gconstpointer a, gconstpointer b)
-{
-	AsRelease **rel1 = (AsRelease **) a;
-	AsRelease **rel2 = (AsRelease **) b;
-	gint ret;
-
-	/* compare version strings */
-	ret = as_release_vercmp (*rel1, *rel2);
-	if (ret == 0)
-		return 0;
-	return (ret >= 1)? -1 : 1;
-}
-
-/**
- * as_component_sort_releases:
- *
- * Sort releases by their release date, starting with the most recent release.
- */
-static void
-as_component_sort_releases (AsComponent *cpt)
-{
-	AsComponentPrivate *priv = GET_PRIVATE (cpt);
-	g_ptr_array_sort (priv->releases, as_component_releases_compare);
 }
 
 /**
@@ -4405,11 +4479,13 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 	g_autofree gchar *date_eol_str = NULL;
 
 	/* sanity check */
-	if ((g_strcmp0 ((gchar*) node->name, "component") != 0) && (g_strcmp0 ((gchar*) node->name, "application") != 0)) {
+	if ((g_strcmp0 ((gchar *) node->name, "component") != 0) &&
+	    (g_strcmp0 ((gchar *) node->name, "application") != 0)) {
 		g_set_error (error,
-				AS_METADATA_ERROR,
-				AS_METADATA_ERROR_FAILED,
-				"Expected 'component' tag, but got '%s' instead.", (gchar*) node->name);
+			     AS_METADATA_ERROR,
+			     AS_METADATA_ERROR_FAILED,
+			     "Expected 'component' tag, but got '%s' instead.",
+			     (gchar *) node->name);
 		return FALSE;
 	}
 
@@ -4452,13 +4528,14 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 		if (iter->type != XML_ELEMENT_NODE)
 			continue;
 
-		node_name = (const gchar*) iter->name;
+		node_name = (const gchar *) iter->name;
 		tag_id = as_xml_tag_from_string (node_name);
 
 		if (tag_id == AS_TAG_ID) {
 			g_autofree gchar *content = as_xml_get_node_value (iter);
 			as_component_set_id (cpt, content);
-			if ((as_context_get_style (ctx) == AS_FORMAT_STYLE_METAINFO) && (priv->kind == AS_COMPONENT_KIND_GENERIC)) {
+			if ((as_context_get_style (ctx) == AS_FORMAT_STYLE_METAINFO) &&
+			    (priv->kind == AS_COMPONENT_KIND_GENERIC)) {
 				/* parse legacy component type information */
 				as_component_set_kind_from_node (cpt, iter);
 			}
@@ -4493,7 +4570,9 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 					g_free (desc);
 				}
 			} else {
-				as_xml_parse_metainfo_description_node (ctx, iter, priv->description);
+				as_xml_parse_metainfo_description_node (ctx,
+									iter,
+									priv->description);
 			}
 		} else if (tag_id == AS_TAG_ICON) {
 			g_autoptr(AsIcon) icon = NULL;
@@ -4514,9 +4593,7 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 					as_component_add_url (cpt, url_kind, content);
 			}
 		} else if (tag_id == AS_TAG_CATEGORIES) {
-			as_xml_add_children_values_to_array (iter,
-							     "category",
-							     priv->categories);
+			as_xml_add_children_values_to_array (iter, "category", priv->categories);
 		} else if (tag_id == AS_TAG_KEYWORDS) {
 			as_component_load_keywords_from_xml (cpt, ctx, iter);
 		} else if (tag_id == AS_TAG_MIMETYPES) {
@@ -4528,9 +4605,10 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 			 * to parse them here. */
 			mime_list = as_xml_get_children_as_string_list (iter, "mimetype");
 			for (i = 0; i < mime_list->len; i++) {
-				as_component_add_provided_item (cpt,
-								AS_PROVIDED_KIND_MIMETYPE,
-								(const gchar*) g_ptr_array_index (mime_list, i));
+				as_component_add_provided_item (
+				    cpt,
+				    AS_PROVIDED_KIND_MEDIATYPE,
+				    (const gchar *) g_ptr_array_index (mime_list, i));
 			}
 		} else if (tag_id == AS_TAG_PROVIDES) {
 			as_component_load_provides_from_xml (cpt, iter);
@@ -4540,9 +4618,12 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 			for (iter2 = iter->children; iter2 != NULL; iter2 = iter2->next) {
 				if (iter2->type != XML_ELEMENT_NODE)
 					continue;
-				if (g_strcmp0 ((const gchar*) iter2->name, "screenshot") == 0) {
+				if (g_strcmp0 ((const gchar *) iter2->name, "screenshot") == 0) {
 					g_autoptr(AsScreenshot) screenshot = as_screenshot_new ();
-					if (as_screenshot_load_from_xml (screenshot, ctx, iter2, NULL))
+					if (as_screenshot_load_from_xml (screenshot,
+									 ctx,
+									 iter2,
+									 NULL))
 						as_component_add_screenshot (cpt, screenshot);
 				}
 			}
@@ -4555,46 +4636,34 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 		} else if (tag_id == AS_TAG_PROJECT_GROUP) {
 			g_autofree gchar *content = as_xml_get_node_value (iter);
 			as_component_set_project_group (cpt, content);
+		} else if (tag_id == AS_TAG_DEVELOPER) {
+			g_autoptr(AsDeveloper) developer = as_developer_new ();
+			if (as_developer_load_from_xml (developer, ctx, iter, NULL)) {
+				if (priv->developer != NULL)
+					g_object_unref (priv->developer);
+				priv->developer = g_steal_pointer (&developer);
+			}
 		} else if (tag_id == AS_TAG_DEVELOPER_NAME) {
+			/* DEPRECATED */
 			g_autofree gchar *lang = NULL;
 			g_autofree gchar *content = as_xml_get_node_value (iter);
 			lang = as_xml_get_node_locale_match (ctx, iter);
-			if (lang != NULL)
-				as_component_set_developer_name (cpt, content, lang);
+			if (lang != NULL) {
+				if (priv->developer == NULL)
+					priv->developer = as_developer_new_with_context (ctx);
+				as_developer_set_name (priv->developer, content, lang);
+			}
 		} else if (tag_id == AS_TAG_COMPULSORY_FOR_DESKTOP) {
 			g_autofree gchar *content = as_xml_get_node_value (iter);
 			if (content != NULL)
 				as_component_set_compulsory_for_desktop (cpt, content);
 		} else if (tag_id == AS_TAG_RELEASES) {
-			g_autofree gchar *releases_kind_str = as_xml_get_prop_value (iter, "type");
-			priv->releases_kind = as_releases_kind_from_string (releases_kind_str);
-			if (priv->releases_kind == AS_RELEASES_KIND_EXTERNAL) {
-				g_autofree gchar *release_url_prop = as_xml_get_prop_value (iter, "url");
-				if (release_url_prop != NULL) {
-					g_free (priv->releases_url);
-					/* handle the media baseurl */
-					if (as_context_has_media_baseurl (ctx))
-						priv->releases_url = g_strconcat (as_context_get_media_baseurl (ctx), "/", release_url_prop, NULL);
-					else
-						priv->releases_url = g_steal_pointer (&release_url_prop);
-				}
-			}
+			as_release_list_load_from_xml (priv->releases, ctx, iter, NULL);
 
-			/* only read release data if it is not external */
-			if (priv->releases_kind != AS_RELEASES_KIND_EXTERNAL) {
-				for (xmlNode *iter2 = iter->children; iter2 != NULL; iter2 = iter2->next) {
-					if (iter2->type != XML_ELEMENT_NODE)
-						continue;
-					if (g_strcmp0 ((const gchar*) iter2->name, "release") == 0) {
-						g_autoptr(AsRelease) release = as_release_new ();
-						if (as_release_load_from_xml (release, ctx, iter2, NULL))
-							g_ptr_array_add (priv->releases, g_steal_pointer (&release));
-					}
-				}
-			}
 		} else if (tag_id == AS_TAG_EXTENDS) {
 			g_autofree gchar *content = as_xml_get_node_value (iter);
 			as_component_add_extends (cpt, content);
+
 		} else if (tag_id == AS_TAG_LANGUAGES) {
 			as_component_xml_parse_languages_node (cpt, iter);
 		} else if (tag_id == AS_TAG_LAUNCHABLE) {
@@ -4625,11 +4694,20 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 				g_ptr_array_unref (priv->replaces);
 			priv->replaces = as_xml_get_children_as_string_list (iter, "id");
 		} else if (tag_id == AS_TAG_REQUIRES) {
-			as_component_load_relations_from_xml (cpt, ctx, iter, AS_RELATION_KIND_REQUIRES);
+			as_component_load_relations_from_xml (cpt,
+							      ctx,
+							      iter,
+							      AS_RELATION_KIND_REQUIRES);
 		} else if (tag_id == AS_TAG_RECOMMENDS) {
-			as_component_load_relations_from_xml (cpt, ctx, iter, AS_RELATION_KIND_RECOMMENDS);
+			as_component_load_relations_from_xml (cpt,
+							      ctx,
+							      iter,
+							      AS_RELATION_KIND_RECOMMENDS);
 		} else if (tag_id == AS_TAG_SUPPORTS) {
-			as_component_load_relations_from_xml (cpt, ctx, iter, AS_RELATION_KIND_SUPPORTS);
+			as_component_load_relations_from_xml (cpt,
+							      ctx,
+							      iter,
+							      AS_RELATION_KIND_SUPPORTS);
 		} else if (tag_id == AS_TAG_AGREEMENT) {
 			g_autoptr(AsAgreement) agreement = as_agreement_new ();
 			if (as_agreement_load_from_xml (agreement, ctx, iter, NULL))
@@ -4638,7 +4716,7 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 			for (xmlNode *sn = iter->children; sn != NULL; sn = sn->next) {
 				if (sn->type != XML_ELEMENT_NODE)
 					continue;
-				if (g_strcmp0 ((const gchar*) sn->name, "review") == 0) {
+				if (g_strcmp0 ((const gchar *) sn->name, "review") == 0) {
 					g_autoptr(AsReview) review = as_review_new ();
 					if (as_review_load_from_xml (review, ctx, sn, NULL))
 						as_component_add_review (cpt, review);
@@ -4655,11 +4733,22 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 				if (sn->type != XML_ELEMENT_NODE)
 					continue;
 				ns = as_xml_get_prop_value (sn, "namespace");
-				if (sn == NULL)
-					continue;
 				value = as_xml_get_node_value (sn);
 				as_component_add_tag (cpt, ns, value);
 			}
+
+		} else if (tag_id == AS_TAG_REFERENCES) {
+			xmlNode *iter2;
+
+			for (iter2 = iter->children; iter2 != NULL; iter2 = iter2->next) {
+				g_autoptr(AsReference) reference = NULL;
+				if (iter2->type != XML_ELEMENT_NODE)
+					continue;
+				reference = as_reference_new ();
+				if (as_reference_load_from_xml (reference, ctx, iter2, NULL))
+					as_component_add_reference (cpt, reference);
+			}
+
 		} else if (as_context_get_internal_mode (ctx)) {
 			g_autofree gchar *content = as_xml_get_node_value (iter);
 			/* internal information */
@@ -4689,9 +4778,9 @@ as_component_load_from_xml (AsComponent *cpt, AsContext *ctx, xmlNode *node, GEr
 	/* sanity check */
 	if (as_is_empty (priv->id)) {
 		g_set_error_literal (error,
-				AS_METADATA_ERROR,
-				AS_METADATA_ERROR_FAILED,
-				"Component is invalid (essential tags are missing or empty).");
+				     AS_METADATA_ERROR,
+				     AS_METADATA_ERROR_FAILED,
+				     "Component is invalid (essential tags are missing or empty).");
 		return FALSE;
 	}
 
@@ -4720,8 +4809,8 @@ as_component_xml_keywords_to_node (AsComponent *cpt, AsContext *ctx, xmlNode *ro
 
 	for (GList *link = keys; link != NULL; link = link->next) {
 		gboolean has_locale = FALSE;
-		const gchar *locale = (const gchar*) link->data;
-		gchar **kws = (gchar**) g_hash_table_lookup (priv->keywords, locale);
+		const gchar *locale = (const gchar *) link->data;
+		GPtrArray *kws = g_hash_table_lookup (priv->keywords, locale);
 
 		/* skip cruft */
 		if (as_is_cruft_locale (locale))
@@ -4729,17 +4818,17 @@ as_component_xml_keywords_to_node (AsComponent *cpt, AsContext *ctx, xmlNode *ro
 
 		has_locale = g_strcmp0 (locale, "C") != 0;
 		if (as_context_get_style (ctx) == AS_FORMAT_STYLE_METAINFO) {
-
-			for (guint i = 0; kws[i] != NULL; i++) {
-				xmlNode *kw_node = as_xml_add_text_node (mi_kw_node,
-									 "keyword",
-									 kws[i]);
+			for (guint i = 0; i < kws->len; i++) {
+				xmlNode *kw_node = as_xml_add_text_node (
+				    mi_kw_node,
+				    "keyword",
+				    (const gchar *) g_ptr_array_index (kws, i));
 
 				if (has_locale)
 					as_xml_add_text_prop (kw_node, "xml:lang", locale);
 			}
 		} else {
-			xmlNode *kws_node = as_xml_add_node_list_strv (root, "keywords", "keyword", kws);
+			xmlNode *kws_node = as_xml_add_node_list (root, "keywords", "keyword", kws);
 			if (kws_node == NULL)
 				continue;
 			if (has_locale)
@@ -4768,86 +4857,68 @@ as_component_xml_serialize_provides (AsComponent *cpt, xmlNode *cnode)
 
 		items = as_provided_get_items (prov);
 		switch (as_provided_get_kind (prov)) {
-			case AS_PROVIDED_KIND_ID:
-				as_xml_add_node_list (node, NULL,
-							"id",
-							items);
-				break;
-			case AS_PROVIDED_KIND_MEDIATYPE:
-				as_xml_add_node_list (node, NULL,
-							"mediatype",
-							items);
-				break;
-			case AS_PROVIDED_KIND_LIBRARY:
-				as_xml_add_node_list (node, NULL,
-							"library",
-							items);
-				break;
-			case AS_PROVIDED_KIND_BINARY:
-				as_xml_add_node_list (node, NULL,
-							"binary",
-							items);
-				break;
-			case AS_PROVIDED_KIND_MODALIAS:
-				as_xml_add_node_list (node, NULL,
-							"modalias",
-							items);
-				break;
-			case AS_PROVIDED_KIND_PYTHON_2:
-				as_xml_add_node_list (node, NULL,
-							"python2",
-							items);
-				break;
-			case AS_PROVIDED_KIND_PYTHON:
-				as_xml_add_node_list (node, NULL,
-							"python3",
-							items);
-				break;
-			case AS_PROVIDED_KIND_FONT:
-				as_xml_add_node_list (node, NULL,
-							"font",
-							items);
-				break;
-			case AS_PROVIDED_KIND_FIRMWARE_RUNTIME:
-				for (j = 0; j < items->len; j++) {
-					xmlNode *n;
-					n = as_xml_add_text_node (node,
-								  "firmware",
-								  g_ptr_array_index (items, j));
-					as_xml_add_text_prop (n, "type", "runtime");
-				}
-				break;
-			case AS_PROVIDED_KIND_FIRMWARE_FLASHED:
-				for (j = 0; j < items->len; j++) {
-					xmlNode *n;
-					n = as_xml_add_text_node (node,
-								  "firmware",
-								  g_ptr_array_index (items, j));
-					as_xml_add_text_prop (n, "type", "flashed");
-				}
-				break;
-			case AS_PROVIDED_KIND_DBUS_SYSTEM:
-				for (j = 0; j < items->len; j++) {
-					xmlNode *n;
-					n = as_xml_add_text_node (node,
-								  "dbus",
-								  g_ptr_array_index (items, j));
-					as_xml_add_text_prop (n, "type", "system");
-				}
-				break;
-			case AS_PROVIDED_KIND_DBUS_USER:
-				for (j = 0; j < items->len; j++) {
-					xmlNode *n;
-					n = as_xml_add_text_node (node,
-								  "dbus",
-								  g_ptr_array_index (items, j));
-					as_xml_add_text_prop (n, "type", "user");
-				}
-				break;
+		case AS_PROVIDED_KIND_ID:
+			as_xml_add_node_list (node, NULL, "id", items);
+			break;
+		case AS_PROVIDED_KIND_MEDIATYPE:
+			as_xml_add_node_list (node, NULL, "mediatype", items);
+			break;
+		case AS_PROVIDED_KIND_LIBRARY:
+			as_xml_add_node_list (node, NULL, "library", items);
+			break;
+		case AS_PROVIDED_KIND_BINARY:
+			as_xml_add_node_list (node, NULL, "binary", items);
+			break;
+		case AS_PROVIDED_KIND_MODALIAS:
+			as_xml_add_node_list (node, NULL, "modalias", items);
+			break;
+		case AS_PROVIDED_KIND_PYTHON:
+			as_xml_add_node_list (node, NULL, "python3", items);
+			break;
+		case AS_PROVIDED_KIND_FONT:
+			as_xml_add_node_list (node, NULL, "font", items);
+			break;
+		case AS_PROVIDED_KIND_FIRMWARE_RUNTIME:
+			for (j = 0; j < items->len; j++) {
+				xmlNode *n;
+				n = as_xml_add_text_node (node,
+							  "firmware",
+							  g_ptr_array_index (items, j));
+				as_xml_add_text_prop (n, "type", "runtime");
+			}
+			break;
+		case AS_PROVIDED_KIND_FIRMWARE_FLASHED:
+			for (j = 0; j < items->len; j++) {
+				xmlNode *n;
+				n = as_xml_add_text_node (node,
+							  "firmware",
+							  g_ptr_array_index (items, j));
+				as_xml_add_text_prop (n, "type", "flashed");
+			}
+			break;
+		case AS_PROVIDED_KIND_DBUS_SYSTEM:
+			for (j = 0; j < items->len; j++) {
+				xmlNode *n;
+				n = as_xml_add_text_node (node,
+							  "dbus",
+							  g_ptr_array_index (items, j));
+				as_xml_add_text_prop (n, "type", "system");
+			}
+			break;
+		case AS_PROVIDED_KIND_DBUS_USER:
+			for (j = 0; j < items->len; j++) {
+				xmlNode *n;
+				n = as_xml_add_text_node (node,
+							  "dbus",
+							  g_ptr_array_index (items, j));
+				as_xml_add_text_prop (n, "type", "user");
+			}
+			break;
 
-			default:
-				g_debug ("Couldn't serialize provided-item type '%s'", as_provided_kind_to_string (as_provided_get_kind (prov)));
-				break;
+		default:
+			g_debug ("Couldn't serialize provided-item type '%s'",
+				 as_provided_kind_to_string (as_provided_get_kind (prov)));
+			break;
 		}
 	}
 }
@@ -4875,14 +4946,12 @@ as_component_xml_serialize_languages (AsComponent *cpt, xmlNode *cptnode)
 		xmlNode *l_node;
 		g_autofree gchar *percentage_str = NULL;
 
-		locale = (const gchar*) link->data;
+		locale = (const gchar *) link->data;
 		percentage = GPOINTER_TO_INT (g_hash_table_lookup (priv->languages, locale));
-		percentage_str = g_strdup_printf("%i", percentage);
+		percentage_str = g_strdup_printf ("%i", percentage);
 
 		l_node = as_xml_add_text_node (node, "lang", locale);
-		as_xml_add_text_prop (l_node,
-				      "percentage",
-				      percentage_str);
+		as_xml_add_text_prop (l_node, "percentage", percentage_str);
 	}
 }
 
@@ -4894,7 +4963,7 @@ as_component_xml_serialize_languages (AsComponent *cpt, xmlNode *cptnode)
  *
  * Serializes the data to an XML node.
  **/
-xmlNode*
+xmlNode *
 as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
@@ -4902,19 +4971,13 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 
 	/* define component root node properties */
 	if (root == NULL)
-		cnode = xmlNewNode (NULL, (xmlChar*) "component");
+		cnode = xmlNewNode (NULL, (xmlChar *) "component");
 	else
 		cnode = as_xml_add_node (root, "component");
 
-	if ((priv->kind != AS_COMPONENT_KIND_GENERIC) && (priv->kind != AS_COMPONENT_KIND_UNKNOWN)) {
-		const gchar *kind_str;
-		if ((as_context_get_format_version (ctx) < AS_FORMAT_VERSION_V0_10) && (priv->kind == AS_COMPONENT_KIND_DESKTOP_APP))
-			kind_str = "desktop";
-		else
-			kind_str = as_component_kind_to_string (priv->kind);
-		as_xml_add_text_prop (cnode,
-				      "type",
-				      kind_str);
+	if ((priv->kind != AS_COMPONENT_KIND_GENERIC) &&
+	    (priv->kind != AS_COMPONENT_KIND_UNKNOWN)) {
+		as_xml_add_text_prop (cnode, "type", as_component_kind_to_string (priv->kind));
 	}
 
 	/* set end-of-life date */
@@ -4937,9 +5000,7 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 
 		if (priv->priority != 0) {
 			g_autofree gchar *priority_str = g_strdup_printf ("%i", priv->priority);
-			as_xml_add_text_prop (cnode,
-					      "priority",
-					      priority_str);
+			as_xml_add_text_prop (cnode, "priority", priority_str);
 		}
 	}
 
@@ -4951,7 +5012,9 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 
 	/* name variant suffix */
 	if (priv->name_variant_suffix != NULL)
-		as_xml_add_localized_text_node (cnode, "name_variant_suffix", priv->name_variant_suffix);
+		as_xml_add_localized_text_node (cnode,
+						"name_variant_suffix",
+						priv->name_variant_suffix);
 
 	/* summary */
 	as_xml_add_localized_text_node (cnode, "summary", priv->summary);
@@ -4963,14 +5026,25 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 	/* project license */
 	as_xml_add_text_node (cnode, "project_license", priv->project_license);
 
-	/* developer name */
-	as_xml_add_localized_text_node (cnode, "developer_name", priv->developer_name);
+	/* long description */
+	as_xml_add_description_node (ctx, cnode, priv->description, TRUE);
 
 	/* project group */
 	as_xml_add_text_node (cnode, "project_group", priv->project_group);
 
-	/* long description */
-	as_xml_add_description_node (ctx, cnode, priv->description, TRUE);
+	/* developer */
+	if (priv->developer != NULL) {
+		as_developer_to_xml_node (priv->developer, ctx, cnode);
+
+		if (as_context_get_format_version (ctx) <= AS_FORMAT_VERSION_V1_0) {
+			/* Add the deprecated tag for now, for improved backwards compatibility */
+			as_xml_add_text_node (
+			    cnode,
+			    "developer_name",
+			    g_hash_table_lookup (as_developer_get_name_table (priv->developer),
+						 "C"));
+		}
+	}
 
 	/* extends nodes */
 	as_xml_add_node_list (cnode, NULL, "extends", priv->extends);
@@ -4993,7 +5067,8 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 		xmlNode *rcnode = as_xml_add_node (cnode, "recommends");
 
 		for (guint i = 0; i < priv->recommends->len; i++) {
-			AsRelation *relation = AS_RELATION (g_ptr_array_index (priv->recommends, i));
+			AsRelation *relation = AS_RELATION (
+			    g_ptr_array_index (priv->recommends, i));
 			as_relation_to_xml_node (relation, ctx, rcnode);
 		}
 	}
@@ -5047,9 +5122,7 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 			continue;
 
 		n = as_xml_add_text_node (cnode, "url", value);
-		as_xml_add_text_prop (n,
-				      "type",
-				      as_url_kind_to_string (i));
+		as_xml_add_text_prop (n, "type", as_url_kind_to_string (i));
 	}
 
 	/* software sorting catgories */
@@ -5061,7 +5134,8 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 	/* translations */
 	if (priv->translations != NULL) {
 		for (guint i = 0; i < priv->translations->len; i++) {
-			AsTranslation *tr = AS_TRANSLATION (g_ptr_array_index (priv->translations, i));
+			AsTranslation *tr = AS_TRANSLATION (
+			    g_ptr_array_index (priv->translations, i));
 			as_translation_to_xml_node (tr, ctx, cnode);
 		}
 	}
@@ -5073,8 +5147,12 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 	if (priv->screenshots->len > 0) {
 		xmlNode *rnode = as_xml_add_node (cnode, "screenshots");
 
+		/* restore default screenshot order */
+		as_component_sort_screenshots (cpt, NULL, NULL, FALSE);
+
 		for (guint i = 0; i < priv->screenshots->len; i++) {
-			AsScreenshot *scr = AS_SCREENSHOT (g_ptr_array_index (priv->screenshots, i));
+			AsScreenshot *scr = AS_SCREENSHOT (
+			    g_ptr_array_index (priv->screenshots, i));
 			as_screenshot_to_xml_node (scr, ctx, rnode);
 		}
 	}
@@ -5093,25 +5171,12 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 		as_branding_to_xml_node (priv->branding, ctx, cnode);
 
 	/* releases */
-	if (priv->releases_kind == AS_RELEASES_KIND_EXTERNAL && as_context_get_style (ctx) == AS_FORMAT_STYLE_METAINFO) {
-		xmlNode *rnode = as_xml_add_node (cnode, "releases");
-		as_xml_add_text_prop (rnode, "type", "external");
-		if (priv->releases_url != NULL)
-			as_xml_add_text_prop (rnode, "url", priv->releases_url);
-	} else if (priv->releases->len > 0) {
-		xmlNode *rnode = as_xml_add_node (cnode, "releases");
-
-		/* ensure releases are sorted, then emit XML nodes */
-		as_component_sort_releases (cpt);
-		for (guint i = 0; i < priv->releases->len; i++) {
-			AsRelease *rel = AS_RELEASE (g_ptr_array_index (priv->releases, i));
-			as_release_to_xml_node (rel, ctx, rnode);
-		}
-	}
+	as_release_list_to_xml_node (priv->releases, ctx, cnode);
 
 	/* content_rating nodes */
 	for (guint i = 0; i < priv->content_ratings->len; i++) {
-		AsContentRating *ctrating = AS_CONTENT_RATING (g_ptr_array_index (priv->content_ratings, i));
+		AsContentRating *ctrating = AS_CONTENT_RATING (
+		    g_ptr_array_index (priv->content_ratings, i));
 		as_content_rating_to_xml_node (ctrating, ctx, cnode);
 	}
 
@@ -5120,10 +5185,21 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 		xmlNode *tags_node = as_xml_add_node (cnode, "tags");
 		for (guint i = 0; i < priv->tags->len; i++) {
 			xmlNode *tag_node = NULL;
-			g_auto(GStrv) parts = g_strsplit (g_ptr_array_index (priv->tags, i), "::", 2);
-			g_assert (parts[1] != NULL);
+			g_auto(GStrv)
+				    parts = g_strsplit (g_ptr_array_index (priv->tags, i), "::", 2);
 			tag_node = as_xml_add_text_node (tags_node, "tag", parts[1]);
-			as_xml_add_text_prop (tag_node, "namespace", parts[0]);
+			if (!as_is_empty (parts[0]))
+				as_xml_add_text_prop (tag_node, "namespace", parts[0]);
+		}
+	}
+
+	/* references */
+	if (priv->references->len > 0) {
+		xmlNode *refs_node = as_xml_add_node (cnode, "references");
+
+		for (guint i = 0; i < priv->references->len; i++) {
+			AsReference *ref = AS_REFERENCE (g_ptr_array_index (priv->references, i));
+			as_reference_to_xml_node (ref, ctx, refs_node);
 		}
 	}
 
@@ -5144,7 +5220,9 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 	if (as_context_get_internal_mode (ctx)) {
 		const gchar *origin = as_component_get_origin (cpt);
 		if (priv->scope != AS_COMPONENT_SCOPE_UNKNOWN)
-			as_xml_add_text_node (cnode, "_asi_scope", as_component_scope_to_string (priv->scope));
+			as_xml_add_text_node (cnode,
+					      "_asi_scope",
+					      as_component_scope_to_string (priv->scope));
 		if (origin != NULL)
 			as_xml_add_text_node (cnode, "_asi_origin", origin);
 		if (priv->branch != NULL)
@@ -5168,15 +5246,11 @@ as_component_yaml_parse_keywords (AsComponent *cpt, AsContext *ctx, GNode *node)
 		const gchar *locale = as_yaml_get_node_locale (ctx, tnode);
 		if (locale != NULL) {
 			g_autoptr(GPtrArray) keywords = NULL;
-			g_auto(GStrv) strv = NULL;
 
 			keywords = g_ptr_array_new_with_free_func (g_free);
 			as_yaml_list_to_str_array (tnode, keywords);
 
-			strv = as_ptr_array_to_strv (keywords);
-			as_component_set_keywords (cpt,
-						   strv,
-						   locale);
+			as_component_set_keywords (cpt, keywords, locale, FALSE);
 		}
 	}
 }
@@ -5231,7 +5305,10 @@ as_component_yaml_parse_icon (AsComponent *cpt, AsContext *ctx, GNode *node, AsI
 					if (as_context_has_media_baseurl (ctx)) {
 						/* handle the media baseurl */
 						g_autofree gchar *url = NULL;
-						url = g_build_filename (as_context_get_media_baseurl (ctx), value, NULL);
+						url = g_build_filename (
+						    as_context_get_media_baseurl (ctx),
+						    value,
+						    NULL);
 						as_icon_set_url (icon, url);
 					} else {
 						/* no baseurl, we can just set the value as URL */
@@ -5276,7 +5353,10 @@ as_component_yaml_parse_icons (AsComponent *cpt, AsContext *ctx, GNode *node)
 				GNode *sn;
 				/* we have a recent YAML file */
 				for (sn = n->children; sn != NULL; sn = sn->next)
-					as_component_yaml_parse_icon (cpt, ctx, sn, AS_ICON_KIND_CACHED);
+					as_component_yaml_parse_icon (cpt,
+								      ctx,
+								      sn,
+								      AS_ICON_KIND_CACHED);
 			}
 		} else if (g_strcmp0 (key, "local") == 0) {
 			GNode *sn;
@@ -5304,33 +5384,44 @@ as_component_yaml_parse_provides (AsComponent *cpt, GNode *node)
 
 		if (g_strcmp0 (key, "ids") == 0) {
 			for (sn = n->children; sn != NULL; sn = sn->next) {
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_ID, (gchar*) sn->data);
+				as_component_add_provided_item (cpt,
+								AS_PROVIDED_KIND_ID,
+								(gchar *) sn->data);
 			}
 		} else if (g_strcmp0 (key, "libraries") == 0) {
 			for (sn = n->children; sn != NULL; sn = sn->next) {
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_LIBRARY, (gchar*) sn->data);
+				as_component_add_provided_item (cpt,
+								AS_PROVIDED_KIND_LIBRARY,
+								(gchar *) sn->data);
 			}
 		} else if (g_strcmp0 (key, "binaries") == 0) {
 			for (sn = n->children; sn != NULL; sn = sn->next) {
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_BINARY, (gchar*) sn->data);
+				as_component_add_provided_item (cpt,
+								AS_PROVIDED_KIND_BINARY,
+								(gchar *) sn->data);
 			}
 		} else if (g_strcmp0 (key, "fonts") == 0) {
 			GNode *dn;
 			for (sn = n->children; sn != NULL; sn = sn->next) {
 				for (dn = sn->children; dn != NULL; dn = dn->next) {
 					gchar *dvalue = NULL;
-					const gchar *dkey = (const gchar*) dn->data;
+					const gchar *dkey = (const gchar *) dn->data;
 					if (dn->children)
-						dvalue = (gchar*) dn->children->data;
+						dvalue = (gchar *) dn->children->data;
 					if (dvalue == NULL)
 						continue;
 					if (g_strcmp0 (dkey, "name") == 0)
-						as_component_add_provided_item (cpt, AS_PROVIDED_KIND_FONT, dvalue);
+						as_component_add_provided_item (
+						    cpt,
+						    AS_PROVIDED_KIND_FONT,
+						    dvalue);
 				}
 			}
 		} else if (g_strcmp0 (key, "modaliases") == 0) {
 			for (sn = n->children; sn != NULL; sn = sn->next) {
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_MODALIAS, (gchar*) sn->data);
+				as_component_add_provided_item (cpt,
+								AS_PROVIDED_KIND_MODALIAS,
+								(gchar *) sn->data);
 			}
 		} else if (g_strcmp0 (key, "firmware") == 0) {
 			GNode *dn;
@@ -5339,14 +5430,15 @@ as_component_yaml_parse_provides (AsComponent *cpt, GNode *node)
 				gchar *fwdata = NULL;
 				for (dn = sn->children; dn != NULL; dn = dn->next) {
 					gchar *dvalue;
-					const gchar *dkey = (const gchar*) dn->data;
+					const gchar *dkey = (const gchar *) dn->data;
 					if (dn->children)
-						dvalue = (gchar*) dn->children->data;
+						dvalue = (gchar *) dn->children->data;
 					else
 						continue;
 					if (g_strcmp0 (dkey, "type") == 0) {
 						kind = dvalue;
-					} else if ((g_strcmp0 (dkey, "guid") == 0) || (g_strcmp0 (dkey, "file") == 0)) {
+					} else if ((g_strcmp0 (dkey, "guid") == 0) ||
+						   (g_strcmp0 (dkey, "file") == 0)) {
 						fwdata = dvalue;
 					}
 				}
@@ -5355,21 +5447,27 @@ as_component_yaml_parse_provides (AsComponent *cpt, GNode *node)
 					continue;
 
 				if (g_strcmp0 (kind, "runtime") == 0)
-					as_component_add_provided_item (cpt, AS_PROVIDED_KIND_FIRMWARE_RUNTIME, fwdata);
+					as_component_add_provided_item (
+					    cpt,
+					    AS_PROVIDED_KIND_FIRMWARE_RUNTIME,
+					    fwdata);
 				else if (g_strcmp0 (kind, "flashed") == 0)
-					as_component_add_provided_item (cpt, AS_PROVIDED_KIND_FIRMWARE_FLASHED, fwdata);
-			}
-		} else if (g_strcmp0 (key, "python2") == 0) {
-			for (sn = n->children; sn != NULL; sn = sn->next) {
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_PYTHON_2, (gchar*) sn->data);
+					as_component_add_provided_item (
+					    cpt,
+					    AS_PROVIDED_KIND_FIRMWARE_FLASHED,
+					    fwdata);
 			}
 		} else if (g_strcmp0 (key, "python3") == 0) {
 			for (sn = n->children; sn != NULL; sn = sn->next) {
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_PYTHON, (gchar*) sn->data);
+				as_component_add_provided_item (cpt,
+								AS_PROVIDED_KIND_PYTHON,
+								(gchar *) sn->data);
 			}
 		} else if (g_strcmp0 (key, "mediatypes") == 0) {
 			for (sn = n->children; sn != NULL; sn = sn->next) {
-				as_component_add_provided_item (cpt, AS_PROVIDED_KIND_MEDIATYPE, (gchar*) sn->data);
+				as_component_add_provided_item (cpt,
+								AS_PROVIDED_KIND_MEDIATYPE,
+								(gchar *) sn->data);
 			}
 		} else if (g_strcmp0 (key, "dbus") == 0) {
 			GNode *dn;
@@ -5378,9 +5476,9 @@ as_component_yaml_parse_provides (AsComponent *cpt, GNode *node)
 				gchar *service = NULL;
 				for (dn = sn->children; dn != NULL; dn = dn->next) {
 					gchar *dvalue = NULL;
-					const gchar *dkey = (const gchar*) dn->data;
+					const gchar *dkey = (const gchar *) dn->data;
 					if (dn->children)
-						dvalue = (gchar*) dn->children->data;
+						dvalue = (gchar *) dn->children->data;
 					if (g_strcmp0 (dkey, "type") == 0) {
 						kind = dvalue;
 					} else if (g_strcmp0 (dkey, "service") == 0) {
@@ -5392,9 +5490,15 @@ as_component_yaml_parse_provides (AsComponent *cpt, GNode *node)
 					continue;
 
 				if (g_strcmp0 (kind, "system") == 0)
-					as_component_add_provided_item (cpt, AS_PROVIDED_KIND_DBUS_SYSTEM, service);
-				else if ((g_strcmp0 (kind, "user") == 0) || (g_strcmp0 (kind, "session") == 0))
-					as_component_add_provided_item (cpt, AS_PROVIDED_KIND_DBUS_USER, service);
+					as_component_add_provided_item (
+					    cpt,
+					    AS_PROVIDED_KIND_DBUS_SYSTEM,
+					    service);
+				else if ((g_strcmp0 (kind, "user") == 0) ||
+					 (g_strcmp0 (kind, "session") == 0))
+					as_component_add_provided_item (cpt,
+									AS_PROVIDED_KIND_DBUS_USER,
+									service);
 			}
 		}
 	}
@@ -5439,7 +5543,10 @@ as_component_yaml_parse_languages (AsComponent *cpt, GNode *node)
  * as_component_yaml_parse_relations:
  */
 static void
-as_component_yaml_parse_relations (AsComponent *cpt, AsContext *ctx, GNode *node, AsRelationKind kind)
+as_component_yaml_parse_relations (AsComponent *cpt,
+				   AsContext *ctx,
+				   GNode *node,
+				   AsRelationKind kind)
 {
 	for (GNode *n = node->children; n != NULL; n = n->next) {
 		g_autoptr(AsRelation) relation = as_relation_new ();
@@ -5514,7 +5621,7 @@ as_component_load_from_yaml (AsComponent *cpt, AsContext *ctx, GNode *root, GErr
 		} else if (field_id == AS_TAG_PKGNAME) {
 			g_strfreev (priv->pkgnames);
 
-			priv->pkgnames = g_new0 (gchar*, 1 + 1);
+			priv->pkgnames = g_new0 (gchar *, 1 + 1);
 			priv->pkgnames[0] = g_strdup (value);
 			priv->pkgnames[1] = NULL;
 			g_object_notify ((GObject *) cpt, "pkgnames");
@@ -5529,8 +5636,21 @@ as_component_load_from_yaml (AsComponent *cpt, AsContext *ctx, GNode *root, GErr
 		} else if (field_id == AS_TAG_DESCRIPTION) {
 			as_yaml_set_localized_table (ctx, node, priv->description);
 			g_object_notify ((GObject *) cpt, "description");
+		} else if (field_id == AS_TAG_DEVELOPER) {
+			g_autoptr(AsDeveloper) developer = as_developer_new ();
+			if (as_developer_load_from_yaml (developer, ctx, node, NULL)) {
+				if (priv->developer != NULL)
+					g_object_unref (priv->developer);
+				priv->developer = g_steal_pointer (&developer);
+			}
+
 		} else if (field_id == AS_TAG_DEVELOPER_NAME) {
-			as_yaml_set_localized_table (ctx, node, priv->developer_name);
+			/* DEPRECATED */
+			if (priv->developer == NULL)
+				priv->developer = as_developer_new_with_context (ctx);
+			as_yaml_set_localized_table (ctx,
+						     node,
+						     as_developer_get_name_table (priv->developer));
 		} else if (field_id == AS_TAG_PROJECT_LICENSE) {
 			as_component_set_project_license (cpt, value);
 		} else if (field_id == AS_TAG_PROJECT_GROUP) {
@@ -5562,7 +5682,7 @@ as_component_load_from_yaml (AsComponent *cpt, AsContext *ctx, GNode *root, GErr
 		} else if (field_id == AS_TAG_PROVIDES) {
 			as_component_yaml_parse_provides (cpt, node);
 		} else if (field_id == AS_TAG_SCREENSHOTS) {
-			for (GNode * n = node->children; n != NULL; n = n->next) {
+			for (GNode *n = node->children; n != NULL; n = n->next) {
 				g_autoptr(AsScreenshot) scr = as_screenshot_new ();
 				if (as_screenshot_load_from_yaml (scr, ctx, n, NULL))
 					as_component_add_screenshot (cpt, scr);
@@ -5570,11 +5690,8 @@ as_component_load_from_yaml (AsComponent *cpt, AsContext *ctx, GNode *root, GErr
 		} else if (field_id == AS_TAG_LANGUAGES) {
 			as_component_yaml_parse_languages (cpt, node);
 		} else if (field_id == AS_TAG_RELEASES) {
-			for (GNode *n = node->children; n != NULL; n = n->next) {
-				g_autoptr(AsRelease) release = as_release_new ();
-				if (as_release_load_from_yaml (release, ctx, n, NULL))
-					g_ptr_array_add (priv->releases, g_steal_pointer (&release));
-			}
+			as_release_list_load_from_yaml (priv->releases, ctx, node, NULL);
+
 		} else if (field_id == AS_TAG_SUGGESTS) {
 			for (GNode *n = node->children; n != NULL; n = n->next) {
 				g_autoptr(AsSuggested) suggested = as_suggested_new ();
@@ -5596,15 +5713,24 @@ as_component_load_from_yaml (AsComponent *cpt, AsContext *ctx, GNode *root, GErr
 					if (g_strcmp0 (as_yaml_node_get_key (sn), "id") != 0)
 						continue;
 					g_ptr_array_add (priv->replaces,
-							g_strdup (as_yaml_node_get_value (sn)));
+							 g_strdup (as_yaml_node_get_value (sn)));
 				}
 			}
 		} else if (field_id == AS_TAG_REQUIRES) {
-			as_component_yaml_parse_relations (cpt, ctx, node, AS_RELATION_KIND_REQUIRES);
+			as_component_yaml_parse_relations (cpt,
+							   ctx,
+							   node,
+							   AS_RELATION_KIND_REQUIRES);
 		} else if (field_id == AS_TAG_RECOMMENDS) {
-			as_component_yaml_parse_relations (cpt, ctx, node, AS_RELATION_KIND_RECOMMENDS);
+			as_component_yaml_parse_relations (cpt,
+							   ctx,
+							   node,
+							   AS_RELATION_KIND_RECOMMENDS);
 		} else if (field_id == AS_TAG_SUPPORTS) {
-			as_component_yaml_parse_relations (cpt, ctx, node, AS_RELATION_KIND_SUPPORTS);
+			as_component_yaml_parse_relations (cpt,
+							   ctx,
+							   node,
+							   AS_RELATION_KIND_SUPPORTS);
 		} else if (field_id == AS_TAG_AGREEMENT) {
 			for (GNode *n = node->children; n != NULL; n = n->next) {
 				g_autoptr(AsAgreement) agreement = as_agreement_new ();
@@ -5618,16 +5744,20 @@ as_component_load_from_yaml (AsComponent *cpt, AsContext *ctx, GNode *root, GErr
 		} else if (field_id == AS_TAG_NAME_VARIANT_SUFFIX) {
 			if (priv->name_variant_suffix != NULL)
 				g_hash_table_unref (priv->name_variant_suffix);
-			priv->name_variant_suffix = g_hash_table_new_full (g_str_hash, g_str_equal,
-									   (GDestroyNotify) as_ref_string_release,
-									   g_free);
+			priv->name_variant_suffix = g_hash_table_new_full (
+			    g_str_hash,
+			    g_str_equal,
+			    (GDestroyNotify) as_ref_string_release,
+			    g_free);
 			as_yaml_set_localized_table (ctx, node, priv->name_variant_suffix);
 		} else if (field_id == AS_TAG_TAGS) {
-			for (GNode *tags_n = node->children; tags_n != NULL; tags_n = tags_n->next) {
+			for (GNode *tags_n = node->children; tags_n != NULL;
+			     tags_n = tags_n->next) {
 				const gchar *ns = NULL;
 				const gchar *tag_value = NULL;
 
-				for (GNode *tag_n = tags_n->children; tag_n != NULL; tag_n = tag_n->next) {
+				for (GNode *tag_n = tags_n->children; tag_n != NULL;
+				     tag_n = tag_n->next) {
 					const gchar *c_key = as_yaml_node_get_key (tag_n);
 					const gchar *c_value = as_yaml_node_get_value (tag_n);
 					if (g_strcmp0 (c_key, "namespace") == 0)
@@ -5637,6 +5767,14 @@ as_component_load_from_yaml (AsComponent *cpt, AsContext *ctx, GNode *root, GErr
 				}
 				as_component_add_tag (cpt, ns, tag_value);
 			}
+
+		} else if (field_id == AS_TAG_REFERENCES) {
+			for (GNode *n = node->children; n != NULL; n = n->next) {
+				g_autoptr(AsReference) reference = as_reference_new ();
+				if (as_reference_load_from_yaml (reference, ctx, n, NULL))
+					as_component_add_reference (cpt, reference);
+			}
+
 		} else if (field_id == AS_TAG_CUSTOM) {
 			as_component_yaml_parse_custom (cpt, node);
 		} else if (field_id == AS_TAG_REVIEWS) {
@@ -5653,9 +5791,9 @@ as_component_load_from_yaml (AsComponent *cpt, AsContext *ctx, GNode *root, GErr
 	/* sanity check */
 	if (as_is_empty (priv->id)) {
 		g_set_error_literal (error,
-				AS_METADATA_ERROR,
-				AS_METADATA_ERROR_FAILED,
-				"Component is invalid (essential tags are missing or empty).");
+				     AS_METADATA_ERROR,
+				     AS_METADATA_ERROR_FAILED,
+				     "Component is invalid (essential tags are missing or empty).");
 		return FALSE;
 	}
 
@@ -5666,7 +5804,7 @@ as_component_load_from_yaml (AsComponent *cpt, AsContext *ctx, GNode *root, GErr
  * as_component_yaml_emit_icons:
  */
 static void
-as_component_yaml_emit_icons (AsComponent* cpt, yaml_emitter_t *emitter, GPtrArray *icons)
+as_component_yaml_emit_icons (AsComponent *cpt, yaml_emitter_t *emitter, GPtrArray *icons)
 {
 	guint i;
 	GHashTableIter iter;
@@ -5700,14 +5838,15 @@ as_component_yaml_emit_icons (AsComponent* cpt, yaml_emitter_t *emitter, GPtrArr
 		AsIconKind ikind;
 
 		ikind = (AsIconKind) GPOINTER_TO_INT (key);
-		ilist = (GPtrArray*) value;
+		ilist = (GPtrArray *) value;
 
 		if (ikind == AS_ICON_KIND_STOCK) {
 			/* there can always be only one stock icon, so this is easy */
 			if (!stock_icon_added)
-				as_yaml_emit_entry (emitter,
-						    as_icon_kind_to_string (ikind),
-						    as_icon_get_name (AS_ICON (g_ptr_array_index (ilist, 0))));
+				as_yaml_emit_entry (
+				    emitter,
+				    as_icon_kind_to_string (ikind),
+				    as_icon_get_name (AS_ICON (g_ptr_array_index (ilist, 0))));
 			stock_icon_added = TRUE;
 		} else {
 			as_yaml_emit_scalar (emitter, as_icon_kind_to_string (ikind));
@@ -5721,26 +5860,30 @@ as_component_yaml_emit_icons (AsComponent* cpt, yaml_emitter_t *emitter, GPtrArr
 				if (ikind == AS_ICON_KIND_REMOTE)
 					as_yaml_emit_entry (emitter, "url", as_icon_get_url (icon));
 				else if (ikind == AS_ICON_KIND_LOCAL)
-					as_yaml_emit_entry (emitter, "name", as_icon_get_filename (icon));
+					as_yaml_emit_entry (emitter,
+							    "name",
+							    as_icon_get_filename (icon));
 				else
-					as_yaml_emit_entry (emitter, "name", as_icon_get_name (icon));
+					as_yaml_emit_entry (emitter,
+							    "name",
+							    as_icon_get_name (icon));
 
 				if (as_icon_get_width (icon) > 0) {
 					as_yaml_emit_entry_uint64 (emitter,
-								 "width",
-								 as_icon_get_width (icon));
+								   "width",
+								   as_icon_get_width (icon));
 				}
 
 				if (as_icon_get_height (icon) > 0) {
 					as_yaml_emit_entry_uint64 (emitter,
-								 "height",
-								 as_icon_get_height (icon));
+								   "height",
+								   as_icon_get_height (icon));
 				}
 
 				if (as_icon_get_scale (icon) > 1) {
 					as_yaml_emit_entry_uint64 (emitter,
-								 "scale",
-								 as_icon_get_scale (icon));
+								   "scale",
+								   as_icon_get_scale (icon));
 				}
 
 				as_yaml_mapping_end (emitter);
@@ -5783,85 +5926,70 @@ as_component_yaml_emit_provides (AsComponent *cpt, yaml_emitter_t *emitter)
 
 		kind = as_provided_get_kind (prov);
 		switch (kind) {
-			case AS_PROVIDED_KIND_ID:
-				as_yaml_emit_sequence (emitter,
-							"ids",
-							items);
-				break;
-			case AS_PROVIDED_KIND_LIBRARY:
-				as_yaml_emit_sequence (emitter,
-							"libraries",
-							items);
-				break;
-			case AS_PROVIDED_KIND_BINARY:
-				as_yaml_emit_sequence (emitter,
-							"binaries",
-							items);
-				break;
-			case AS_PROVIDED_KIND_MEDIATYPE:
-				as_yaml_emit_sequence (emitter,
-							"mediatypes",
-							items);
-				break;
-			case AS_PROVIDED_KIND_PYTHON_2:
-				as_yaml_emit_sequence (emitter,
-							"python2",
-							items);
-				break;
-			case AS_PROVIDED_KIND_PYTHON:
-				as_yaml_emit_sequence (emitter,
-							"python3",
-							items);
-				break;
-			case AS_PROVIDED_KIND_MODALIAS:
-				as_yaml_emit_sequence (emitter,
-							"modaliases",
-							items);
-				break;
-			case AS_PROVIDED_KIND_FONT:
-				as_yaml_emit_scalar (emitter, "fonts");
+		case AS_PROVIDED_KIND_ID:
+			as_yaml_emit_sequence (emitter, "ids", items);
+			break;
+		case AS_PROVIDED_KIND_LIBRARY:
+			as_yaml_emit_sequence (emitter, "libraries", items);
+			break;
+		case AS_PROVIDED_KIND_BINARY:
+			as_yaml_emit_sequence (emitter, "binaries", items);
+			break;
+		case AS_PROVIDED_KIND_MEDIATYPE:
+			as_yaml_emit_sequence (emitter, "mediatypes", items);
+			break;
+		case AS_PROVIDED_KIND_PYTHON:
+			as_yaml_emit_sequence (emitter, "python3", items);
+			break;
+		case AS_PROVIDED_KIND_MODALIAS:
+			as_yaml_emit_sequence (emitter, "modaliases", items);
+			break;
+		case AS_PROVIDED_KIND_FONT:
+			as_yaml_emit_scalar (emitter, "fonts");
 
-				as_yaml_sequence_start (emitter);
-				for (j = 0; j < items->len; j++) {
-					as_yaml_mapping_start (emitter);
-					as_yaml_emit_entry (emitter,
-							    "name",
-							    (const gchar*) g_ptr_array_index (items, j));
-					as_yaml_mapping_end (emitter);
-				}
-				as_yaml_sequence_end (emitter);
-				break;
-			case AS_PROVIDED_KIND_DBUS_SYSTEM:
-				if (dbus_system == NULL) {
-					dbus_system = g_ptr_array_ref (items);
-				} else {
-					g_critical ("Hit dbus:system twice, this should never happen!");
-				}
-				break;
-			case AS_PROVIDED_KIND_DBUS_USER:
-				if (dbus_user == NULL) {
-					dbus_user = g_ptr_array_ref (items);
-				} else {
-					g_critical ("Hit dbus:user twice, this should never happen!");
-				}
-				break;
-			case AS_PROVIDED_KIND_FIRMWARE_RUNTIME:
-				if (fw_runtime == NULL) {
-					fw_runtime = g_ptr_array_ref (items);
-				} else {
-					g_critical ("Hit firmware:runtime twice, this should never happen!");
-				}
-				break;
-			case AS_PROVIDED_KIND_FIRMWARE_FLASHED:
-				if (fw_flashed == NULL) {
-					fw_flashed = g_ptr_array_ref (items);
-				} else {
-					g_critical ("Hit dbus-user twice, this should never happen!");
-				}
-				break;
-			default:
-				g_warning ("Ignoring unknown type of provided items: %s", as_provided_kind_to_string (kind));
-				break;
+			as_yaml_sequence_start (emitter);
+			for (j = 0; j < items->len; j++) {
+				as_yaml_mapping_start (emitter);
+				as_yaml_emit_entry (emitter,
+						    "name",
+						    (const gchar *) g_ptr_array_index (items, j));
+				as_yaml_mapping_end (emitter);
+			}
+			as_yaml_sequence_end (emitter);
+			break;
+		case AS_PROVIDED_KIND_DBUS_SYSTEM:
+			if (dbus_system == NULL) {
+				dbus_system = g_ptr_array_ref (items);
+			} else {
+				g_critical ("Hit dbus:system twice, this should never happen!");
+			}
+			break;
+		case AS_PROVIDED_KIND_DBUS_USER:
+			if (dbus_user == NULL) {
+				dbus_user = g_ptr_array_ref (items);
+			} else {
+				g_critical ("Hit dbus:user twice, this should never happen!");
+			}
+			break;
+		case AS_PROVIDED_KIND_FIRMWARE_RUNTIME:
+			if (fw_runtime == NULL) {
+				fw_runtime = g_ptr_array_ref (items);
+			} else {
+				g_critical (
+				    "Hit firmware:runtime twice, this should never happen!");
+			}
+			break;
+		case AS_PROVIDED_KIND_FIRMWARE_FLASHED:
+			if (fw_flashed == NULL) {
+				fw_flashed = g_ptr_array_ref (items);
+			} else {
+				g_critical ("Hit dbus-user twice, this should never happen!");
+			}
+			break;
+		default:
+			g_warning ("Ignoring unknown type of provided items: %s",
+				   as_provided_kind_to_string (kind));
+			break;
 		}
 	}
 
@@ -5872,7 +6000,8 @@ as_component_yaml_emit_provides (AsComponent *cpt, yaml_emitter_t *emitter)
 
 		if (dbus_system != NULL) {
 			for (i = 0; i < dbus_system->len; i++) {
-				const gchar *value = (const gchar*) g_ptr_array_index (dbus_system, i);
+				const gchar *value = (const gchar *) g_ptr_array_index (dbus_system,
+											i);
 				as_yaml_mapping_start (emitter);
 
 				as_yaml_emit_entry (emitter, "type", "system");
@@ -5884,7 +6013,8 @@ as_component_yaml_emit_provides (AsComponent *cpt, yaml_emitter_t *emitter)
 
 		if (dbus_user != NULL) {
 			for (i = 0; i < dbus_user->len; i++) {
-				const gchar *value = (const gchar*) g_ptr_array_index (dbus_user, i);
+				const gchar *value = (const gchar *) g_ptr_array_index (dbus_user,
+											i);
 
 				as_yaml_mapping_start (emitter);
 
@@ -5955,7 +6085,7 @@ as_component_yaml_emit_languages (AsComponent *cpt, yaml_emitter_t *emitter)
 		guint percentage;
 		const gchar *locale;
 
-		locale = (const gchar*) link->data;
+		locale = (const gchar *) link->data;
 		percentage = GPOINTER_TO_INT (g_hash_table_lookup (priv->languages, locale));
 
 		as_yaml_mapping_start (emitter);
@@ -5987,8 +6117,8 @@ as_component_yaml_emit_custom (AsComponent *cpt, yaml_emitter_t *emitter)
 	keys = g_list_sort (keys, (GCompareFunc) g_ascii_strcasecmp);
 	for (link = keys; link != NULL; link = link->next) {
 		as_yaml_emit_entry (emitter,
-				    (const gchar*) link->data,
-				    (const gchar*) g_hash_table_lookup (priv->custom, link->data));
+				    (const gchar *) link->data,
+				    (const gchar *) g_hash_table_lookup (priv->custom, link->data));
 	}
 
 	as_yaml_mapping_end (emitter);
@@ -6007,7 +6137,6 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	gint res;
-	const gchar *cstr;
 	yaml_event_t event;
 
 	/* new document for this component */
@@ -6019,11 +6148,7 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 	as_yaml_mapping_start (emitter);
 
 	/* write component kind */
-	if ((as_context_get_format_version (ctx) < AS_FORMAT_VERSION_V0_10) && (priv->kind == AS_COMPONENT_KIND_DESKTOP_APP))
-		cstr = "desktop-app";
-	else
-		cstr = as_component_kind_to_string (priv->kind);
-	as_yaml_emit_entry (emitter, "Type", cstr);
+	as_yaml_emit_entry (emitter, "Type", as_component_kind_to_string (priv->kind));
 
 	/* AppStream-ID */
 	as_yaml_emit_entry (emitter, "ID", priv->id);
@@ -6031,16 +6156,12 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 	/* Priority */
 	if (priv->priority != 0) {
 		g_autofree gchar *priority_str = g_strdup_printf ("%i", priv->priority);
-		as_yaml_emit_entry (emitter,
-				    "Priority",
-				    priority_str);
+		as_yaml_emit_entry (emitter, "Priority", priority_str);
 	}
 
 	/* merge strategy */
 	if (priv->merge_kind != AS_MERGE_KIND_NONE) {
-		as_yaml_emit_entry (emitter,
-				    "Merge",
-				    as_merge_kind_to_string (priv->merge_kind));
+		as_yaml_emit_entry (emitter, "Merge", as_merge_kind_to_string (priv->merge_kind));
 	}
 
 	/* End-of-life date */
@@ -6064,6 +6185,9 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 	/* Extends */
 	as_yaml_emit_sequence (emitter, "Extends", priv->extends);
 
+	/* ProjectLicense */
+	as_yaml_emit_entry (emitter, "ProjectLicense", priv->project_license);
+
 	/* Name */
 	as_yaml_emit_localized_entry (emitter, "Name", priv->name);
 
@@ -6075,25 +6199,27 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 
 	/* NameVariantSuffix */
 	if (priv->name_variant_suffix != NULL)
-		as_yaml_emit_localized_entry (emitter, "NameVariantSuffix", priv->name_variant_suffix);
-
-	/* DeveloperName */
-	as_yaml_emit_localized_entry (emitter, "DeveloperName", priv->developer_name);
+		as_yaml_emit_localized_entry (emitter,
+					      "NameVariantSuffix",
+					      priv->name_variant_suffix);
 
 	/* ProjectGroup */
 	as_yaml_emit_entry (emitter, "ProjectGroup", priv->project_group);
 
-	/* ProjectLicense */
-	as_yaml_emit_entry (emitter, "ProjectLicense", priv->project_license);
+	/* Developer */
+	if (priv->developer != NULL)
+		as_developer_emit_yaml (priv->developer, ctx, emitter);
 
 	/* CompulsoryForDesktops */
-	as_yaml_emit_sequence_from_str_array (emitter, "CompulsoryForDesktops", priv->compulsory_for_desktops);
+	as_yaml_emit_sequence_from_str_array (emitter,
+					      "CompulsoryForDesktops",
+					      priv->compulsory_for_desktops);
 
 	/* Categories */
 	as_yaml_emit_sequence_from_str_array (emitter, "Categories", priv->categories);
 
 	/* Keywords */
-	as_yaml_emit_localized_strv (emitter, "Keywords", priv->keywords);
+	as_yaml_emit_localized_str_array (emitter, "Keywords", priv->keywords);
 
 	/* Urls */
 	if (g_hash_table_size (priv->urls) > 0) {
@@ -6105,7 +6231,9 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 
 		g_hash_table_iter_init (&iter, priv->urls);
 		while (g_hash_table_iter_next (&iter, &key, &value)) {
-			as_yaml_emit_entry (emitter, as_url_kind_to_string (GPOINTER_TO_INT (key)), (const gchar*) value);
+			as_yaml_emit_entry (emitter,
+					    as_url_kind_to_string (GPOINTER_TO_INT (key)),
+					    (const gchar *) value);
 		}
 		as_yaml_mapping_end (emitter);
 	}
@@ -6137,7 +6265,8 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 		as_yaml_mapping_start (emitter);
 
 		for (guint i = 0; i < priv->launchables->len; i++) {
-			AsLaunchable *launch = AS_LAUNCHABLE (g_ptr_array_index (priv->launchables, i));
+			AsLaunchable *launch = AS_LAUNCHABLE (
+			    g_ptr_array_index (priv->launchables, i));
 			as_launchable_emit_yaml (launch, ctx, emitter);
 		}
 
@@ -6151,7 +6280,9 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 
 		for (guint i = 0; i < priv->replaces->len; i++) {
 			as_yaml_mapping_start (emitter);
-			as_yaml_emit_entry (emitter, "id", (const gchar*) g_ptr_array_index (priv->replaces, i));
+			as_yaml_emit_entry (emitter,
+					    "id",
+					    (const gchar *) g_ptr_array_index (priv->replaces, i));
 			as_yaml_mapping_end (emitter);
 		}
 
@@ -6177,7 +6308,8 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 		as_yaml_sequence_start (emitter);
 
 		for (guint i = 0; i < priv->recommends->len; i++) {
-			AsRelation *relation = AS_RELATION (g_ptr_array_index (priv->recommends, i));
+			AsRelation *relation = AS_RELATION (
+			    g_ptr_array_index (priv->recommends, i));
 			as_relation_emit_yaml (relation, ctx, emitter);
 		}
 
@@ -6206,7 +6338,8 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 		as_yaml_sequence_start (emitter);
 
 		for (guint i = 0; i < priv->suggestions->len; i++) {
-			AsSuggested *suggested = AS_SUGGESTED (g_ptr_array_index (priv->suggestions, i));
+			AsSuggested *suggested = AS_SUGGESTED (
+			    g_ptr_array_index (priv->suggestions, i));
 			as_suggested_emit_yaml (suggested, ctx, emitter);
 		}
 
@@ -6215,11 +6348,15 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 
 	/* Screenshots */
 	if (priv->screenshots->len > 0) {
+		/* restore default screenshot order */
+		as_component_sort_screenshots (cpt, NULL, NULL, FALSE);
+
 		as_yaml_emit_scalar (emitter, "Screenshots");
 		as_yaml_sequence_start (emitter);
 
 		for (guint i = 0; i < priv->screenshots->len; i++) {
-			AsScreenshot *screenshot = AS_SCREENSHOT (g_ptr_array_index (priv->screenshots, i));
+			AsScreenshot *screenshot = AS_SCREENSHOT (
+			    g_ptr_array_index (priv->screenshots, i));
 			as_screenshot_emit_yaml (screenshot, ctx, emitter);
 		}
 
@@ -6235,7 +6372,8 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 		as_yaml_sequence_start (emitter);
 
 		for (guint i = 0; i < priv->agreements->len; i++) {
-			AsAgreement *agreement = AS_AGREEMENT (g_ptr_array_index (priv->agreements, i));
+			AsAgreement *agreement = AS_AGREEMENT (
+			    g_ptr_array_index (priv->agreements, i));
 			as_agreement_emit_yaml (agreement, ctx, emitter);
 		}
 
@@ -6247,20 +6385,7 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 		as_branding_emit_yaml (priv->branding, ctx, emitter);
 
 	/* Releases */
-	if (priv->releases->len > 0) {
-		/* ensure releases are sorted */
-		as_component_sort_releases (cpt);
-
-		as_yaml_emit_scalar (emitter, "Releases");
-		as_yaml_sequence_start (emitter);
-
-		for (guint i = 0; i < priv->releases->len; i++) {
-			AsRelease *release = AS_RELEASE (g_ptr_array_index (priv->releases, i));
-			as_release_emit_yaml (release, ctx, emitter);
-		}
-
-		as_yaml_sequence_end (emitter);
-	}
+	as_release_list_emit_yaml (priv->releases, ctx, emitter);
 
 	/* ContentRating */
 	if (priv->content_ratings->len > 0) {
@@ -6268,7 +6393,8 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 		as_yaml_mapping_start (emitter);
 
 		for (guint i = 0; i < priv->content_ratings->len; i++) {
-			AsContentRating *content_rating = AS_CONTENT_RATING (g_ptr_array_index (priv->content_ratings, i));
+			AsContentRating *content_rating = AS_CONTENT_RATING (
+			    g_ptr_array_index (priv->content_ratings, i));
 			as_content_rating_emit_yaml (content_rating, ctx, emitter);
 		}
 
@@ -6281,13 +6407,27 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 		as_yaml_sequence_start (emitter);
 
 		for (guint i = 0; i < priv->tags->len; i++) {
-			g_auto(GStrv) parts = g_strsplit (g_ptr_array_index (priv->tags, i), "::", 2);
-			g_assert (parts[1] != NULL);
+			g_auto(GStrv)
+				    parts = g_strsplit (g_ptr_array_index (priv->tags, i), "::", 2);
 
 			as_yaml_mapping_start (emitter);
-			as_yaml_emit_entry (emitter, "namespace", parts[0]);
+			if (!as_is_empty (parts[0]))
+				as_yaml_emit_entry (emitter, "namespace", parts[0]);
 			as_yaml_emit_entry (emitter, "tag", parts[1]);
 			as_yaml_mapping_end (emitter);
+		}
+
+		as_yaml_sequence_end (emitter);
+	}
+
+	/* References */
+	if (priv->references->len > 0) {
+		as_yaml_emit_scalar (emitter, "References");
+		as_yaml_sequence_start (emitter);
+
+		for (guint i = 0; i < priv->references->len; i++) {
+			AsReference *ref = AS_REFERENCE (g_ptr_array_index (priv->references, i));
+			as_reference_emit_yaml (ref, ctx, emitter);
 		}
 
 		as_yaml_sequence_end (emitter);
@@ -6339,7 +6479,11 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
  * Since: 0.14.0
  */
 gboolean
-as_component_load_from_bytes (AsComponent *cpt, AsContext *context, AsFormatKind format, GBytes *bytes, GError **error)
+as_component_load_from_bytes (AsComponent *cpt,
+			      AsContext *context,
+			      AsFormatKind format,
+			      GBytes *bytes,
+			      GError **error)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
 	gsize data_len;
@@ -6359,7 +6503,10 @@ as_component_load_from_bytes (AsComponent *cpt, AsContext *context, AsFormatKind
 		gboolean ret;
 		g_return_val_if_fail (context != NULL, FALSE);
 
-		doc = as_xml_parse_document (data, data_len, error);
+		doc = as_xml_parse_document (data,
+					     data_len,
+					     FALSE, /* pedantic */
+					     error);
 		if (doc == NULL)
 			return FALSE;
 		root = xmlDocGetRootElement (doc);
@@ -6374,7 +6521,7 @@ as_component_load_from_bytes (AsComponent *cpt, AsContext *context, AsFormatKind
 		as_desktop_entry_parse_data (cpt,
 					     data,
 					     data_len,
-					     AS_FORMAT_VERSION_CURRENT,
+					     AS_FORMAT_VERSION_LATEST,
 					     TRUE,
 					     NULL, /* issues */
 					     NULL, /* l10n function */
@@ -6392,37 +6539,12 @@ as_component_load_from_bytes (AsComponent *cpt, AsContext *context, AsFormatKind
 		return TRUE;
 	}
 
-	g_set_error_literal (error,
-			     AS_METADATA_ERROR,
-			     AS_METADATA_ERROR_FAILED,
-			     "Unable to load data: Unknown or unsupported format for this operation.");
+	g_set_error_literal (
+	    error,
+	    AS_METADATA_ERROR,
+	    AS_METADATA_ERROR_FAILED,
+	    "Unable to load data: Unknown or unsupported format for this operation.");
 	return FALSE;
-}
-
-/**
- * as_component_load_from_xml_data:
- * @cpt: an #AsComponent instance.
- * @context: an #AsContext instance.
- * @data: The XML data to load.
- * @error: a #GError.
- *
- * Load metadata for this component from an XML string.
- * You normally do not want to use this method directly and instead use the more
- * convenient API of #AsMetadata to create and update components.
- *
- * Returns: %TRUE on success.
- *
- * Since: 0.12.10
- */
-gboolean
-as_component_load_from_xml_data (AsComponent *cpt, AsContext *context, const gchar *data, GError **error)
-{
-	g_autoptr(GBytes) bytes = g_bytes_new_static (data, strlen (data));
-	return as_component_load_from_bytes (cpt,
-					     context,
-					     AS_FORMAT_KIND_XML,
-					     bytes,
-					     error);
 }
 
 /**
@@ -6439,7 +6561,7 @@ as_component_load_from_xml_data (AsComponent *cpt, AsContext *context, const gch
  *
  * Since: 0.12.10
  */
-gchar*
+gchar *
 as_component_to_xml_data (AsComponent *cpt, AsContext *context, GError **error)
 {
 	xmlNode *node;
@@ -6450,44 +6572,10 @@ as_component_to_xml_data (AsComponent *cpt, AsContext *context, GError **error)
 }
 
 /**
- * as_component_get_desktop_id:
- * @cpt: a #AsComponent instance.
- *
- * Get the Desktop Entry ID for this component, if it is
- * of type "desktop-application".
- * For most desktop-application components, this is the name
- * of the .desktop file.
- *
- * Refer to https://specifications.freedesktop.org/desktop-entry-spec/latest/ape.html for more
- * information.
- *
- * Returns: The desktop file id.
- *
- * Since: 0.9.8
- * Deprecated: 0.11.0: Replaced by #AsLaunchable and %as_component_get_launchable
- */
-const gchar*
-as_component_get_desktop_id (AsComponent *cpt)
-{
-	AsLaunchable *launch;
-	GPtrArray *entries;
-
-	launch = as_component_get_launchable (cpt, AS_LAUNCHABLE_KIND_DESKTOP_ID);
-	if (launch == NULL)
-		return NULL;
-
-	entries = as_launchable_get_entries (launch);
-	if (entries->len <= 0)
-		return 0;
-
-	return (const gchar*) g_ptr_array_index (entries, 0);
-}
-
-/**
  * as_component_get_property:
  */
 static void
-as_component_get_property (GObject * object, guint property_id, GValue * value, GParamSpec * pspec)
+as_component_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
 {
 	AsComponent *cpt;
 	AsComponentPrivate *priv;
@@ -6495,51 +6583,48 @@ as_component_get_property (GObject * object, guint property_id, GValue * value, 
 	priv = GET_PRIVATE (cpt);
 
 	switch (property_id) {
-		case AS_COMPONENT_KIND:
-			g_value_set_enum (value, as_component_get_kind (cpt));
-			break;
-		case AS_COMPONENT_PKGNAMES:
-			g_value_set_boxed (value, as_component_get_pkgnames (cpt));
-			break;
-		case AS_COMPONENT_ID:
-			g_value_set_string (value, as_component_get_id (cpt));
-			break;
-		case AS_COMPONENT_NAME:
-			g_value_set_string (value, as_component_get_name (cpt));
-			break;
-		case AS_COMPONENT_SUMMARY:
-			g_value_set_string (value, as_component_get_summary (cpt));
-			break;
-		case AS_COMPONENT_DESCRIPTION:
-			g_value_set_string (value, as_component_get_description (cpt));
-			break;
-		case AS_COMPONENT_KEYWORDS:
-			g_value_set_boxed (value, as_component_get_keywords (cpt));
-			break;
-		case AS_COMPONENT_ICONS:
-			g_value_set_pointer (value, as_component_get_icons (cpt));
-			break;
-		case AS_COMPONENT_URLS:
-			g_value_set_boxed (value, priv->urls);
-			break;
-		case AS_COMPONENT_CATEGORIES:
-			g_value_set_boxed (value, as_component_get_categories (cpt));
-			break;
-		case AS_COMPONENT_PROJECT_LICENSE:
-			g_value_set_string (value, as_component_get_project_license (cpt));
-			break;
-		case AS_COMPONENT_PROJECT_GROUP:
-			g_value_set_string (value, as_component_get_project_group (cpt));
-			break;
-		case AS_COMPONENT_DEVELOPER_NAME:
-			g_value_set_string (value, as_component_get_developer_name (cpt));
-			break;
-		case AS_COMPONENT_SCREENSHOTS:
-			g_value_set_boxed (value, as_component_get_screenshots (cpt));
-			break;
-		default:
-			G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-			break;
+	case AS_COMPONENT_KIND:
+		g_value_set_enum (value, as_component_get_kind (cpt));
+		break;
+	case AS_COMPONENT_PKGNAMES:
+		g_value_set_boxed (value, as_component_get_pkgnames (cpt));
+		break;
+	case AS_COMPONENT_ID:
+		g_value_set_string (value, as_component_get_id (cpt));
+		break;
+	case AS_COMPONENT_NAME:
+		g_value_set_string (value, as_component_get_name (cpt));
+		break;
+	case AS_COMPONENT_SUMMARY:
+		g_value_set_string (value, as_component_get_summary (cpt));
+		break;
+	case AS_COMPONENT_DESCRIPTION:
+		g_value_set_string (value, as_component_get_description (cpt));
+		break;
+	case AS_COMPONENT_KEYWORDS:
+		g_value_set_boxed (value, as_component_get_keywords (cpt));
+		break;
+	case AS_COMPONENT_ICONS:
+		g_value_set_pointer (value, as_component_get_icons (cpt));
+		break;
+	case AS_COMPONENT_URLS:
+		g_value_set_boxed (value, priv->urls);
+		break;
+	case AS_COMPONENT_CATEGORIES:
+		g_value_set_boxed (value, as_component_get_categories (cpt));
+		break;
+	case AS_COMPONENT_PROJECT_LICENSE:
+		g_value_set_string (value, as_component_get_project_license (cpt));
+		break;
+	case AS_COMPONENT_PROJECT_GROUP:
+		g_value_set_string (value, as_component_get_project_group (cpt));
+		break;
+	case AS_COMPONENT_SCREENSHOTS:
+		g_value_set_boxed (value, as_component_get_screenshots_all (cpt));
+		break;
+	default:
+		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+		break;
 	}
 }
 
@@ -6547,45 +6632,45 @@ as_component_get_property (GObject * object, guint property_id, GValue * value, 
  * as_component_set_property:
  */
 static void
-as_component_set_property (GObject * object, guint property_id, const GValue * value, GParamSpec * pspec)
+as_component_set_property (GObject *object,
+			   guint property_id,
+			   const GValue *value,
+			   GParamSpec *pspec)
 {
 	AsComponent *cpt;
 	cpt = G_TYPE_CHECK_INSTANCE_CAST (object, AS_TYPE_COMPONENT, AsComponent);
 
 	switch (property_id) {
-		case AS_COMPONENT_KIND:
-			as_component_set_kind (cpt, g_value_get_enum (value));
-			break;
-		case AS_COMPONENT_PKGNAMES:
-			as_component_set_pkgnames (cpt, g_value_get_boxed (value));
-			break;
-		case AS_COMPONENT_ID:
-			as_component_set_id (cpt, g_value_get_string (value));
-			break;
-		case AS_COMPONENT_NAME:
-			as_component_set_name (cpt, g_value_get_string (value), NULL);
-			break;
-		case AS_COMPONENT_SUMMARY:
-			as_component_set_summary (cpt, g_value_get_string (value), NULL);
-			break;
-		case AS_COMPONENT_DESCRIPTION:
-			as_component_set_description (cpt, g_value_get_string (value), NULL);
-			break;
-		case AS_COMPONENT_KEYWORDS:
-			as_component_set_keywords (cpt, g_value_get_boxed (value), NULL);
-			break;
-		case AS_COMPONENT_PROJECT_LICENSE:
-			as_component_set_project_license (cpt, g_value_get_string (value));
-			break;
-		case AS_COMPONENT_PROJECT_GROUP:
-			as_component_set_project_group (cpt, g_value_get_string (value));
-			break;
-		case AS_COMPONENT_DEVELOPER_NAME:
-			as_component_set_developer_name (cpt, g_value_get_string (value), NULL);
-			break;
-		default:
-			G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-			break;
+	case AS_COMPONENT_KIND:
+		as_component_set_kind (cpt, g_value_get_enum (value));
+		break;
+	case AS_COMPONENT_PKGNAMES:
+		as_component_set_pkgnames (cpt, g_value_get_boxed (value));
+		break;
+	case AS_COMPONENT_ID:
+		as_component_set_id (cpt, g_value_get_string (value));
+		break;
+	case AS_COMPONENT_NAME:
+		as_component_set_name (cpt, g_value_get_string (value), NULL);
+		break;
+	case AS_COMPONENT_SUMMARY:
+		as_component_set_summary (cpt, g_value_get_string (value), NULL);
+		break;
+	case AS_COMPONENT_DESCRIPTION:
+		as_component_set_description (cpt, g_value_get_string (value), NULL);
+		break;
+	case AS_COMPONENT_KEYWORDS:
+		as_component_set_keywords (cpt, g_value_get_pointer (value), NULL, TRUE);
+		break;
+	case AS_COMPONENT_PROJECT_LICENSE:
+		as_component_set_project_license (cpt, g_value_get_string (value));
+		break;
+	case AS_COMPONENT_PROJECT_GROUP:
+		as_component_set_project_group (cpt, g_value_get_string (value));
+		break;
+	default:
+		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+		break;
 	}
 }
 
@@ -6593,7 +6678,7 @@ as_component_set_property (GObject * object, guint property_id, const GValue * v
  * as_component_class_init:
  */
 static void
-as_component_class_init (AsComponentClass * klass)
+as_component_class_init (AsComponentClass *klass)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
 	object_class->finalize = as_component_finalize;
@@ -6604,113 +6689,184 @@ as_component_class_init (AsComponentClass * klass)
 	 *
 	 * the #AsComponentKind of this component
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_KIND,
-					g_param_spec_enum ("kind", "kind", "kind", AS_TYPE_COMPONENT_KIND, 0, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE | G_PARAM_WRITABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_KIND,
+	    g_param_spec_enum ("kind",
+			       "kind",
+			       "kind",
+			       AS_TYPE_COMPONENT_KIND,
+			       0,
+			       G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				   G_PARAM_READABLE | G_PARAM_WRITABLE));
 	/**
 	 * AsComponent:pkgnames:
 	 *
 	 * string array of packages name
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_PKGNAMES,
-					g_param_spec_boxed ("pkgnames", "pkgnames", "pkgnames", G_TYPE_STRV, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE | G_PARAM_WRITABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_PKGNAMES,
+	    g_param_spec_boxed ("pkgnames",
+				"pkgnames",
+				"pkgnames",
+				G_TYPE_STRV,
+				G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				    G_PARAM_READABLE | G_PARAM_WRITABLE));
 	/**
 	 * AsComponent:id:
 	 *
 	 * the unique identifier
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_ID,
-					g_param_spec_string ("id", "id", "id", NULL, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE | G_PARAM_WRITABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_ID,
+	    g_param_spec_string ("id",
+				 "id",
+				 "id",
+				 NULL,
+				 G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				     G_PARAM_READABLE | G_PARAM_WRITABLE));
 	/**
 	 * AsComponent:name:
 	 *
 	 * the name
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_NAME,
-					g_param_spec_string ("name", "name", "name", NULL, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE | G_PARAM_WRITABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_NAME,
+	    g_param_spec_string ("name",
+				 "name",
+				 "name",
+				 NULL,
+				 G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				     G_PARAM_READABLE | G_PARAM_WRITABLE));
 	/**
 	 * AsComponent:summary:
 	 *
 	 * the summary
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_SUMMARY,
-					g_param_spec_string ("summary", "summary", "summary", NULL, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE | G_PARAM_WRITABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_SUMMARY,
+	    g_param_spec_string ("summary",
+				 "summary",
+				 "summary",
+				 NULL,
+				 G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				     G_PARAM_READABLE | G_PARAM_WRITABLE));
 	/**
 	 * AsComponent:description:
 	 *
 	 * the description
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_DESCRIPTION,
-					g_param_spec_string ("description", "description", "description", NULL, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE | G_PARAM_WRITABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_DESCRIPTION,
+	    g_param_spec_string ("description",
+				 "description",
+				 "description",
+				 NULL,
+				 G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				     G_PARAM_READABLE | G_PARAM_WRITABLE));
 	/**
 	 * AsComponent:keywords:
 	 *
 	 * string array of keywords
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_KEYWORDS,
-					g_param_spec_boxed ("keywords", "keywords", "keywords", G_TYPE_STRV, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE | G_PARAM_WRITABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_KEYWORDS,
+	    g_param_spec_boxed ("keywords",
+				"keywords",
+				"keywords",
+				G_TYPE_STRV,
+				G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				    G_PARAM_READABLE | G_PARAM_WRITABLE));
 	/**
 	 * AsComponent:icons: (type GList(AsIcon))
 	 *
 	 * hash map of icon urls and sizes
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_ICONS,
-					g_param_spec_pointer ("icons", "icons", "icons", G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_ICONS,
+	    g_param_spec_pointer ("icons",
+				  "icons",
+				  "icons",
+				  G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				      G_PARAM_READABLE));
 	/**
 	 * AsComponent:urls: (type GHashTable(AsUrlKind,utf8))
 	 *
 	 * the urls associated with this component
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_URLS,
-					g_param_spec_boxed ("urls", "urls", "urls", G_TYPE_HASH_TABLE, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_URLS,
+	    g_param_spec_boxed ("urls",
+				"urls",
+				"urls",
+				G_TYPE_HASH_TABLE,
+				G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				    G_PARAM_READABLE));
 	/**
 	 * AsComponent:categories:
 	 *
 	 * string array of categories
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_CATEGORIES,
-					g_param_spec_boxed ("categories", "categories", "categories", G_TYPE_PTR_ARRAY, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_CATEGORIES,
+	    g_param_spec_boxed ("categories",
+				"categories",
+				"categories",
+				G_TYPE_PTR_ARRAY,
+				G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				    G_PARAM_READABLE));
 	/**
 	 * AsComponent:project-license:
 	 *
 	 * the project license
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_PROJECT_LICENSE,
-					g_param_spec_string ("project-license", "project-license", "project-license", NULL, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE | G_PARAM_WRITABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_PROJECT_LICENSE,
+	    g_param_spec_string ("project-license",
+				 "project-license",
+				 "project-license",
+				 NULL,
+				 G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				     G_PARAM_READABLE | G_PARAM_WRITABLE));
 	/**
 	 * AsComponent:project-group:
 	 *
 	 * the project group
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_PROJECT_GROUP,
-					g_param_spec_string ("project-group", "project-group", "project-group", NULL, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE | G_PARAM_WRITABLE));
-	/**
-	 * AsComponent:developer-name:
-	 *
-	 * the developer name
-	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_DEVELOPER_NAME,
-					g_param_spec_string ("developer-name", "developer-name", "developer-name", NULL, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE | G_PARAM_WRITABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_PROJECT_GROUP,
+	    g_param_spec_string ("project-group",
+				 "project-group",
+				 "project-group",
+				 NULL,
+				 G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				     G_PARAM_READABLE | G_PARAM_WRITABLE));
+
 	/**
 	 * AsComponent:screenshots: (type GPtrArray(AsScreenshot)):
 	 *
 	 * An array of #AsScreenshot instances
 	 */
-	g_object_class_install_property (object_class,
-					AS_COMPONENT_SCREENSHOTS,
-					g_param_spec_boxed ("screenshots", "screenshots", "screenshots", G_TYPE_PTR_ARRAY, G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB | G_PARAM_READABLE));
+	g_object_class_install_property (
+	    object_class,
+	    AS_COMPONENT_SCREENSHOTS,
+	    g_param_spec_boxed ("screenshots",
+				"screenshots",
+				"screenshots",
+				G_TYPE_PTR_ARRAY,
+				G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB |
+				    G_PARAM_READABLE));
 }
 
 /**
@@ -6720,7 +6876,7 @@ as_component_class_init (AsComponentClass * klass)
  *
  * Returns: (transfer full): a new #AsComponent
  **/
-AsComponent*
+AsComponent *
 as_component_new (void)
 {
 	AsComponent *cpt;

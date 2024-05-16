@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (C) 2016-2022 Matthias Klumpp <matthias@tenstral.net>
+# Copyright (C) 2016-2024 Matthias Klumpp <matthias@tenstral.net>
 #
 # Licensed under the GNU Lesser General Public License Version 2.1
 #
@@ -30,18 +30,21 @@ from pathlib import Path
 
 
 # additional CSS from system locations, we use it if available
-EXTRA_CSS = [['/usr/share/javascript/highlight.js/styles/routeros.css',
-              'highlight.css']]
+EXTRA_CSS = [['/usr/share/javascript/highlight.js/styles/routeros.css', 'highlight.css']]
 
 
-def daps_build(src_dir, project_name, daps_exe):
+def daps_build(src_dir, project_name, daps_exe, valsec_gen):
     print('Creating HTML with DAPS...')
     sys.stdout.flush()
 
+    if valsec_gen:
+        ret = subprocess.call([valsec_gen, src_dir], cwd=src_dir)
+        if ret != 0:
+            print('Failed to generated some documentation sections.')
+            sys.exit(6)
+
     build_dir = os.path.join(src_dir, '_docbuild')
-    cmd = [daps_exe,
-           'html',
-           '--clean']
+    cmd = [daps_exe, 'html', '--clean']
     if project_name:
         cmd.extend(['--name', project_name])
 
@@ -57,14 +60,15 @@ def daps_build(src_dir, project_name, daps_exe):
     html_out_dir = os.path.join(build_dir, project_name, 'html', project_name)
 
     # copy the (usually missing) plain SVG project icon
-    shutil.copy(os.path.join(src_dir, 'images', 'src', 'svg', 'appstream-logo.svg'),
-                os.path.join(html_out_dir, 'images'))
+    shutil.copy(
+        os.path.join(src_dir, 'images', 'src', 'svg', 'appstream-logo.svg'),
+        os.path.join(html_out_dir, 'images'),
+    )
 
     # copy extra CSS if it is available
     for css_fname in EXTRA_CSS:
         if os.path.exists(css_fname[0]):
-            shutil.copy(css_fname[0], os.path.join(html_out_dir, 'static',
-                                                   'css', css_fname[1]))
+            shutil.copy(css_fname[0], os.path.join(html_out_dir, 'static', 'css', css_fname[1]))
 
     return build_dir
 
@@ -74,18 +78,33 @@ def copy_result(build_dir, project_name, dest_dir):
     if os.path.exists(dest_dir):
         shutil.rmtree(dest_dir)
 
-    shutil.copytree(os.path.join(build_dir, project_name, 'html', project_name),
-                    dest_dir, symlinks=True)
+    shutil.copytree(
+        os.path.join(build_dir, project_name, 'html', project_name), dest_dir, symlinks=True
+    )
 
 
-def cleanup_build_dir(build_dir):
+def cleanup_workspace(src_dir, build_dir):
     print('Cleaning up.')
+    assert src_dir != build_dir
+
+    try:
+        os.remove(os.path.join(src_dir, 'xml', 'validator-compose-hints.xml'))
+        os.remove(os.path.join(src_dir, 'xml', 'validator-issues.xml'))
+    except OSError:
+        pass
+
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
 
 
-def daps_validate(src_dir, daps_exe):
+def daps_validate(src_dir, daps_exe, valsec_gen):
     print('Validating documentation with DAPS...')
+
+    if valsec_gen:
+        ret = subprocess.call([valsec_gen, src_dir], cwd=src_dir)
+        if ret != 0:
+            print('Failed to generated some documentation sections.')
+            sys.exit(6)
 
     build_dir = os.path.join(src_dir, '_docbuild')
     if os.path.exists(build_dir):
@@ -95,7 +114,7 @@ def daps_validate(src_dir, daps_exe):
     ret = subprocess.call([daps_exe, 'validate'], cwd=src_dir)
     if ret != 0:
         print('Validation failed!')
-    cleanup_build_dir(build_dir)
+    cleanup_workspace(src_dir, build_dir)
     return ret == 0
 
 
@@ -104,6 +123,7 @@ def main(args):
     parser.add_argument('--build', action='store_true')
     parser.add_argument('--validate', action='store_true')
 
+    parser.add_argument('--valsec-gen', action='store')
     parser.add_argument('--src', action='store')
     parser.add_argument('--builddir', action='store')
     parser.add_argument('--daps', action='store', default='daps')
@@ -123,14 +143,13 @@ def main(args):
 
     if options.build:
         # build the HTML files
-        build_dir = daps_build(options.src, options.project, options.daps)
+        build_dir = daps_build(options.src, options.project, options.daps, options.valsec_gen)
 
         # copy to output HTML folder, overriding all previous contents
-        copy_result(build_dir, options.project,
-                    os.path.join(options.src, 'html'))
+        copy_result(build_dir, options.project, os.path.join(options.src, 'html'))
 
         # remove temporary directory
-        cleanup_build_dir(build_dir)
+        cleanup_workspace(options.src, build_dir)
 
         # make a dummy file so Meson can rebuild documentation on demand
         if options.builddir:
@@ -140,7 +159,7 @@ def main(args):
 
     elif options.validate:
         # validate the XML
-        ret = daps_validate(options.src, options.daps)
+        ret = daps_validate(options.src, options.daps, options.valsec_gen)
         if not ret:
             sys.exit(6)
 
@@ -149,4 +168,5 @@ def main(args):
 
 if __name__ == '__main__':
     import sys
+
     sys.exit(main(sys.argv[1:]))

@@ -1,1 +1,10 @@
-.pc/
+*~
+*.bak
+*.o
+*.so
+*.user
+*.pc
+*.cache
+build
+Makefile
+.directory

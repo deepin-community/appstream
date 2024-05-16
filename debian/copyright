@@ -109,8 +109,8 @@ License: FSFAP
  permitted in any medium without royalty provided the copyright notice and
  this notice are preserved. This file is offered as-is, without any warranty.
 
-Files: tests/samples/compose/NotoSans-Regular.ttf
-Copyright: 2010-2015, Google Corporation
+Files: tests/samples/compose/Raleway-Regular.ttf
+Copyright: 2010, The Raleway Project Authors
 License: SIL-1.1
  PREAMBLE
  .

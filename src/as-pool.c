@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2022 Matthias Klumpp <matthias@tenstral.net>
+ * Copyright (C) 2012-2024 Matthias Klumpp <matthias@tenstral.net>
  *
  * Licensed under the GNU Lesser General Public License Version 2.1
  *
@@ -40,7 +40,6 @@
 
 #include "config.h"
 #include "as-pool.h"
-#include "as-pool-gir.h"
 #include "as-pool-private.h"
 
 #include <glib.h>
@@ -55,8 +54,8 @@
 #include "as-utils.h"
 #include "as-utils-private.h"
 #include "as-component-private.h"
-#include "as-distro-details.h"
-#include "as-settings-private.h"
+#include "as-component-box-private.h"
+#include "as-macros-private.h"
 #include "as-distro-extras.h"
 #include "as-stemmer.h"
 #include "as-cache.h"
@@ -65,23 +64,22 @@
 
 #include "as-metadata.h"
 
-typedef struct
-{
-	gchar		*screenshot_service_url;
-	gchar		*locale;
-	gchar		*current_arch;
-	AsProfile	*profile;
+typedef struct {
+	gchar *locale_bcp47;
+	gchar *locale_posix;
+	gchar *current_arch;
+	AsProfile *profile;
 
-	GHashTable	*std_data_locations;
-	GHashTable	*extra_data_locations;
+	GHashTable *std_data_locations;
+	GHashTable *extra_data_locations;
 
-	AsCache		*cache;
-	guint		 pending_id; /* source ID for pending auto-reload */
+	AsCache *cache;
+	guint pending_id; /* source ID for pending auto-reload */
 
-	gchar		**term_greylist;
-	AsPoolFlags	flags;
+	gchar **term_greylist;
+	AsPoolFlags flags;
 
-	GRWLock		rw_lock;
+	GRWLock rw_lock;
 } AsPoolPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AsPool, as_pool, G_TYPE_OBJECT)
@@ -91,7 +89,7 @@ enum {
 	SIGNAL_LAST
 };
 
-static guint signals [SIGNAL_LAST] = { 0 };
+static guint signals[SIGNAL_LAST] = { 0 };
 
 #define GET_PRIVATE(o) (as_pool_get_instance_private (o))
 
@@ -108,7 +106,7 @@ static guint signals [SIGNAL_LAST] = { 0 };
 static const gchar *SYSTEM_CATALOG_METADATA_PREFIXES[] = { "/usr/share",
 							   "/var/lib",
 							   "/var/cache",
-							   NULL};
+							   NULL };
 
 /* where .desktop files are installed to by packages to be registered with the system */
 static gchar *APPLICATIONS_DIR = "/usr/share/applications";
@@ -123,25 +121,24 @@ static gchar *LOCAL_METAINFO_CACHE_KEY = "local-metainfo";
 static gchar *OS_CATALOG_CACHE_KEY = "os-catalog";
 
 typedef struct {
-	AsFormatKind		format_kind;
-	GRefString		*location;
-	gboolean		compressed_only; /* load only compressed data, workaround for Flatpak */
+	AsFormatKind format_kind;
+	GRefString *location;
+	gboolean compressed_only; /* load only compressed data, workaround for Flatpak */
 } AsLocationEntry;
 
 typedef struct {
-	AsPool			*owner;
-	AsComponentScope	scope;
-	AsFormatStyle		format_style;
-	gboolean		is_os_data;
-	GPtrArray		*locations;
-	GPtrArray		*icon_dirs;
-	GRefString		*cache_key;
-	AsFileMonitor		*monitor;
+	AsPool *owner;
+	AsComponentScope scope;
+	AsFormatStyle format_style;
+	gboolean is_os_data;
+	GPtrArray *locations;
+	GPtrArray *icon_dirs;
+	GRefString *cache_key;
+	AsFileMonitor *monitor;
 } AsLocationGroup;
 
-static AsLocationEntry*
-as_location_entry_new (AsFormatKind format_kind,
-		       const gchar *location)
+static AsLocationEntry *
+as_location_entry_new (AsFormatKind format_kind, const gchar *location)
 {
 	AsLocationEntry *entry;
 	entry = g_new0 (AsLocationEntry, 1);
@@ -159,10 +156,13 @@ as_location_entry_free (AsLocationEntry *entry)
 	g_free (entry);
 }
 
-static void as_pool_cache_refine_component_cb (AsComponent *cpt, gboolean is_serialization, gpointer user_data);
-static void as_pool_location_group_monitor_changed_cb (AsFileMonitor *monitor, const gchar *filename, AsLocationGroup *lgroup);
+static void
+as_pool_cache_refine_component_cb (AsComponent *cpt, gboolean is_serialization, gpointer user_data);
+static void as_pool_location_group_monitor_changed_cb (AsFileMonitor *monitor,
+						       const gchar *filename,
+						       AsLocationGroup *lgroup);
 
-static AsLocationGroup*
+static AsLocationGroup *
 as_location_group_new (AsPool *owner,
 		       AsComponentScope scope,
 		       AsFormatStyle format_style,
@@ -177,18 +177,22 @@ as_location_group_new (AsPool *owner,
 	lgroup->format_style = format_style;
 	lgroup->is_os_data = is_os_data;
 
-	lgroup->locations = g_ptr_array_new_with_free_func ((GDestroyNotify) as_location_entry_free);
+	lgroup->locations = g_ptr_array_new_with_free_func (
+	    (GDestroyNotify) as_location_entry_free);
 	lgroup->icon_dirs = g_ptr_array_new_with_free_func ((GDestroyNotify) as_ref_string_release);
 	as_ref_string_assign_safe (&lgroup->cache_key, cache_key);
 
 	lgroup->monitor = as_file_monitor_new ();
-	g_signal_connect (lgroup->monitor, "changed",
+	g_signal_connect (lgroup->monitor,
+			  "changed",
 			  G_CALLBACK (as_pool_location_group_monitor_changed_cb),
 			  lgroup);
-	g_signal_connect (lgroup->monitor, "added",
+	g_signal_connect (lgroup->monitor,
+			  "added",
 			  G_CALLBACK (as_pool_location_group_monitor_changed_cb),
 			  lgroup);
-	g_signal_connect (lgroup->monitor, "removed",
+	g_signal_connect (lgroup->monitor,
+			  "removed",
 			  G_CALLBACK (as_pool_location_group_monitor_changed_cb),
 			  lgroup);
 
@@ -206,7 +210,7 @@ as_location_group_free (AsLocationGroup *lgroup)
 	g_free (lgroup);
 }
 
-static AsLocationEntry*
+static AsLocationEntry *
 as_location_group_add_dir (AsLocationGroup *lgroup,
 			   const gchar *dir,
 			   const gchar *icon_dir,
@@ -219,15 +223,15 @@ as_location_group_add_dir (AsLocationGroup *lgroup,
 	entry = as_location_entry_new (format_kind, dir);
 	g_ptr_array_add (lgroup->locations, entry);
 	if (icon_dir != NULL)
-		g_ptr_array_add (lgroup->icon_dirs,
-				 g_ref_string_new_intern (icon_dir));
+		g_ptr_array_add (lgroup->icon_dirs, g_ref_string_new_intern (icon_dir));
 
 	/* monitor directory for changes if needed */
 	if (as_flags_contains (priv->flags, AS_POOL_FLAG_MONITOR)) {
 		g_autoptr(GError) error = NULL;
 		if (!as_file_monitor_add_directory (lgroup->monitor, dir, NULL, &error))
 			g_warning ("Unable to register directory '%s' for monitoring: %s",
-				   dir, error->message);
+				   dir,
+				   error->message);
 	}
 
 	return entry;
@@ -246,7 +250,7 @@ typedef struct {
 	GHashTable *id_map;
 } AsComponentRegistry;
 
-static AsComponentRegistry*
+static AsComponentRegistry *
 as_component_registry_new (void)
 {
 	AsComponentRegistry *registry;
@@ -254,10 +258,12 @@ as_component_registry_new (void)
 
 	registry->data_id_map = g_hash_table_new_full ((GHashFunc) as_utils_data_id_hash,
 						       (GEqualFunc) as_utils_data_id_equal,
-							NULL,
-							g_object_unref);
-	registry->id_map = g_hash_table_new_full (g_str_hash, g_str_equal,
-						  NULL, (GDestroyNotify) g_ptr_array_unref);
+						       NULL,
+						       g_object_unref);
+	registry->id_map = g_hash_table_new_full (g_str_hash,
+						  g_str_equal,
+						  NULL,
+						  (GDestroyNotify) g_ptr_array_unref);
 
 	return registry;
 }
@@ -277,21 +283,18 @@ as_component_registry_add (AsComponentRegistry *registry, AsComponent *cpt)
 	GPtrArray *list;
 
 	g_hash_table_insert (registry->data_id_map,
-				(gchar*) as_component_get_data_id (cpt),
-				g_object_ref (cpt));
+			     (gchar *) as_component_get_data_id (cpt),
+			     g_object_ref (cpt));
 
 	list = g_hash_table_lookup (registry->id_map, as_component_get_id (cpt));
 	if (list == NULL) {
 		list = g_ptr_array_new_with_free_func (g_object_unref);
-		g_hash_table_insert (registry->id_map,
-				     (gchar*) as_component_get_id (cpt),
-				     list);
+		g_hash_table_insert (registry->id_map, (gchar *) as_component_get_id (cpt), list);
 	}
-	g_ptr_array_add (list,
-			 g_object_ref (cpt));
+	g_ptr_array_add (list, g_object_ref (cpt));
 }
 
-static AsComponent*
+static AsComponent *
 as_component_registry_lookup (AsComponentRegistry *registry, const gchar *data_id)
 {
 	return g_hash_table_lookup (registry->data_id_map, data_id);
@@ -309,13 +312,13 @@ as_component_registry_has_cid (AsComponentRegistry *registry, const gchar *cid)
 	return g_hash_table_contains (registry->id_map, cid);
 }
 
-static GPtrArray*
+static GPtrArray *
 as_component_registry_get_components_by_id (AsComponentRegistry *registry, const gchar *cid)
 {
 	return g_hash_table_lookup (registry->id_map, cid);
 }
 
-static GPtrArray*
+static GPtrArray *
 as_component_registry_get_contents (AsComponentRegistry *registry)
 {
 	GPtrArray *cpt_array;
@@ -341,22 +344,27 @@ as_pool_init (AsPool *pool)
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autofree gchar *cache_root = NULL;
 	g_autoptr(GError) tmp_error = NULL;
-	g_autoptr(AsDistroDetails) distro = NULL;
 
 	g_rw_lock_init (&priv->rw_lock);
 
 	priv->profile = as_profile_new ();
 
 	/* set active locale */
-	priv->locale = as_get_current_locale ();
+	priv->locale_posix = as_get_current_locale_posix ();
+	priv->locale_bcp47 = as_utils_posix_locale_to_bcp47 (priv->locale_posix);
 
 	/* well-known default metadata directories */
-	priv->std_data_locations = g_hash_table_new_full (g_str_hash, g_str_equal,
-							  g_free, (GDestroyNotify) as_location_group_free);
+	priv->std_data_locations = g_hash_table_new_full (g_str_hash,
+							  g_str_equal,
+							  g_free,
+							  (GDestroyNotify) as_location_group_free);
 
 	/* user-defined catalog metadata locations */
-	priv->extra_data_locations = g_hash_table_new_full (g_str_hash, g_str_equal,
-							    g_free, (GDestroyNotify) as_location_group_free);
+	priv->extra_data_locations = g_hash_table_new_full (
+	    g_str_hash,
+	    g_str_equal,
+	    g_free,
+	    (GDestroyNotify) as_location_group_free);
 
 	/* set the current architecture */
 	priv->current_arch = as_get_current_arch ();
@@ -370,17 +378,9 @@ as_pool_init (AsPool *pool)
 	/* set callback to refine components after deserialization */
 	as_cache_set_refine_func (priv->cache, as_pool_cache_refine_component_cb);
 
-	distro = as_distro_details_new ();
-	priv->screenshot_service_url = as_distro_details_get_str (distro, "ScreenshotUrl");
-
 	/* set default pool flags */
-	priv->flags = AS_POOL_FLAG_LOAD_OS_CATALOG |
-		      AS_POOL_FLAG_LOAD_OS_METAINFO |
+	priv->flags = AS_POOL_FLAG_LOAD_OS_CATALOG | AS_POOL_FLAG_LOAD_OS_METAINFO |
 		      AS_POOL_FLAG_LOAD_FLATPAK;
-
-	/* check whether we might want to prefer local metainfo files over remote data */
-	if (as_distro_details_get_bool (distro, "PreferLocalMetainfoData", FALSE))
-		as_pool_add_flags (pool, AS_POOL_FLAG_PREFER_OS_METAINFO);
 }
 
 /**
@@ -396,14 +396,13 @@ as_pool_finalize (GObject *object)
 	if (priv->pending_id)
 		g_source_remove (priv->pending_id);
 
-	g_free (priv->screenshot_service_url);
-
 	g_hash_table_unref (priv->std_data_locations);
 	g_hash_table_unref (priv->extra_data_locations);
 
 	g_object_unref (priv->cache);
 
-	g_free (priv->locale);
+	g_free (priv->locale_posix);
+	g_free (priv->locale_bcp47);
 	g_free (priv->current_arch);
 	g_strfreev (priv->term_greylist);
 
@@ -432,12 +431,15 @@ as_pool_class_init (AsPoolClass *klass)
 	 *
 	 * Since: 0.15.0
 	 **/
-	signals [SIGNAL_CHANGED] =
-		g_signal_new ("changed",
-			      G_TYPE_FROM_CLASS (object_class), G_SIGNAL_RUN_LAST,
-			      G_STRUCT_OFFSET (AsPoolClass, changed),
-			      NULL, NULL, g_cclosure_marshal_VOID__VOID,
-			      G_TYPE_NONE, 0);
+	signals[SIGNAL_CHANGED] = g_signal_new ("changed",
+						G_TYPE_FROM_CLASS (object_class),
+						G_SIGNAL_RUN_LAST,
+						G_STRUCT_OFFSET (AsPoolClass, changed),
+						NULL,
+						NULL,
+						g_cclosure_marshal_VOID__VOID,
+						G_TYPE_NONE,
+						0);
 
 	object_class->finalize = as_pool_finalize;
 }
@@ -450,7 +452,7 @@ as_pool_class_init (AsPoolClass *klass)
  * @add_root: Whether to add the root directory if necessary.
  * @with_legacy_support: Whether some legacy support should be enabled.
  *
- * See %as_pool_add_metadata_location()
+ * See %as_pool_add_extra_data_location()
  */
 static void
 as_pool_add_catalog_metadata_dir_internal (AsPool *pool,
@@ -464,7 +466,8 @@ as_pool_add_catalog_metadata_dir_internal (AsPool *pool,
 	gchar *path;
 
 	if (!g_file_test (directory, G_FILE_TEST_IS_DIR)) {
-		g_debug ("Not adding metadata catalog location '%s': Not a directory, or does not exist.",
+		g_debug ("Not adding metadata catalog location '%s': Not a directory, or does not "
+			 "exist.",
 			 directory);
 		return;
 	}
@@ -477,10 +480,7 @@ as_pool_add_catalog_metadata_dir_internal (AsPool *pool,
 	/* metadata locations */
 	path = g_build_filename (directory, "xml", NULL);
 	if (g_file_test (path, G_FILE_TEST_IS_DIR)) {
-		as_location_group_add_dir (lgroup,
-					   path,
-					   icon_dir,
-					   AS_FORMAT_KIND_XML);
+		as_location_group_add_dir (lgroup, path, icon_dir, AS_FORMAT_KIND_XML);
 		dir_added = TRUE;
 	}
 	g_free (path);
@@ -488,10 +488,7 @@ as_pool_add_catalog_metadata_dir_internal (AsPool *pool,
 	if (with_legacy_support) {
 		path = g_build_filename (directory, "xmls", NULL);
 		if (g_file_test (path, G_FILE_TEST_IS_DIR)) {
-			as_location_group_add_dir (lgroup,
-						path,
-						icon_dir,
-						AS_FORMAT_KIND_XML);
+			as_location_group_add_dir (lgroup, path, icon_dir, AS_FORMAT_KIND_XML);
 			dir_added = TRUE;
 		}
 		g_free (path);
@@ -499,24 +496,15 @@ as_pool_add_catalog_metadata_dir_internal (AsPool *pool,
 
 	path = g_build_filename (directory, "yaml", NULL);
 	if (g_file_test (path, G_FILE_TEST_IS_DIR)) {
-		as_location_group_add_dir (lgroup,
-					   path,
-					   icon_dir,
-					   AS_FORMAT_KIND_YAML);
+		as_location_group_add_dir (lgroup, path, icon_dir, AS_FORMAT_KIND_YAML);
 		dir_added = TRUE;
 	}
 	g_free (path);
 
 	if ((add_root) && (!dir_added)) {
 		/* we didn't find metadata-specific directories, so let's watch to root path for both YAML and XML */
-		as_location_group_add_dir (lgroup,
-					   directory,
-					   icon_dir,
-					   AS_FORMAT_KIND_XML);
-		as_location_group_add_dir (lgroup,
-					   directory,
-					   icon_dir,
-					   AS_FORMAT_KIND_YAML);
+		as_location_group_add_dir (lgroup, directory, icon_dir, AS_FORMAT_KIND_XML);
+		as_location_group_add_dir (lgroup, directory, icon_dir, AS_FORMAT_KIND_YAML);
 		g_debug ("Added %s to YAML and XML metadata watch locations.", directory);
 	}
 }
@@ -538,14 +526,16 @@ as_pool_register_flatpak_dir (AsPool *pool, const gchar *flatpak_root_dir, AsCom
 	if (!g_file_test (flatpak_root_dir, G_FILE_TEST_EXISTS))
 		return;
 
-	fpr_dir =  g_file_new_for_path (flatpak_root_dir);
+	fpr_dir = g_file_new_for_path (flatpak_root_dir);
 	fpr_direnum = g_file_enumerate_children (fpr_dir,
-					     G_FILE_ATTRIBUTE_STANDARD_NAME,
-					     G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-					     NULL, &error);
+						 G_FILE_ATTRIBUTE_STANDARD_NAME,
+						 G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+						 NULL,
+						 &error);
 	if (error != NULL) {
 		g_warning ("Unable to read Flatpak directory '%s': %s",
-			   flatpak_root_dir, error->message);
+			   flatpak_root_dir,
+			   error->message);
 		return;
 	}
 
@@ -556,7 +546,8 @@ as_pool_register_flatpak_dir (AsPool *pool, const gchar *flatpak_root_dir, AsCom
 
 		if (!g_file_enumerator_iterate (fpr_direnum, &repo_finfo, NULL, NULL, &error)) {
 			g_warning ("Unable to iterate Flatpak directory '%s': %s",
-			   flatpak_root_dir, error->message);
+				   flatpak_root_dir,
+				   error->message);
 			return;
 		}
 		if (repo_finfo == NULL)
@@ -571,14 +562,17 @@ as_pool_register_flatpak_dir (AsPool *pool, const gchar *flatpak_root_dir, AsCom
 			g_autoptr(GFileEnumerator) repo_direnum = NULL;
 			g_autoptr(GFile) repo_dir = NULL;
 
-			repo_dir =  g_file_new_for_path (repo_fname);
-			repo_direnum = g_file_enumerate_children (repo_dir,
-								  G_FILE_ATTRIBUTE_STANDARD_NAME,
-								  G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-								  NULL, &error);
+			repo_dir = g_file_new_for_path (repo_fname);
+			repo_direnum = g_file_enumerate_children (
+			    repo_dir,
+			    G_FILE_ATTRIBUTE_STANDARD_NAME,
+			    G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+			    NULL,
+			    &error);
 			if (repo_direnum == NULL) {
 				g_warning ("Unable to scan Flatpak repository directory '%s': %s",
-					   repo_fname, error->message);
+					   repo_fname,
+					   error->message);
 				g_error_free (g_steal_pointer (&error));
 				continue;
 			}
@@ -592,34 +586,53 @@ as_pool_register_flatpak_dir (AsPool *pool, const gchar *flatpak_root_dir, AsCom
 				AsLocationEntry *lentry;
 				const gchar *arch_name;
 
-				if (!g_file_enumerator_iterate (repo_direnum, &repo_arch_finfo, NULL, NULL, &error)) {
-					g_warning ("Unable to iterate Flatpak repository directory '%s': %s",
-						   repo_fname, error->message);
+				if (!g_file_enumerator_iterate (repo_direnum,
+								&repo_arch_finfo,
+								NULL,
+								NULL,
+								&error)) {
+					g_warning ("Unable to iterate Flatpak repository directory "
+						   "'%s': %s",
+						   repo_fname,
+						   error->message);
 					g_error_free (g_steal_pointer (&error));
 					break;
 				}
 				if (repo_arch_finfo == NULL)
 					break;
-				if (g_file_info_get_file_type (repo_arch_finfo) != G_FILE_TYPE_DIRECTORY)
+				if (g_file_info_get_file_type (repo_arch_finfo) !=
+				    G_FILE_TYPE_DIRECTORY)
 					continue;
 
 				arch_name = g_file_info_get_name (repo_arch_finfo);
 
 				/* add the Flatpak AppStream metadata dir */
-				fp_appstream_dir = g_build_filename (repo_fname, arch_name, "active", NULL);
-				fp_appstream_icons_dir = g_build_filename (fp_appstream_dir, "icons", NULL);
-				cache_key = g_strconcat ("flatpak-", repo_name, "-", arch_name, NULL);
-				lgroup = as_location_group_new (pool,
-								scope,
-								AS_FORMAT_STYLE_CATALOG,
-								FALSE, /* no OS data, external from Flatpak */
-								cache_key);
+				fp_appstream_dir = g_build_filename (repo_fname,
+								     arch_name,
+								     "active",
+								     NULL);
+				fp_appstream_icons_dir = g_build_filename (fp_appstream_dir,
+									   "icons",
+									   NULL);
+				cache_key = g_strconcat ("flatpak-",
+							 repo_name,
+							 "-",
+							 arch_name,
+							 NULL);
+				lgroup = as_location_group_new (
+				    pool,
+				    scope,
+				    AS_FORMAT_STYLE_CATALOG,
+				    FALSE, /* no OS data, external from Flatpak */
+				    cache_key);
 				lentry = as_location_group_add_dir (lgroup,
 								    fp_appstream_dir,
 								    fp_appstream_icons_dir,
 								    AS_FORMAT_KIND_XML);
 				if (lentry == NULL) {
-					g_critical ("Unable to watch possibly invalid Flatpak metadata directory %s", fp_appstream_dir);
+					g_critical ("Unable to watch possibly invalid Flatpak "
+						    "metadata directory %s",
+						    fp_appstream_dir);
 					continue;
 				}
 
@@ -658,10 +671,10 @@ as_pool_detect_std_metadata_dirs (AsPool *pool, gboolean include_user_data)
 
 	/* create location groups and register them */
 	lgroup_catalog = as_location_group_new (pool,
-					     AS_COMPONENT_SCOPE_SYSTEM,
-					     AS_FORMAT_STYLE_CATALOG,
-					     TRUE, /* is OS data */
-					     OS_CATALOG_CACHE_KEY);
+						AS_COMPONENT_SCOPE_SYSTEM,
+						AS_FORMAT_STYLE_CATALOG,
+						TRUE, /* is OS data */
+						OS_CATALOG_CACHE_KEY);
 	g_hash_table_insert (priv->std_data_locations,
 			     g_strdup (lgroup_catalog->cache_key),
 			     lgroup_catalog);
@@ -681,9 +694,9 @@ as_pool_detect_std_metadata_dirs (AsPool *pool, gboolean include_user_data)
 		/* desktop-entry */
 		if (g_file_test (APPLICATIONS_DIR, G_FILE_TEST_IS_DIR)) {
 			as_location_group_add_dir (lgroup_metainfo,
-						APPLICATIONS_DIR,
-						NULL, /* no icon dir */
-						AS_FORMAT_KIND_DESKTOP_ENTRY);
+						   APPLICATIONS_DIR,
+						   NULL, /* no icon dir */
+						   AS_FORMAT_KIND_DESKTOP_ENTRY);
 		} else {
 			g_debug ("System applications desktop-entry directory was not found!");
 		}
@@ -691,9 +704,9 @@ as_pool_detect_std_metadata_dirs (AsPool *pool, gboolean include_user_data)
 		/* metainfo files */
 		if (g_file_test (METAINFO_DIR, G_FILE_TEST_IS_DIR)) {
 			as_location_group_add_dir (lgroup_metainfo,
-						METAINFO_DIR,
-						NULL, /* no icon dir */
-						AS_FORMAT_KIND_XML);
+						   METAINFO_DIR,
+						   NULL, /* no icon dir */
+						   AS_FORMAT_KIND_XML);
 		} else {
 			g_debug ("System installed MetaInfo directory was not found!");
 		}
@@ -704,48 +717,29 @@ as_pool_detect_std_metadata_dirs (AsPool *pool, gboolean include_user_data)
 	if (as_flags_contains (priv->flags, AS_POOL_FLAG_LOAD_OS_CATALOG)) {
 		for (guint i = 0; SYSTEM_CATALOG_METADATA_PREFIXES[i] != NULL; i++) {
 			g_autofree gchar *catalog_path = NULL;
-			g_autofree gchar *catalog_legacy_path = NULL;
-			gboolean ignore_legacy_path = FALSE;
 
-			catalog_path = g_build_filename (SYSTEM_CATALOG_METADATA_PREFIXES[i], "swcatalog", NULL);
-			catalog_legacy_path = g_build_filename (SYSTEM_CATALOG_METADATA_PREFIXES[i], "app-info", NULL);
-
-			/* ignore compatibility symlink if one exists */
-			if (g_file_test (catalog_legacy_path, G_FILE_TEST_IS_SYMLINK)) {
-				g_autofree gchar *link_target = g_file_read_link (catalog_legacy_path, NULL);
-				if (link_target != NULL) {
-					if (g_strcmp0 (link_target, catalog_path) == 0) {
-						ignore_legacy_path = TRUE;
-						g_debug ("Ignoring legacy catalog location '%s'.", catalog_legacy_path);
-					}
-				}
-			}
-
+			catalog_path = g_build_filename (SYSTEM_CATALOG_METADATA_PREFIXES[i],
+							 "swcatalog",
+							 NULL);
 			as_pool_add_catalog_metadata_dir_internal (pool,
 								   lgroup_catalog,
 								   catalog_path,
 								   FALSE, /* add root */
 								   FALSE /* no legacy support */);
-
-			if (!ignore_legacy_path)
-				as_pool_add_catalog_metadata_dir_internal (pool,
-									   lgroup_catalog,
-									   catalog_legacy_path,
-									   FALSE, /* add root */
-									   TRUE /* enable legacy support */);
 		}
 	}
 
 	/* Add directories belonging to the Flatpak bundling system */
 	if (as_flags_contains (priv->flags, AS_POOL_FLAG_LOAD_FLATPAK)) {
 		as_pool_register_flatpak_dir (pool,
-						"/var/lib/flatpak/appstream/",
-						AS_COMPONENT_SCOPE_SYSTEM);
+					      "/var/lib/flatpak/appstream/",
+					      AS_COMPONENT_SCOPE_SYSTEM);
 		if (include_user_data) {
-			g_autofree gchar *flatpak_user_dir = g_build_filename (g_get_user_data_dir (),
-									       "flatpak",
-										"appstream",
-										NULL);
+			g_autofree gchar *flatpak_user_dir = g_build_filename (
+			    g_get_user_data_dir (),
+			    "flatpak",
+			    "appstream",
+			    NULL);
 			as_pool_register_flatpak_dir (pool,
 						      flatpak_user_dir,
 						      AS_COMPONENT_SCOPE_USER);
@@ -781,10 +775,12 @@ as_pool_add_component_internal (AsPool *pool,
 	cdid = as_component_get_data_id (cpt);
 	if (as_component_is_ignored (cpt)) {
 		if (pedantic_noadd)
-			g_set_error (error,
-					AS_POOL_ERROR,
-					AS_POOL_ERROR_FAILED,
-					"Skipping '%s' from inclusion into the pool: Component is ignored.", cdid);
+			g_set_error (
+			    error,
+			    AS_POOL_ERROR,
+			    AS_POOL_ERROR_FAILED,
+			    "Skipping '%s' from inclusion into the pool: Component is ignored.",
+			    cdid);
 		return FALSE;
 	}
 
@@ -801,10 +797,13 @@ as_pool_add_component_internal (AsPool *pool,
 		}
 
 		if (existing_cpt != NULL) {
-			if (as_component_get_origin_kind (existing_cpt) != AS_ORIGIN_KIND_DESKTOP_ENTRY) {
+			if (as_component_get_origin_kind (existing_cpt) !=
+			    AS_ORIGIN_KIND_DESKTOP_ENTRY) {
 				/* discard this component if we have better data already in the pool,
 				 * which is basically anything *but* data from a .desktop file */
-				g_debug ("Ignored .desktop metadata for '%s': We already have better data.", cdid);
+				g_debug ("Ignored .desktop metadata for '%s': We already have "
+					 "better data.",
+					 cdid);
 				return FALSE;
 			}
 		}
@@ -825,7 +824,8 @@ as_pool_add_component_internal (AsPool *pool,
 			AsComponent *match = AS_COMPONENT (g_ptr_array_index (matches, i));
 			if (new_cpt_merge_kind == AS_MERGE_KIND_REMOVE_COMPONENT) {
 				/* remove matching component from pool if its priority is lower */
-				if (as_component_get_priority (match) < as_component_get_priority (cpt)) {
+				if (as_component_get_priority (match) <
+				    as_component_get_priority (cpt)) {
 					const gchar *match_cdid = as_component_get_data_id (match);
 					as_component_registry_remove (registry, match_cdid);
 					g_debug ("Removed via merge component: %s", match_cdid);
@@ -857,12 +857,11 @@ as_pool_add_component_internal (AsPool *pool,
 	if (existing_cpt_orig_kind == AS_ORIGIN_KIND_DESKTOP_ENTRY) {
 		if (new_cpt_orig_kind == AS_ORIGIN_KIND_METAINFO) {
 			/* do an append-merge to ensure the data from an existing metainfo file has an icon */
-			as_component_merge_with_mode (cpt,
-							existing_cpt,
-							AS_MERGE_KIND_APPEND);
+			as_component_merge_with_mode (cpt, existing_cpt, AS_MERGE_KIND_APPEND);
 
 			as_component_registry_add (registry, cpt);
-			g_debug ("Replaced '%s' with data from metainfo and desktop-entry file.", cdid);
+			g_debug ("Replaced '%s' with data from metainfo and desktop-entry file.",
+				 cdid);
 			return TRUE;
 		} else {
 			as_component_set_priority (existing_cpt, -G_MAXINT);
@@ -873,14 +872,14 @@ as_pool_add_component_internal (AsPool *pool,
 	if (new_cpt_orig_kind == AS_ORIGIN_KIND_DESKTOP_ENTRY) {
 		if (existing_cpt_orig_kind == AS_ORIGIN_KIND_METAINFO) {
 			/* do an append-merge to ensure the metainfo file has an icon */
-			as_component_merge_with_mode (existing_cpt,
-						      cpt,
-						      AS_MERGE_KIND_APPEND);
+			as_component_merge_with_mode (existing_cpt, cpt, AS_MERGE_KIND_APPEND);
 			g_debug ("Merged desktop-entry data into metainfo data for '%s'.", cdid);
 			return TRUE;
 		}
 		if (existing_cpt_orig_kind == AS_ORIGIN_KIND_CATALOG) {
-			g_debug ("Ignored desktop-entry component '%s': We already have better data.", cdid);
+			g_debug (
+			    "Ignored desktop-entry component '%s': We already have better data.",
+			    cdid);
 			return FALSE;
 		}
 	}
@@ -917,7 +916,8 @@ as_pool_add_component_internal (AsPool *pool,
 
 		/* experimental multiarch support */
 		if (as_component_get_architecture (cpt) != NULL) {
-			if (as_arch_compatible (as_component_get_architecture (cpt), priv->current_arch)) {
+			if (as_arch_compatible (as_component_get_architecture (cpt),
+						priv->current_arch)) {
 				const gchar *earch;
 				/* this component is compatible with our current architecture */
 
@@ -925,10 +925,16 @@ as_pool_add_component_internal (AsPool *pool,
 				if (earch != NULL) {
 					if (as_arch_compatible (earch, priv->current_arch)) {
 						as_component_registry_add (registry, cpt);
-						g_debug ("Preferred component for native architecture for %s (was %s)", cdid, earch);
+						g_debug ("Preferred component for native "
+							 "architecture for %s (was %s)",
+							 cdid,
+							 earch);
 						return TRUE;
 					} else {
-						g_debug ("Ignored additional entry for '%s' on architecture %s.", cdid, earch);
+						g_debug ("Ignored additional entry for '%s' on "
+							 "architecture %s.",
+							 cdid,
+							 earch);
 						return FALSE;
 					}
 				}
@@ -936,17 +942,21 @@ as_pool_add_component_internal (AsPool *pool,
 		}
 
 		if (pool_priority == as_component_get_priority (cpt)) {
-			g_set_error (error,
-					AS_POOL_ERROR,
-					AS_POOL_ERROR_COLLISION,
-					"Detected colliding IDs: %s was already added with the same priority.", cdid);
+			g_set_error (
+			    error,
+			    AS_POOL_ERROR,
+			    AS_POOL_ERROR_COLLISION,
+			    "Detected colliding IDs: %s was already added with the same priority.",
+			    cdid);
 			return FALSE;
 		} else {
 			if (pedantic_noadd)
 				g_set_error (error,
-						AS_POOL_ERROR,
-						AS_POOL_ERROR_COLLISION,
-						"Detected colliding IDs: %s was already added with a higher priority.", cdid);
+					     AS_POOL_ERROR,
+					     AS_POOL_ERROR_COLLISION,
+					     "Detected colliding IDs: %s was already added with a "
+					     "higher priority.",
+					     cdid);
 			return FALSE;
 		}
 	}
@@ -957,7 +967,7 @@ as_pool_add_component_internal (AsPool *pool,
 /**
  * as_pool_add_components:
  * @pool: An instance of #AsPool
- * @cpts: (element-type AsComponent): Array of components to add to the pool.
+ * @cbox: Components to add to the pool.
  * @error: A #GError or %NULL
  *
  * Register a set of components with the pool temporarily.
@@ -968,33 +978,12 @@ as_pool_add_component_internal (AsPool *pool,
  * Since: 0.15.0
  */
 gboolean
-as_pool_add_components (AsPool *pool, GPtrArray *cpts, GError **error)
+as_pool_add_components (AsPool *pool, AsComponentBox *cbox, GError **error)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	return as_cache_add_masking_components (priv->cache,
-						cpts,
+						as_component_box_as_array (cbox),
 						error);
-}
-
-/**
- * as_pool_add_component:
- * @pool: An instance of #AsPool
- * @cpt: The #AsComponent to add to the pool.
- * @error: A #GError or %NULL
- *
- * Register a new component in the AppStream metadata pool.
- *
- * Returns: %TRUE if the new component was successfully added to the pool.
- *
- * Deprecated: 0.15.0: This function is very inefficient. Collect all the components you need
- *                     to add, and then register them with %as_pool_add_components in one go.
- */
-gboolean
-as_pool_add_component (AsPool *pool, AsComponent *cpt, GError **error)
-{
-	g_autoptr(GPtrArray) array = g_ptr_array_new ();
-	g_ptr_array_add (array, cpt);
-	return as_pool_add_components (pool, array, error);
 }
 
 /**
@@ -1011,20 +1000,22 @@ as_pool_clear (AsPool *pool)
 	g_autoptr(GRWLockWriterLocker) locker = g_rw_lock_writer_locker_new (&priv->rw_lock);
 
 	as_cache_clear (priv->cache);
-	as_cache_set_locale (priv->cache, priv->locale);
+	as_cache_set_locale (priv->cache, priv->locale_bcp47);
 }
 
 /**
- * as_pool_clear2:
- * @pool: An #AsPool.
+ * as_pool_is_empty:
+ * @pool: An instance of #AsPool.
  *
- * Remove all metadata from the pool.
+ * Check if this pool contains any data.
+ *
+ * Returns: %TRUE if the pool is empty.
  */
 gboolean
-as_pool_clear2 (AsPool *pool, GError **error)
+as_pool_is_empty (AsPool *pool)
 {
-	as_pool_clear (pool);
-	return TRUE;
+	AsPoolPrivate *priv = GET_PRIVATE (pool);
+	return as_cache_is_empty (priv->cache);
 }
 
 /**
@@ -1035,12 +1026,12 @@ as_pool_clear2 (AsPool *pool, GError **error)
  */
 static gboolean
 as_pool_load_catalog_data (AsPool *pool,
-			      AsComponentRegistry *registry,
-			      AsLocationGroup *lgroup,
-			      GError **error)
+			   AsComponentRegistry *registry,
+			   AsLocationGroup *lgroup,
+			   GError **error)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
-	GPtrArray *cpts;
+	AsComponentBox *cbox;
 	g_autoptr(GPtrArray) merge_cpts = NULL;
 	gboolean ret;
 	g_autoptr(AsMetadata) metad = NULL;
@@ -1059,7 +1050,7 @@ as_pool_load_catalog_data (AsPool *pool,
 	/* prepare metadata parser */
 	metad = as_metadata_new ();
 	as_metadata_set_format_style (metad, AS_FORMAT_STYLE_CATALOG);
-	as_metadata_set_locale (metad, priv->locale);
+	as_metadata_set_locale (metad, priv->locale_bcp47);
 
 	/* find AppStream metadata */
 	ret = TRUE;
@@ -1077,15 +1068,20 @@ as_pool_load_catalog_data (AsPool *pool,
 			g_autoptr(GPtrArray) xmls = NULL;
 			g_debug ("Searching for XML data in: %s", lentry->location);
 			if (lentry->compressed_only)
-				xmls = as_utils_find_files_matching (lentry->location, "*.xml.gz", FALSE, NULL);
+				xmls = as_utils_find_files_matching (lentry->location,
+								     "*.xml.gz",
+								     FALSE,
+								     NULL);
 			else
-				xmls = as_utils_find_files_matching (lentry->location, "*.xml*", FALSE, NULL);
+				xmls = as_utils_find_files_matching (lentry->location,
+								     "*.xml*",
+								     FALSE,
+								     NULL);
 			if (xmls != NULL) {
 				for (guint j = 0; j < xmls->len; j++) {
 					const gchar *val;
 					val = (const gchar *) g_ptr_array_index (xmls, j);
-					g_ptr_array_add (mdata_files,
-								g_strdup (val));
+					g_ptr_array_add (mdata_files, g_strdup (val));
 				}
 			}
 		}
@@ -1096,27 +1092,31 @@ as_pool_load_catalog_data (AsPool *pool,
 
 			g_debug ("Searching for YAML data in: %s", lentry->location);
 			if (lentry->compressed_only)
-				yamls = as_utils_find_files_matching (lentry->location, "*.yml.gz", FALSE, NULL);
+				yamls = as_utils_find_files_matching (lentry->location,
+								      "*.yml.gz",
+								      FALSE,
+								      NULL);
 			else
-				yamls = as_utils_find_files_matching (lentry->location, "*.yml*", FALSE, NULL);
+				yamls = as_utils_find_files_matching (lentry->location,
+								      "*.yml*",
+								      FALSE,
+								      NULL);
 			if (yamls != NULL) {
 				for (guint j = 0; j < yamls->len; j++) {
 					const gchar *val;
 					val = (const gchar *) g_ptr_array_index (yamls, j);
-					g_ptr_array_add (mdata_files,
-								g_strdup (val));
+					g_ptr_array_add (mdata_files, g_strdup (val));
 				}
 			}
 		}
 	}
-
 
 	/* parse the found data */
 	for (guint i = 0; i < mdata_files->len; i++) {
 		g_autoptr(GFile) infile = NULL;
 		const gchar *fname;
 
-		fname = (const gchar*) g_ptr_array_index (mdata_files, i);
+		fname = (const gchar *) g_ptr_array_index (mdata_files, i);
 		g_debug ("Reading: %s", fname);
 
 		infile = g_file_new_for_path (fname);
@@ -1125,10 +1125,7 @@ as_pool_load_catalog_data (AsPool *pool,
 			continue;
 		}
 
-		as_metadata_parse_file (metad,
-					infile,
-					AS_FORMAT_KIND_UNKNOWN,
-					&tmp_error);
+		as_metadata_parse_file (metad, infile, AS_FORMAT_KIND_UNKNOWN, &tmp_error);
 		if (tmp_error != NULL) {
 			g_debug ("WARNING: %s", tmp_error->message);
 			g_clear_pointer (&tmp_error, g_error_free);
@@ -1151,10 +1148,10 @@ as_pool_load_catalog_data (AsPool *pool,
 		g_prefix_error (error, "%s ", _("Metadata files have errors:"));
 
 	/* add found components to the metadata pool */
-	cpts = as_metadata_get_components (metad);
+	cbox = as_metadata_get_components (metad);
 	merge_cpts = g_ptr_array_new ();
-	for (guint i = 0; i < cpts->len; i++) {
-		AsComponent *cpt = AS_COMPONENT (g_ptr_array_index (cpts, i));
+	for (guint i = 0; i < as_component_box_len (cbox); i++) {
+		AsComponent *cpt = as_component_box_index (cbox, i);
 
 		as_component_set_scope (cpt, lgroup->scope);
 
@@ -1196,8 +1193,6 @@ static void
 as_pool_cache_refine_component_cb (AsComponent *cpt, gboolean is_serialization, gpointer user_data)
 {
 	AsLocationGroup *lgroup = user_data;
-	AsPool *pool = lgroup->owner;
-	AsPoolPrivate *priv = GET_PRIVATE (pool);
 
 	/* NOTE: Write-lock on AsPool structures is held by the caller (as the direct caller is
 	 * on the same thread and itself triggered by a write-locked AsPool). */
@@ -1207,15 +1202,11 @@ as_pool_cache_refine_component_cb (AsComponent *cpt, gboolean is_serialization, 
 		 * and needs to be done partially again on deserialization anyway */
 		/* FIXME: We *do* resolve icon paths here, as not doing so currently causes issues for some apps.
 		 * There's a test case for this, so we can address the issue later. */
-		as_component_complete (cpt,
-					priv->screenshot_service_url,
-					lgroup->icon_dirs);
+		as_component_complete (cpt, lgroup->icon_dirs);
 	} else {
 		/* add additional data to the component, e.g. external screenshots. Also refines
 		 * the component's icon paths */
-		as_component_complete (cpt,
-					priv->screenshot_service_url,
-					lgroup->icon_dirs);
+		as_component_complete (cpt, lgroup->icon_dirs);
 	}
 }
 
@@ -1237,7 +1228,7 @@ as_pool_update_desktop_entries_table (AsPool *pool, GHashTable *de_cpt_table, co
 
 	/* prepare metadata parser */
 	metad = as_metadata_new ();
-	as_metadata_set_locale (metad, priv->locale);
+	as_metadata_set_locale (metad, priv->locale_bcp47);
 
 	/* find .desktop files */
 	g_debug ("Searching for data in: %s", apps_dir);
@@ -1251,7 +1242,7 @@ as_pool_update_desktop_entries_table (AsPool *pool, GHashTable *de_cpt_table, co
 	for (guint i = 0; i < de_files->len; i++) {
 		g_autoptr(GFile) infile = NULL;
 		AsComponent *cpt;
-		const gchar *fname = (const gchar*) g_ptr_array_index (de_files, i);
+		const gchar *fname = (const gchar *) g_ptr_array_index (de_files, i);
 
 		g_debug ("Reading: %s", fname);
 		infile = g_file_new_for_path (fname);
@@ -1261,10 +1252,7 @@ as_pool_update_desktop_entries_table (AsPool *pool, GHashTable *de_cpt_table, co
 		}
 
 		as_metadata_clear_components (metad);
-		as_metadata_parse_file (metad,
-					infile,
-					AS_FORMAT_KIND_DESKTOP_ENTRY,
-					&error);
+		as_metadata_parse_file (metad, infile, AS_FORMAT_KIND_DESKTOP_ENTRY, &error);
 		if (error != NULL) {
 			g_debug ("Error reading .desktop file '%s': %s", fname, error->message);
 			g_error_free (error);
@@ -1309,7 +1297,7 @@ as_pool_load_metainfo_data (AsPool *pool,
 
 	/* prepare metadata parser */
 	metad = as_metadata_new ();
-	as_metadata_set_locale (metad, priv->locale);
+	as_metadata_set_locale (metad, priv->locale_bcp47);
 
 	/* find metainfo files */
 	g_debug ("Searching for data in: %s", metainfo_dir);
@@ -1325,7 +1313,7 @@ as_pool_load_metainfo_data (AsPool *pool,
 		AsLaunchable *launchable;
 		g_autoptr(GFile) infile = NULL;
 		g_autofree gchar *desktop_id = NULL;
-		const gchar *fname = (const gchar*) g_ptr_array_index (mi_files, i);
+		const gchar *fname = (const gchar *) g_ptr_array_index (mi_files, i);
 
 		if (!as_flags_contains (priv->flags, AS_POOL_FLAG_PREFER_OS_METAINFO)) {
 			g_autofree gchar *mi_cid = NULL;
@@ -1360,10 +1348,7 @@ as_pool_load_metainfo_data (AsPool *pool,
 		}
 
 		as_metadata_clear_components (metad);
-		as_metadata_parse_file (metad,
-					infile,
-					AS_FORMAT_KIND_UNKNOWN,
-					&error);
+		as_metadata_parse_file (metad, infile, AS_FORMAT_KIND_UNKNOWN, &error);
 		if (error != NULL) {
 			g_debug ("Errors in '%s': %s", fname, error->message);
 			g_error_free (error);
@@ -1384,13 +1369,15 @@ as_pool_load_metainfo_data (AsPool *pool,
 		launchable = as_component_get_launchable (cpt, AS_LAUNCHABLE_KIND_DESKTOP_ID);
 		if ((launchable != NULL) && (as_launchable_get_entries (launchable)->len > 0)) {
 			/* find matching .desktop component to merge with via launchable */
-			desktop_id = g_strdup (g_ptr_array_index (as_launchable_get_entries (launchable), 0));
+			desktop_id = g_strdup (
+			    g_ptr_array_index (as_launchable_get_entries (launchable), 0));
 		} else {
 			/* try to guess the matching .desktop ID from the component-id */
 			if (g_str_has_suffix (as_component_get_id (cpt), ".desktop"))
 				desktop_id = g_strdup (as_component_get_id (cpt));
 			else
-				desktop_id = g_strdup_printf ("%s.desktop", as_component_get_id (cpt));
+				desktop_id = g_strdup_printf ("%s.desktop",
+							      as_component_get_id (cpt));
 		}
 
 		/* merge .desktop data into component if possible */
@@ -1398,16 +1385,16 @@ as_pool_load_metainfo_data (AsPool *pool,
 			AsComponent *de_cpt;
 			de_cpt = g_hash_table_lookup (desktop_entry_cpts, desktop_id);
 			if (de_cpt != NULL) {
-				as_component_merge_with_mode (cpt,
-								de_cpt,
-								AS_MERGE_KIND_APPEND);
+				as_component_merge_with_mode (cpt, de_cpt, AS_MERGE_KIND_APPEND);
 				g_hash_table_remove (desktop_entry_cpts, desktop_id);
 			}
 		}
 
 		as_pool_add_component_internal (pool, registry, cpt, FALSE, &error);
 		if (error != NULL) {
-			g_debug ("Component '%s' ignored: %s", as_component_get_data_id (cpt), error->message);
+			g_debug ("Component '%s' ignored: %s",
+				 as_component_get_data_id (cpt),
+				 error->message);
 			g_error_free (error);
 			error = NULL;
 		}
@@ -1433,7 +1420,8 @@ as_pool_process_metainfo_desktop_data (AsPool *pool,
 	/* NOTE: Write-lock is held by the caller. */
 
 	/* check if we actually need to load anything */
-	if (!as_flags_contains (priv->flags, AS_POOL_FLAG_LOAD_OS_DESKTOP_FILES) && !as_flags_contains (priv->flags, AS_POOL_FLAG_LOAD_OS_METAINFO))
+	if (!as_flags_contains (priv->flags, AS_POOL_FLAG_LOAD_OS_DESKTOP_FILES) &&
+	    !as_flags_contains (priv->flags, AS_POOL_FLAG_LOAD_OS_METAINFO))
 		return;
 
 	/* check if the group has the right format */
@@ -1448,7 +1436,8 @@ as_pool_process_metainfo_desktop_data (AsPool *pool,
 					 g_free,
 					 (GDestroyNotify) g_object_unref);
 	for (guint i = 0; i < lgroup->locations->len; i++) {
-		AsLocationEntry *lentry = (AsLocationEntry*) g_ptr_array_index (lgroup->locations, i);
+		AsLocationEntry *lentry = (AsLocationEntry *) g_ptr_array_index (lgroup->locations,
+										 i);
 		if (lentry->format_kind != AS_FORMAT_KIND_DESKTOP_ENTRY)
 			continue;
 		as_pool_update_desktop_entries_table (pool, de_cpts, lentry->location);
@@ -1456,7 +1445,9 @@ as_pool_process_metainfo_desktop_data (AsPool *pool,
 
 	if (as_flags_contains (priv->flags, AS_POOL_FLAG_LOAD_OS_METAINFO)) {
 		for (guint i = 0; i < lgroup->locations->len; i++) {
-			AsLocationEntry *lentry = (AsLocationEntry*) g_ptr_array_index (lgroup->locations, i);
+			AsLocationEntry *lentry = (AsLocationEntry *) g_ptr_array_index (
+			    lgroup->locations,
+			    i);
 			if (lentry->format_kind != AS_FORMAT_KIND_XML)
 				continue;
 
@@ -1484,7 +1475,8 @@ as_pool_process_metainfo_desktop_data (AsPool *pool,
 			as_pool_add_component_internal (pool, registry, cpt, FALSE, &error);
 			if (error != NULL) {
 				g_debug ("Ignored component '%s': %s",
-					 as_component_get_data_id (cpt), error->message);
+					 as_component_get_data_id (cpt),
+					 error->message);
 				g_error_free (error);
 				error = NULL;
 			}
@@ -1532,13 +1524,16 @@ as_pool_loader_process_group (AsPool *pool,
 		return TRUE;
 
 	/* first check if we can load cache data */
-	if (!force_cache_refresh && !as_flags_contains (priv->flags, AS_POOL_FLAG_IGNORE_CACHE_AGE)) {
+	if (!force_cache_refresh &&
+	    !as_flags_contains (priv->flags, AS_POOL_FLAG_IGNORE_CACHE_AGE)) {
 		cache_time = as_cache_get_ctime (priv->cache,
-						lgroup->scope,
-						lgroup->cache_key,
-						NULL);
+						 lgroup->scope,
+						 lgroup->cache_key,
+						 NULL);
 		for (guint i = 0; i < lgroup->locations->len; i++) {
-			AsLocationEntry *lentry = (AsLocationEntry*) g_ptr_array_index (lgroup->locations, i);
+			AsLocationEntry *lentry = (AsLocationEntry *) g_ptr_array_index (
+			    lgroup->locations,
+			    i);
 			if (as_get_location_ctime (lentry->location) > cache_time) {
 				cache_outdated = TRUE;
 				break;
@@ -1549,20 +1544,21 @@ as_pool_loader_process_group (AsPool *pool,
 			/* cache is not out of data, let's use it! */
 			g_debug ("Using cached metadata: %s", lgroup->cache_key);
 			as_cache_load_section_for_key (priv->cache,
-							lgroup->scope,
-							lgroup->format_style,
-							lgroup->is_os_data,
-							lgroup->cache_key,
-							&cache_outdated,
-							lgroup);
+						       lgroup->scope,
+						       lgroup->format_style,
+						       lgroup->is_os_data,
+						       lgroup->cache_key,
+						       &cache_outdated,
+						       lgroup);
 			if (!cache_outdated) {
 				/* cache was fine and is now loaded, we are done here */
 				return TRUE;
 			}
 			/* if we are here, the cache either went out of date (e.g. by being removed)
 			* or loading failed, in which case we will just regenerate it */
-			g_debug ("Failed to load cache metadata for '%s' or cache suddenly went out of data. Regenerating cache.",
-					lgroup->cache_key);
+			g_debug ("Failed to load cache metadata for '%s' or cache suddenly went "
+				 "out of data. Regenerating cache.",
+				 lgroup->cache_key);
 		}
 	}
 
@@ -1570,26 +1566,21 @@ as_pool_loader_process_group (AsPool *pool,
 	registry = as_component_registry_new ();
 
 	/* process any MetaInfo and desktop-entry files */
-	as_pool_process_metainfo_desktop_data (pool, registry,
-					lgroup,
-					lgroup->cache_key);
+	as_pool_process_metainfo_desktop_data (pool, registry, lgroup, lgroup->cache_key);
 
 	/* process catalog data - we intentionally ignore errors here, and just skip any broken metadata*/
-	as_pool_load_catalog_data (pool,
-					registry,
-					lgroup,
-					NULL);
+	as_pool_load_catalog_data (pool, registry, lgroup, NULL);
 
 	/* save cache section */
 	final_results = as_component_registry_get_contents (registry);
 	ret = as_cache_set_contents_for_section (priv->cache,
-						lgroup->scope,
-						lgroup->format_style,
-						lgroup->is_os_data,
-						final_results,
-						lgroup->cache_key,
-						lgroup,
-						error);
+						 lgroup->scope,
+						 lgroup->format_style,
+						 lgroup->is_os_data,
+						 final_results,
+						 lgroup->cache_key,
+						 lgroup,
+						 error);
 	if (!ret)
 		return FALSE;
 
@@ -1630,8 +1621,9 @@ as_pool_load_internal (AsPool *pool,
 	locker = g_rw_lock_writer_locker_new (&priv->rw_lock);
 
 	/* apply settings */
-	as_cache_set_prefer_os_metainfo (priv->cache,
-					 as_flags_contains (priv->flags, AS_POOL_FLAG_PREFER_OS_METAINFO));
+	as_cache_set_prefer_os_metainfo (
+	    priv->cache,
+	    as_flags_contains (priv->flags, AS_POOL_FLAG_PREFER_OS_METAINFO));
 
 	/* prune any ancient data from the cache that has not been used for a long time */
 	as_cache_prune_data (priv->cache);
@@ -1653,7 +1645,6 @@ as_pool_load_internal (AsPool *pool,
 		/* cache writing errors or other fatal stuff will cause us to stop loading anything */
 		if (!ret)
 			return FALSE;
-
 	}
 
 	/* process data in user-defined locations */
@@ -1666,7 +1657,6 @@ as_pool_load_internal (AsPool *pool,
 						    error);
 		if (!ret)
 			return FALSE;
-
 	}
 
 	return ret;
@@ -1691,9 +1681,9 @@ gboolean
 as_pool_load (AsPool *pool, GCancellable *cancellable, GError **error)
 {
 	return as_pool_load_internal (pool,
-				      TRUE, /* also load user-specific data */
+				      TRUE,  /* also load user-specific data */
 				      FALSE, /* do not force cache refresh */
-				      NULL, /* we don't care whether caches were used or not */
+				      NULL,  /* we don't care whether caches were used or not */
 				      cancellable,
 				      error);
 }
@@ -1703,9 +1693,9 @@ as_pool_load (AsPool *pool, GCancellable *cancellable, GError **error)
  */
 static void
 as_pool_load_thread (GTask *task,
-		   gpointer source_object,
-		   gpointer task_data,
-		   GCancellable *cancellable)
+		     gpointer source_object,
+		     gpointer task_data,
+		     GCancellable *cancellable)
 {
 	AsPool *pool = AS_POOL (source_object);
 	GError *error = NULL;
@@ -1736,10 +1726,7 @@ as_pool_load_async (AsPool *pool,
 		    GAsyncReadyCallback callback,
 		    gpointer user_data)
 {
-	g_autoptr(GTask) task = g_task_new (pool,
-					    cancellable,
-					    callback,
-					    user_data);
+	g_autoptr(GTask) task = g_task_new (pool, cancellable, callback, user_data);
 	g_task_run_in_thread (task, as_pool_load_thread);
 }
 
@@ -1756,9 +1743,7 @@ as_pool_load_async (AsPool *pool,
  * Since: 0.12.10
  **/
 gboolean
-as_pool_load_finish (AsPool *pool,
-		     GAsyncResult *result,
-		     GError **error)
+as_pool_load_finish (AsPool *pool, GAsyncResult *result, GError **error)
 {
 	g_return_val_if_fail (g_task_is_valid (result, pool), FALSE);
 	return g_task_propagate_boolean (G_TASK (result), error);
@@ -1769,9 +1754,9 @@ as_pool_load_finish (AsPool *pool,
  */
 static void
 as_pool_section_reload_thread (GTask *task,
-		   gpointer source_object,
-		   gpointer task_data,
-		   GCancellable *cancellable)
+			       gpointer source_object,
+			       gpointer task_data,
+			       GCancellable *cancellable)
 {
 	AsPool *pool = AS_POOL (source_object);
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
@@ -1780,16 +1765,18 @@ as_pool_section_reload_thread (GTask *task,
 	gboolean ret;
 	g_autoptr(GRWLockWriterLocker) locker = g_rw_lock_writer_locker_new (&priv->rw_lock);
 
-	ret = as_pool_loader_process_group (pool,
-					    lgroup,
-					    TRUE, /* always refresh cache, don't bother verifying timestamps */
-					    NULL,
-					    &error);
+	ret = as_pool_loader_process_group (
+	    pool,
+	    lgroup,
+	    TRUE, /* always refresh cache, don't bother verifying timestamps */
+	    NULL,
+	    &error);
 	if (!ret)
 		g_warning ("Failed to auto-reload cache section %s: %s",
-			   lgroup->cache_key, error->message);
+			   lgroup->cache_key,
+			   error->message);
 
-	g_debug ("Emitting Pool::changed() [%s]", ret? "success" : "failure");
+	g_debug ("Emitting Pool::changed() [%s]", ret ? "success" : "failure");
 	g_signal_emit (pool, signals[SIGNAL_CHANGED], 0);
 
 	g_task_return_boolean (task, TRUE);
@@ -1830,9 +1817,7 @@ as_pool_trigger_reload_pending (AsPool *pool, AsLocationGroup *lgroup, guint tim
 		g_source_remove (priv->pending_id);
 	else
 		g_debug ("Reload for %s pending in ~%i ms", lgroup->cache_key, timeout_ms);
-	priv->pending_id = g_timeout_add (timeout_ms,
-					  as_pool_process_pending_reload_cb,
-					  lgroup);
+	priv->pending_id = g_timeout_add (timeout_ms, as_pool_process_pending_reload_cb, lgroup);
 }
 
 /**
@@ -1850,88 +1835,36 @@ as_pool_location_group_monitor_changed_cb (AsFileMonitor *monitor,
 }
 
 /**
- * as_pool_load_cache_file:
- * @pool: An instance of #AsPool.
- * @fname: Filename of the cache file to load into the pool.
- * @error: A #GError or %NULL.
- *
- * Load AppStream metadata from a cache file.
- */
-gboolean
-as_pool_load_cache_file (AsPool *pool, const gchar *fname, GError **error)
-{
-	g_set_error (error,
-			AS_POOL_ERROR,
-			AS_POOL_ERROR_FAILED,
-			"Can not load cache file '%s': Direct cache injection is no longer possible.", fname);
-	return FALSE;
-}
-
-/**
- * as_pool_save_cache_file:
- * @pool: An instance of #AsPool.
- * @fname: Filename of the cache file the pool contents should be dumped to.
- * @error: A #GError or %NULL.
- *
- * Serialize AppStream metadata to a cache file.
- */
-gboolean
-as_pool_save_cache_file (AsPool *pool, const gchar *fname, GError **error)
-{
-	g_set_error (error,
-			AS_POOL_ERROR,
-			AS_POOL_ERROR_FAILED,
-			"Can not write cache file '%s': Single-file cache export is no longer possible.", fname);
-	return FALSE;
-}
-
-/**
- * as_pool_get_components: (skip)
+ * as_pool_get_components:
  * @pool: An instance of #AsPool.
  *
  * Get a list of found components.
  *
- * Returns: (transfer container) (element-type AsComponent): an array of #AsComponent instances.
+ * Returns: (transfer full): an #AsComponentBox.
  */
-GPtrArray*
+AsComponentBox *
 as_pool_get_components (AsPool *pool)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autoptr(AsProfileTask) ptask = NULL;
 	g_autoptr(GError) tmp_error = NULL;
-	GPtrArray *result = NULL;
+	AsComponentBox *result = NULL;
 	g_autoptr(GRWLockReaderLocker) locker = g_rw_lock_reader_locker_new (&priv->rw_lock);
 
 	ptask = as_profile_start_literal (priv->profile, "AsPool:get_components");
 
 	result = as_cache_get_components_all (priv->cache, &tmp_error);
 	if (result == NULL) {
-		g_warning ("Unable to retrieve all components from session cache: %s", tmp_error->message);
-		return g_ptr_array_new_with_free_func (g_object_unref);
+		g_warning ("Unable to retrieve all components from session cache: %s",
+			   tmp_error->message);
+		return as_component_box_new_simple ();
 	}
 
 	return result;
 }
 
 /**
- * as_pool_get_components_gir: (rename-to as_pool_get_components)
- * @pool: An instance of #AsPool.
- *
- * Get a list of found components.
- *
- * This function fully transfers ownership of the returned container,
- * to be used in GIR bindings.
- *
- * Returns: (transfer full) (element-type AsComponent): an array of #AsComponent instances.
- */
-GPtrArray*
-as_pool_get_components_gir (AsPool *pool)
-{
-	AS_PTR_ARRAY_RETURN_CLEAR_FREE_FUNC (as_pool_get_components (pool));
-}
-
-/**
- * as_pool_get_components_by_id: (skip)
+ * as_pool_get_components_by_id:
  * @pool: An instance of #AsPool.
  * @cid: The AppStream-ID to look for.
  *
@@ -1939,13 +1872,13 @@ as_pool_get_components_gir (AsPool *pool)
  * This function may contain multiple results if we have
  * data describing this component from multiple scopes/origin types.
  *
- * Returns: (transfer container) (element-type AsComponent): An #AsComponent
+ * Returns: (transfer full): an #AsComponentBox.
  */
-GPtrArray*
+AsComponentBox *
 as_pool_get_components_by_id (AsPool *pool, const gchar *cid)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
-	GPtrArray *result;
+	AsComponentBox *result;
 	g_autoptr(GError) tmp_error = NULL;
 	g_autoptr(AsProfileTask) ptask = NULL;
 	g_autoptr(GRWLockReaderLocker) locker = g_rw_lock_reader_locker_new (&priv->rw_lock);
@@ -1954,178 +1887,104 @@ as_pool_get_components_by_id (AsPool *pool, const gchar *cid)
 	result = as_cache_get_components_by_id (priv->cache, cid, &tmp_error);
 	if (result == NULL) {
 		g_warning ("Error while trying to get components by ID: %s", tmp_error->message);
-		return g_ptr_array_new_with_free_func (g_object_unref);
+		return as_component_box_new_simple ();
 	}
 	return result;
 }
 
 /**
- * as_pool_get_components_by_id_gir: (rename-to as_pool_get_components_by_id)
- * @pool: An instance of #AsPool.
- * @cid: The AppStream-ID to look for.
- *
- * Get a specific component by its ID.
- * This function may contain multiple results if we have
- * data describing this component from multiple scopes/origin types.
- *
- * This function fully transfers ownership of the returned container,
- * to be used in GIR bindings.
- *
- * Returns: (transfer full) (element-type AsComponent): An #AsComponent
- */
-GPtrArray*
-as_pool_get_components_by_id_gir (AsPool *pool, const gchar *cid)
-{
-	AS_PTR_ARRAY_RETURN_CLEAR_FREE_FUNC (as_pool_get_components_by_id (pool, cid));
-}
-
-/**
- * as_pool_get_components_by_provided_item: (skip)
+ * as_pool_get_components_by_provided_item:
  * @pool: An instance of #AsPool.
  * @kind: An #AsProvidesKind
  * @item: The value of the provided item.
  *
  * Find components in the AppStream data pool which provide a certain item.
  *
- * Returns: (transfer container) (element-type AsComponent): an array of #AsComponent objects which have been found.
+ * Returns: (transfer full): an #AsComponentBox of found components.
  */
-GPtrArray*
-as_pool_get_components_by_provided_item (AsPool *pool,
-					      AsProvidedKind kind,
-					      const gchar *item)
+AsComponentBox *
+as_pool_get_components_by_provided_item (AsPool *pool, AsProvidedKind kind, const gchar *item)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autoptr(GError) tmp_error = NULL;
-	GPtrArray *result = NULL;
+	AsComponentBox *result = NULL;
 	g_autoptr(GRWLockReaderLocker) locker = g_rw_lock_reader_locker_new (&priv->rw_lock);
 
 	result = as_cache_get_components_by_provided_item (priv->cache, kind, item, &tmp_error);
 	if (result == NULL) {
-		g_warning ("Unable find components by provided item in session cache: %s", tmp_error->message);
-		return g_ptr_array_new_with_free_func (g_object_unref);
+		g_warning ("Unable find components by provided item in session cache: %s",
+			   tmp_error->message);
+		return as_component_box_new_simple ();
 	}
 
 	return result;
 }
 
 /**
- * as_pool_get_components_by_provided_item_gir: (rename-to as_pool_get_components_by_provided_item)
- * @pool: An instance of #AsPool.
- * @kind: An #AsProvidesKind
- * @item: The value of the provided item.
- *
- * Find components in the AppStream data pool which provide a certain item.
- *
- * This function fully transfers ownership of the returned container,
- * to be used in GIR bindings.
- *
- * Returns: (transfer full) (element-type AsComponent): an array of #AsComponent objects which have been found.
- */
-GPtrArray*
-as_pool_get_components_by_provided_item_gir (AsPool *pool,
-					      AsProvidedKind kind,
-					      const gchar *item)
-{
-	AS_PTR_ARRAY_RETURN_CLEAR_FREE_FUNC (as_pool_get_components_by_provided_item (pool, kind, item));
-}
-
-/**
- * as_pool_get_components_by_kind: (skip)
+ * as_pool_get_components_by_kind:
  * @pool: An instance of #AsDatabase.
  * @kind: An #AsComponentKind.
  *
  * Return a list of all components in the pool which are of a certain kind.
  *
- * Returns: (transfer container) (element-type AsComponent): an array of #AsComponent objects which have been found.
+ * Returns: (transfer full): an #AsComponentBox of found components.
  */
-GPtrArray*
+AsComponentBox *
 as_pool_get_components_by_kind (AsPool *pool, AsComponentKind kind)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autoptr(GError) tmp_error = NULL;
-	GPtrArray *result = NULL;
+	AsComponentBox *result = NULL;
 	g_autoptr(GRWLockReaderLocker) locker = g_rw_lock_reader_locker_new (&priv->rw_lock);
 
 	result = as_cache_get_components_by_kind (priv->cache, kind, &tmp_error);
 	if (result == NULL) {
-		g_warning ("Unable find components by kind in session cache: %s", tmp_error->message);
-		return g_ptr_array_new_with_free_func (g_object_unref);
+		g_warning ("Unable find components by kind in session cache: %s",
+			   tmp_error->message);
+		return as_component_box_new_simple ();
 	}
 
 	return result;
 }
 
 /**
- * as_pool_get_components_by_kind_gir: (rename-to as_pool_get_components_by_kind)
- * @pool: An instance of #AsDatabase.
- * @kind: An #AsComponentKind.
- *
- * Return a list of all components in the pool which are of a certain kind.
- *
- * This function fully transfers ownership of the returned container,
- * to be used in GIR bindings.
- *
- * Returns: (transfer full) (element-type AsComponent): an array of #AsComponent objects which have been found.
- */
-GPtrArray*
-as_pool_get_components_by_kind_gir (AsPool *pool, AsComponentKind kind)
-{
-	AS_PTR_ARRAY_RETURN_CLEAR_FREE_FUNC (as_pool_get_components_by_kind (pool, kind));
-}
-
-/**
- * as_pool_get_components_by_categories: (skip)
+ * as_pool_get_components_by_categories:
  * @pool: An instance of #AsDatabase.
  * @categories: (array zero-terminated=1): An array of XDG categories to include.
  *
  * Return a list of components which are in all of the categories.
  *
- * Returns: (transfer container) (element-type AsComponent): an array of #AsComponent objects which have been found.
+ * Returns: (transfer full): an #AsComponentBox of found components.
  */
-GPtrArray*
+AsComponentBox *
 as_pool_get_components_by_categories (AsPool *pool, gchar **categories)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autoptr(GError) tmp_error = NULL;
-	GPtrArray *result = NULL;
+	AsComponentBox *result = NULL;
 	g_autoptr(GRWLockReaderLocker) locker = g_rw_lock_reader_locker_new (&priv->rw_lock);
 
 	/* sanity check */
 	for (guint i = 0; categories[i] != NULL; i++) {
 		if (!as_utils_is_category_name (categories[i])) {
-			g_warning ("'%s' is not a valid XDG category name, search results might be invalid or empty.", categories[i]);
+			g_warning ("'%s' is not a valid XDG category name, search results might be "
+				   "invalid or empty.",
+				   categories[i]);
 		}
 	}
 
 	result = as_cache_get_components_by_categories (priv->cache, categories, &tmp_error);
 	if (result == NULL) {
-		g_warning ("Unable find components by categories in session cache: %s", tmp_error->message);
-		return g_ptr_array_new_with_free_func (g_object_unref);
+		g_warning ("Unable find components by categories in session cache: %s",
+			   tmp_error->message);
+		return as_component_box_new_simple ();
 	}
 
 	return result;
 }
 
 /**
- * as_pool_get_components_by_categories_gir: (rename-to as_pool_get_components_by_categories)
- * @pool: An instance of #AsDatabase.
- * @categories: (array zero-terminated=1): An array of XDG categories to include.
- *
- * Return a list of components which are in one of the categories.
- *
- * This function fully transfers ownership of the returned container,
- * to be used in GIR bindings.
- *
- * Returns: (transfer full) (element-type AsComponent): an array of #AsComponent objects which have been found.
- */
-GPtrArray*
-as_pool_get_components_by_categories_gir (AsPool *pool, gchar **categories)
-{
-	AS_PTR_ARRAY_RETURN_CLEAR_FREE_FUNC (as_pool_get_components_by_categories (pool, categories));
-}
-
-/**
- * as_pool_get_components_by_launchable: (skip)
+ * as_pool_get_components_by_launchable:
  * @pool: An instance of #AsPool.
  * @kind: An #AsLaunchableKind
  * @id: The ID of the launchable.
@@ -2133,55 +1992,30 @@ as_pool_get_components_by_categories_gir (AsPool *pool, gchar **categories)
  * Find components in the AppStream data pool which provide a specific launchable.
  * See #AsLaunchable for details on launchables, or refer to the AppStream specification.
  *
- * Returns: (transfer container) (element-type AsComponent): an array of #AsComponent objects which have been found.
+ * Returns: (transfer full): an #AsComponentBox of found components.
  *
  * Since: 0.11.4
  */
-GPtrArray*
-as_pool_get_components_by_launchable (AsPool *pool,
-					AsLaunchableKind kind,
-					const gchar *id)
+AsComponentBox *
+as_pool_get_components_by_launchable (AsPool *pool, AsLaunchableKind kind, const gchar *id)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autoptr(GError) tmp_error = NULL;
-	GPtrArray *result = NULL;
+	AsComponentBox *result = NULL;
 	g_autoptr(GRWLockReaderLocker) locker = g_rw_lock_reader_locker_new (&priv->rw_lock);
 
 	result = as_cache_get_components_by_launchable (priv->cache, kind, id, &tmp_error);
 	if (result == NULL) {
-		g_warning ("Unable find components by launchable in session cache: %s", tmp_error->message);
-		return g_ptr_array_new_with_free_func (g_object_unref);
+		g_warning ("Unable find components by launchable in session cache: %s",
+			   tmp_error->message);
+		return as_component_box_new_simple ();
 	}
 
 	return result;
 }
 
 /**
- * as_pool_get_components_by_launchable_gir: (rename-to as_pool_get_components_by_launchable)
- * @pool: An instance of #AsPool.
- * @kind: An #AsLaunchableKind
- * @id: The ID of the launchable.
- *
- * Find components in the AppStream data pool which provide a specific launchable.
- * See #AsLaunchable for details on launchables, or refer to the AppStream specification.
- *
- * This function fully transfers ownership of the returned container,
- * to be used in GIR bindings.
- *
- * Returns: (transfer full) (element-type AsComponent): an array of #AsComponent objects which have been found.
- *
- * Since: 0.11.4
- */
-GPtrArray*
-as_pool_get_components_by_launchable_gir (AsPool *pool,
-					  AsLaunchableKind kind,
-					  const gchar *id)
-{
-	AS_PTR_ARRAY_RETURN_CLEAR_FREE_FUNC (as_pool_get_components_by_launchable (pool, kind, id));
-}
-
-/**
- * as_pool_get_components_by_extends: (skip)
+ * as_pool_get_components_by_extends:
  * @pool: An instance of #AsPool.
  * @extended_id: The ID of the component to search extensions for.
  *
@@ -2191,53 +2025,29 @@ as_pool_get_components_by_launchable_gir (AsPool *pool,
  * this explicit function is not needed, but overall query time will be increased (so only use
  * this flag if you will be resolving addon information later anyway).
  *
- * Returns: (transfer container) (element-type AsComponent): an array of #AsComponent objects.
+ * Returns: (transfer full): an #AsComponentBox.
  *
  * Since: 0.15.0
  */
-GPtrArray*
+AsComponentBox *
 as_pool_get_components_by_extends (AsPool *pool, const gchar *extended_id)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autoptr(GError) tmp_error = NULL;
-	GPtrArray *result = NULL;
+	AsComponentBox *result = NULL;
 	g_autoptr(GRWLockReaderLocker) locker = g_rw_lock_reader_locker_new (&priv->rw_lock);
 
 	result = as_cache_get_components_by_extends (priv->cache, extended_id, &tmp_error);
 	if (result == NULL) {
 		g_warning ("Unable find addon components in session cache: %s", tmp_error->message);
-		return g_ptr_array_new_with_free_func (g_object_unref);
+		return as_component_box_new_simple ();
 	}
 
 	return result;
 }
 
 /**
- * as_pool_get_components_by_extends_gir: (rename-to as_pool_get_components_by_extends)
- * @pool: An instance of #AsPool.
- * @extended_id: The ID of the component to search extensions for.
- *
- * Find components extending the component with the given ID. They can then be registered to the
- * #AsComponent they extend via %as_component_add_addon.
- * If the %AS_POOL_FLAG_RESOLVE_ADDONS pool flag is set, addons are automatically resolved and
- * this explicit function is not needed, but overall query time will be increased (so only use
- * this flag if you will be resolving addon information later anyway).
- *
- * This function fully transfers ownership of the returned container,
- * to be used in GIR bindings.
- *
- * Returns: (transfer full) (element-type AsComponent): an array of #AsComponent objects.
- *
- * Since: 0.15.0
- */
-GPtrArray*
-as_pool_get_components_by_extends_gir (AsPool *pool, const gchar *extended_id)
-{
-	AS_PTR_ARRAY_RETURN_CLEAR_FREE_FUNC (as_pool_get_components_by_extends (pool, extended_id));
-}
-
-/**
- * as_pool_get_components_by_bundle_id: (skip)
+ * as_pool_get_components_by_bundle_id:
  * @pool: An instance of #AsPool.
  * @kind: The kind of the bundle we are looking for
  * @bundle_id: The bundle ID to match, as specified in #AsBundle
@@ -2248,48 +2058,33 @@ as_pool_get_components_by_extends_gir (AsPool *pool, const gchar *extended_id)
  * it will list all the components that bundle dolphin. If the bundle_id is
  * "org.kde.dolphin/x86_64" it will give those with also the architecture.
  *
+ * Returns: (transfer full): an #AsComponentBox.
+ *
  * Since: 0.16.0
  */
-GPtrArray*
-as_pool_get_components_by_bundle_id (AsPool *pool, AsBundleKind kind, const gchar *bundle_id, gboolean match_prefix)
+AsComponentBox *
+as_pool_get_components_by_bundle_id (AsPool *pool,
+				     AsBundleKind kind,
+				     const gchar *bundle_id,
+				     gboolean match_prefix)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autoptr(GError) tmp_error = NULL;
-	GPtrArray *result = NULL;
+	AsComponentBox *result = NULL;
 	g_autoptr(GRWLockReaderLocker) locker = g_rw_lock_reader_locker_new (&priv->rw_lock);
 
-	result = as_cache_get_components_by_bundle_id (priv->cache, kind, bundle_id, match_prefix, &tmp_error);
+	result = as_cache_get_components_by_bundle_id (priv->cache,
+						       kind,
+						       bundle_id,
+						       match_prefix,
+						       &tmp_error);
 	if (result == NULL) {
-		g_warning ("Unable find components by bundle ID in session cache: %s", tmp_error->message);
-		return g_ptr_array_new_with_free_func (g_object_unref);
+		g_warning ("Unable find components by bundle ID in session cache: %s",
+			   tmp_error->message);
+		return as_component_box_new_simple ();
 	}
 
 	return result;
-}
-
-/**
- * as_pool_get_components_by_bundle_id_gir: (rename-to as_pool_get_components_by_bundle_id)
- * @pool: An instance of #AsPool.
- * @kind: The kind of the bundle we are looking for
- * @bundle_id: The bundle ID to match, as specified in #AsBundle
- * @match_prefix: %TRUE to match the ID by prefix, %FALSE to perform an absolute match.
- *
- * Find components that are provided by a bundle with a specific ID by its prefix.
- * For example, given a AS_BUNDLE_KIND_FLATPAK and a bundle_id "org.kde.dolphin/",
- * it will list all the components that bundle dolphin. If the bundle_id is
- * "org.kde.dolphin/x86_64" it will give those with also the architecture.
- *
- * This function fully transfers ownership of the returned container,
- * to be used in GIR bindings.
- *
- * Returns: (transfer full) (element-type AsComponent): an array of #AsComponent objects.
- *
- * Since: 0.16.0
- */
-GPtrArray*
-as_pool_get_components_by_bundle_id_gir (AsPool *pool, AsBundleKind kind, const gchar *bundle_id, gboolean match_prefix)
-{
-	AS_PTR_ARRAY_RETURN_CLEAR_FREE_FUNC (as_pool_get_components_by_bundle_id (pool, kind, bundle_id, match_prefix));
 }
 
 /**
@@ -2304,10 +2099,7 @@ as_user_search_term_valid (const gchar *term)
 {
 	guint i;
 	for (i = 0; term[i] != '\0'; i++) {
-		if (term[i] == '<' ||
-		    term[i] == '>' ||
-		    term[i] == '(' ||
-		    term[i] == ')')
+		if (term[i] == '<' || term[i] == '>' || term[i] == '(' || term[i] == ')')
 			return FALSE;
 	}
 	if (i == 1)
@@ -2329,7 +2121,7 @@ as_user_search_term_valid (const gchar *term)
  *
  * Returns: (transfer full): (array zero-terminated=1): Valid tokens to search for, or %NULL for error
  */
-gchar**
+gchar **
 as_pool_build_search_tokens (AsPool *pool, const gchar *search)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
@@ -2366,7 +2158,7 @@ as_pool_build_search_tokens (AsPool *pool, const gchar *search)
 		search_norm = g_utf8_casefold (search, -1);
 	}
 
-	strv = g_str_tokenize_and_fold (search_norm, priv->locale, NULL);
+	strv = g_str_tokenize_and_fold (search_norm, priv->locale_posix, NULL);
 	/* we might still be able to extract tokens if g_str_tokenize_and_fold() can't do it or +/- were found */
 	if (strv == NULL) {
 		g_autofree gchar *delim = NULL;
@@ -2377,7 +2169,7 @@ as_pool_build_search_tokens (AsPool *pool, const gchar *search)
 
 	terms = g_new0 (gchar *, g_strv_length (strv) + 1);
 	idx = 0;
-	stemmer = g_object_ref (as_stemmer_get ());
+	stemmer = g_object_ref (as_stemmer_get (priv->locale_posix));
 	for (guint i = 0; strv[i] != NULL; i++) {
 		gchar *token;
 		if (!as_user_search_term_valid (strv[i]))
@@ -2397,24 +2189,24 @@ as_pool_build_search_tokens (AsPool *pool, const gchar *search)
 }
 
 /**
- * as_pool_search: (skip)
+ * as_pool_search:
  * @pool: An instance of #AsPool
  * @search: A search string
  *
  * Search for a list of components matching the search term.
  * The list will be ordered by match score.
  *
- * Returns: (transfer container) (element-type AsComponent): an array of the found #AsComponent objects.
+ * Returns: (transfer full): an #AsComponentBox of the found components.
  *
  * Since: 0.9.7
  */
-GPtrArray*
+AsComponentBox *
 as_pool_search (AsPool *pool, const gchar *search)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autoptr(AsProfileTask) ptask = NULL;
 	g_autoptr(GError) tmp_error = NULL;
-	GPtrArray *result = NULL;
+	AsComponentBox *result = NULL;
 	g_auto(GStrv) tokens = NULL;
 	g_autoptr(GRWLockReaderLocker) locker = g_rw_lock_reader_locker_new (&priv->rw_lock);
 
@@ -2433,7 +2225,7 @@ as_pool_search (AsPool *pool, const gchar *search)
 			return as_pool_get_components (pool);
 		} else {
 			g_debug ("No valid search tokens. Can not find any results.");
-			return g_ptr_array_new_with_free_func (g_object_unref);
+			return as_component_box_new_simple ();
 		}
 	} else {
 		g_autofree gchar *tmp_str = NULL;
@@ -2442,52 +2234,15 @@ as_pool_search (AsPool *pool, const gchar *search)
 	}
 
 	result = as_cache_search (priv->cache,
-				  (const gchar * const *) tokens,
+				  (const gchar *const *) tokens,
 				  TRUE, /* sort */
 				  &tmp_error);
 	if (result == NULL) {
 		g_warning ("Search failed: %s", tmp_error->message);
-		return g_ptr_array_new_with_free_func (g_object_unref);
+		return as_component_box_new_simple ();
 	}
 
 	return result;
-}
-
-/**
- * as_pool_search_gir: (rename-to as_pool_search)
- * @pool: An instance of #AsPool
- * @search: A search string
- *
- * Search for a list of components matching the search term.
- * The list will be ordered by match score.
- *
- * This function fully transfers ownership of the returned container,
- * to be used in GIR bindings.
- *
- * Returns: (transfer container) (element-type AsComponent): an array of the found #AsComponent objects.
- *
- * Since: 0.9.7
- */
-GPtrArray*
-as_pool_search_gir (AsPool *pool, const gchar *search)
-{
-	AS_PTR_ARRAY_RETURN_CLEAR_FREE_FUNC (as_pool_search (pool, search));
-}
-
-/**
- * as_pool_refresh_cache:
- * @pool: An instance of #AsPool.
- * @force: Enforce refresh, even if source data has not changed.
- *
- * Update the AppStream cache. There is normally no need to call this function manually, because cache updates are handled
- * transparently in the background.
- *
- * Returns: %TRUE on success, %FALSE on error.
- */
-gboolean
-as_pool_refresh_cache (AsPool *pool, gboolean force, GError **error)
-{
-	return as_pool_refresh_system_cache (pool, force, NULL, error);
 }
 
 /**
@@ -2547,7 +2302,7 @@ as_pool_refresh_system_cache (AsPool *pool,
 /**
  * as_pool_set_locale:
  * @pool: An instance of #AsPool.
- * @locale: the locale.
+ * @locale: the BCP47 or POSIX locale to use for this pool.
  *
  * Sets the current locale which should be used when parsing metadata.
  **/
@@ -2557,9 +2312,11 @@ as_pool_set_locale (AsPool *pool, const gchar *locale)
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autoptr(GRWLockWriterLocker) locker = g_rw_lock_writer_locker_new (&priv->rw_lock);
 
-	g_free (priv->locale);
-	priv->locale = g_strdup (locale);
-	as_cache_set_locale (priv->cache, locale);
+	g_free (priv->locale_bcp47);
+	g_free (priv->locale_posix);
+	priv->locale_posix = g_strdup (locale);
+	priv->locale_bcp47 = as_utils_posix_locale_to_bcp47 (priv->locale_posix);
+	as_cache_set_locale (priv->cache, priv->locale_bcp47);
 }
 
 /**
@@ -2575,7 +2332,7 @@ as_pool_get_locale (AsPool *pool)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	g_autoptr(GRWLockReaderLocker) locker = g_rw_lock_reader_locker_new (&priv->rw_lock);
-	return priv->locale;
+	return priv->locale_posix;
 }
 
 /**
@@ -2649,19 +2406,29 @@ as_pool_print_location_group_info (AsLocationGroup *lgroup)
 
 		g_print ("  %s\n", lentry->location);
 		if (lentry->format_kind == AS_FORMAT_KIND_XML) {
-			files = as_utils_find_files_matching (lentry->location, "*.xml*", FALSE, NULL);
+			files = as_utils_find_files_matching (lentry->location,
+							      "*.xml*",
+							      FALSE,
+							      NULL);
 			if (lgroup->format_style == AS_FORMAT_STYLE_METAINFO)
 				format_kind_str = "MetaInfo XML";
 			else
 				format_kind_str = "Catalog XML";
 		} else if (lentry->format_kind == AS_FORMAT_KIND_YAML) {
-			files = as_utils_find_files_matching (lentry->location, "*.yml*", FALSE, NULL);
+			files = as_utils_find_files_matching (lentry->location,
+							      "*.yml*",
+							      FALSE,
+							      NULL);
 			format_kind_str = "YAML";
 		} else if (lentry->format_kind == AS_FORMAT_KIND_DESKTOP_ENTRY) {
-			files = as_utils_find_files_matching (lentry->location, "*.desktop", FALSE, NULL);
+			files = as_utils_find_files_matching (lentry->location,
+							      "*.desktop",
+							      FALSE,
+							      NULL);
 			format_kind_str = "Desktop Entry";
 		} else {
-			g_warning ("Unknown data format type detected: %s", as_format_kind_to_string (lentry->format_kind));
+			g_warning ("Unknown data format type detected: %s",
+				   as_format_kind_to_string (lentry->format_kind));
 			continue;
 		}
 
@@ -2671,7 +2438,6 @@ as_pool_print_location_group_info (AsLocationGroup *lgroup)
 				data_found = TRUE;
 		}
 	}
-
 
 	for (guint i = 0; i < lgroup->icon_dirs->len; i++) {
 		const gchar *icons_path = g_ptr_array_index (lgroup->icon_dirs, i);
@@ -2706,7 +2472,9 @@ as_pool_print_location_group_info (AsLocationGroup *lgroup)
  * Used in appstreamcli, but not exposed as public API.
  */
 gboolean
-as_pool_print_std_data_locations_info_private (AsPool *pool, gboolean print_os_data, gboolean print_extra_data)
+as_pool_print_std_data_locations_info_private (AsPool *pool,
+					       gboolean print_os_data,
+					       gboolean print_extra_data)
 {
 	AsPoolPrivate *priv = GET_PRIVATE (pool);
 	gboolean data_found = FALSE;
@@ -2717,7 +2485,6 @@ as_pool_print_std_data_locations_info_private (AsPool *pool, gboolean print_os_d
 	/* find common locations that have metadata */
 	if (g_hash_table_size (priv->std_data_locations) == 0)
 		as_pool_detect_std_metadata_dirs (pool, TRUE);
-
 
 	g_hash_table_iter_init (&loc_iter, priv->std_data_locations);
 	while (g_hash_table_iter_next (&loc_iter, NULL, &loc_value)) {
@@ -2742,43 +2509,6 @@ as_pool_print_std_data_locations_info_private (AsPool *pool, gboolean print_os_d
 	}
 
 	return data_found;
-}
-
-/**
- * as_pool_add_metadata_location:
- * @pool: An instance of #AsPool.
- * @directory: An existing filesystem location.
- *
- * Add a location for the data pool to read data from.
- * If @directory contains a "xml", "xmls", "yaml" or "icons" subdirectory (or all of them),
- * those paths will be added to the search paths instead.
- *
- * Deprecated: 0.15.0: Use %as_pool_add_extra_data_location instead.
- */
-void
-as_pool_add_metadata_location (AsPool *pool, const gchar *directory)
-{
-	as_pool_add_extra_data_location (pool, directory, AS_FORMAT_STYLE_CATALOG);
-}
-
-/**
- * as_pool_clear_metadata_locations:
- * @pool: An instance of #AsPool.
- *
- * Remove all metadata locations from the list of watched locations.
- *
- * Deprecated: 0.15.0: Use %as_pool_reset_extra_data_locations and control system data loading via flags.
- */
-void
-as_pool_clear_metadata_locations (AsPool *pool)
-{
-	/* don't load stuff from default locations to mimic previous behavior */
-	as_pool_set_load_std_data_locations (pool, FALSE);
-
-	/* clear arrays */
-	as_pool_reset_extra_data_locations (pool);
-
-	g_debug ("Cleared all metadata search paths.");
 }
 
 /**
@@ -2906,74 +2636,6 @@ as_pool_get_os_metadata_cache_age (AsPool *pool)
 }
 
 /**
- * as_pool_set_cache_location:
- * @pool: An instance of #AsPool.
- * @fname: Filename of the cache file, or special identifier.
- *
- * Sets the name of the cache file. If @fname is ":memory", the cache will be
- * kept in memory, if it is set to ":temporary", the cache will be stored in
- * a temporary directory. In any other case, the given filename is used.
- *
- * Since: 0.12.7
- *
- * Deprecated: 0.15.0: Cache location can no longer be set explicitly.
- **/
-void
-as_pool_set_cache_location (AsPool *pool, const gchar *fname)
-{
-	g_warning ("Not changing AppStream cache location: No longer supported.");
-}
-
-/**
- * as_pool_get_cache_flags:
- * @pool: An instance of #AsPool.
- *
- * Get the #AsCacheFlags for this data pool.
- *
- * Deprecated: 0.15.0: Cache flags can no longer be changed.
- */
-AsCacheFlags
-as_pool_get_cache_flags (AsPool *pool)
-{
-	return AS_CACHE_FLAG_USE_SYSTEM | AS_CACHE_FLAG_USE_USER | AS_CACHE_FLAG_REFRESH_SYSTEM;
-}
-
-/**
- * as_pool_set_cache_flags:
- * @pool: An instance of #AsPool.
- * @flags: The new #AsCacheFlags.
- *
- * Set the #AsCacheFlags for this data pool.
- *
- * Deprecated: 0.15.0: Cache flags can no longer be modified.
- */
-void
-as_pool_set_cache_flags (AsPool *pool, AsCacheFlags flags)
-{
-	/* Legacy function that is just providing some compatibility glue */
-	if (as_flags_contains (flags, AS_CACHE_FLAG_USE_USER))
-		as_pool_remove_flags (pool, AS_POOL_FLAG_LOAD_OS_CATALOG |
-					    AS_POOL_FLAG_LOAD_OS_METAINFO);
-}
-
-/**
- * as_pool_get_cache_location:
- * @pool: An instance of #AsPool.
- *
- * Gets the location of the session cache.
- *
- * Returns: Location of the cache, or %NULL if unknown.
- *
- * Deprecated: 0.15.0: Cache location can no longer be set explicitly.
- **/
-const gchar*
-as_pool_get_cache_location (AsPool *pool)
-{
-	/* No-op */
-	return NULL;
-}
-
-/**
  * as_pool_override_cache_location:
  * @pool: An instance of #AsPool.
  * @dir_sys: Directory to store system/non-writable cache
@@ -3017,7 +2679,7 @@ as_pool_error_quark (void)
  * Returns: (transfer full): a #AsPool
  *
  **/
-AsPool*
+AsPool *
 as_pool_new (void)
 {
 	AsPool *pool;
