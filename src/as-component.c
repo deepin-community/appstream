@@ -4967,7 +4967,10 @@ xmlNode *
 as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 {
 	AsComponentPrivate *priv = GET_PRIVATE (cpt);
+	AsFormatStyle format_style;
 	xmlNode *cnode;
+
+	format_style = as_context_get_style (ctx);
 
 	/* define component root node properties */
 	if (root == NULL)
@@ -4990,7 +4993,7 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 			as_xml_add_text_prop (cnode, "date_eol", time_str);
 	}
 
-	if (as_context_get_style (ctx) == AS_FORMAT_STYLE_CATALOG) {
+	if (format_style == AS_FORMAT_STYLE_CATALOG) {
 		/* write some propties which only exist in catalog XML */
 		if (priv->merge_kind != AS_MERGE_KIND_NONE) {
 			as_xml_add_text_prop (cnode,
@@ -5020,7 +5023,7 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 	as_xml_add_localized_text_node (cnode, "summary", priv->summary);
 
 	/* order license and project group after name/summary */
-	if (as_context_get_style (ctx) == AS_FORMAT_STYLE_METAINFO)
+	if (format_style == AS_FORMAT_STYLE_METAINFO)
 		as_xml_add_text_node (cnode, "metadata_license", priv->metadata_license);
 
 	/* project license */
@@ -5036,7 +5039,8 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 	if (priv->developer != NULL) {
 		as_developer_to_xml_node (priv->developer, ctx, cnode);
 
-		if (as_context_get_format_version (ctx) <= AS_FORMAT_VERSION_V1_0) {
+		if (format_style == AS_FORMAT_STYLE_CATALOG &&
+		    as_context_get_format_version (ctx) <= AS_FORMAT_VERSION_V1_0) {
 			/* Add the deprecated tag for now, for improved backwards compatibility */
 			as_xml_add_text_node (
 			    cnode,
@@ -5186,7 +5190,7 @@ as_component_to_xml_node (AsComponent *cpt, AsContext *ctx, xmlNode *root)
 		for (guint i = 0; i < priv->tags->len; i++) {
 			xmlNode *tag_node = NULL;
 			g_auto(GStrv)
-				    parts = g_strsplit (g_ptr_array_index (priv->tags, i), "::", 2);
+				   parts = g_strsplit (g_ptr_array_index (priv->tags, i), "::", 2);
 			tag_node = as_xml_add_text_node (tags_node, "tag", parts[1]);
 			if (!as_is_empty (parts[0]))
 				as_xml_add_text_prop (tag_node, "namespace", parts[0]);
@@ -6408,7 +6412,7 @@ as_component_emit_yaml (AsComponent *cpt, AsContext *ctx, yaml_emitter_t *emitte
 
 		for (guint i = 0; i < priv->tags->len; i++) {
 			g_auto(GStrv)
-				    parts = g_strsplit (g_ptr_array_index (priv->tags, i), "::", 2);
+				   parts = g_strsplit (g_ptr_array_index (priv->tags, i), "::", 2);
 
 			as_yaml_mapping_start (emitter);
 			if (!as_is_empty (parts[0]))

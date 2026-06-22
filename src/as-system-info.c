@@ -52,6 +52,12 @@
 #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#elif defined(__GNU__)
+#include <mach/mach.h>
+#include <mach/host_info.h>
+#include <mach/mach_host.h>
+#elif defined(__sun)
+#include <unistd.h>
 #endif
 #ifdef HAVE_SYSTEMD
 #include <systemd/sd-hwdb.h>
@@ -392,7 +398,7 @@ as_system_info_read_kernel_details (AsSystemInfo *sysinfo)
 	if (priv->kernel_name != NULL)
 		return;
 
-	if (uname (&utsbuf) != 0) {
+	if (uname (&utsbuf) < 0) {
 		g_warning ("Unable to read kernel information via uname: %s", g_strerror (errno));
 		return;
 	}
@@ -498,6 +504,21 @@ as_get_physical_memory_total (void)
 	statex.dwLength = sizeof (statex);
 	GlobalMemoryStatusEx (&statex);
 	return statex.ullTotalPhys / (1024 * 1024);
+#elif defined(__GNU__)
+	host_basic_info_data_t hbi;
+	mach_msg_type_number_t cnt = HOST_BASIC_INFO_COUNT;
+	int err = host_info (mach_host_self (), HOST_BASIC_INFO, (host_info_t) &hbi, &cnt);
+	if (err != 0) {
+		g_warning ("Unable to determine physical memory size: %s", g_strerror (err));
+		return 0;
+	}
+	return hbi.memory_size / MB_IN_BYTES;
+#elif defined(__sun)
+	long physpages = sysconf (_SC_PHYS_PAGES);
+	long pagesize = sysconf (_SC_PAGESIZE);
+	if (physpages > 0 && pagesize > 0)
+		return (physpages * pagesize) / MB_IN_BYTES;
+	return 0;
 #else
 #error "Implementation of as_get_physical_memory_total() missing for this OS."
 #endif
@@ -1091,7 +1112,7 @@ as_system_info_get_display_length (AsSystemInfo *sysinfo, AsDisplaySideKind side
  * Set the current display length for the given side kind.
  * The size needs to be in device-independent pixels, see the
  * AppStream documentation for more information:
- * https://freedesktop.org/software/appstream/docs/chap-Metadata.html#tag-relations-display_length
+ * https://www.freedesktop.org/software/appstream/docs/chap-Metadata.html#tag-relations-display_length
  */
 void
 as_system_info_set_display_length (AsSystemInfo *sysinfo, AsDisplaySideKind side, gulong value_dip)

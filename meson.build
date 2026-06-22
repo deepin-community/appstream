@@ -1,9 +1,9 @@
 project('AppStream', 'c',
   meson_version: '>=0.62',
-  default_options: ['c_std=c11', 'cpp_std=gnu++17'],
+  default_options: ['c_std=gnu17', 'cpp_std=c++20'],
 
   license: 'LGPL-2.1-or-later',
-  version: '1.0.3',
+  version: '1.0.5',
 )
 
 cc = meson.get_compiler('c')
@@ -73,6 +73,9 @@ if get_option('maintainer')
                          '-Winline',
                          '-Wno-error=comment',
                          '-Werror=format-security',
+
+                         # used in rsvg's headers, so we can not make this fatal yet
+                         '-Wno-error=expansion-to-defined',
     ]
     add_project_arguments(maintainer_c_args, language: 'c')
     add_project_arguments(maintainer_c_args, language: 'cpp')

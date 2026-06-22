@@ -68,6 +68,25 @@
 G_DEFINE_QUARK (as-utils-error-quark, as_utils_error)
 
 /**
+ * as_get_resource_safe:
+ *
+ * A threadsafe variant to obtain our GResource.
+ */
+static GResource *
+as_get_resource_safe (void)
+{
+	static GResource *resource = NULL;
+
+	if (g_once_init_enter (&resource)) {
+		GResource *res = as_get_resource ();
+		g_once_init_leave (&resource, res);
+	}
+
+	g_assert (resource != NULL);
+	return resource;
+}
+
+/**
  * as_markup_strsplit_words:
  * @text: the text to split.
  * @line_len: the maximum length of the output line
@@ -1260,29 +1279,11 @@ as_utils_search_token_valid (const gchar *token)
 }
 
 /**
- * as_utils_ensure_resources:
- *
- * Perform a sanity check to ensure GResource can be loaded.
- */
-void
-as_utils_ensure_resources (void)
-{
-	static GMutex mutex;
-	GResource *resource = NULL;
-
-	g_mutex_lock (&mutex);
-	resource = as_get_resource ();
-	if (resource == NULL)
-		g_error ("Failed to load internal resources: as_get_resource() returned NULL!");
-	g_mutex_unlock (&mutex);
-}
-
-/**
  * as_utils_is_category_name:
  * @category_name: a XDG category name, e.g. "ProjectManagement"
  *
  * Searches the known list of registered XDG category names.
- * See https://specifications.freedesktop.org/menu-spec/menu-spec-1.0.html#category-registry
+ * See https://specifications.freedesktop.org/menu-spec/latest/category-registry.html
  * for a reference.
  *
  * Returns: %TRUE if the category name is valid
@@ -1294,8 +1295,7 @@ as_utils_is_category_name (const gchar *category_name)
 {
 	g_autoptr(GBytes) data = NULL;
 	g_autofree gchar *key = NULL;
-	GResource *resource = as_get_resource ();
-	g_assert (resource != NULL);
+	GResource *resource = as_get_resource_safe ();
 
 	/* custom spec-extensions are generally valid if prefixed correctly */
 	if (g_str_has_prefix (category_name, "X-"))
@@ -1382,8 +1382,7 @@ as_utils_is_tld (const gchar *tld)
 {
 	g_autoptr(GBytes) data = NULL;
 	g_autofree gchar *key = NULL;
-	GResource *resource = as_get_resource ();
-	g_assert (resource != NULL);
+	GResource *resource = as_get_resource_safe ();
 
 	/* safeguard against accidentally matching comments */
 	if (as_is_empty (tld) || g_str_has_prefix (tld, "#"))
@@ -1532,8 +1531,7 @@ as_utils_is_platform_triplet_arch (const gchar *arch)
 	if (g_str_has_prefix (arch, "#"))
 		return FALSE;
 
-	resource = as_get_resource ();
-	g_assert (resource != NULL);
+	resource = as_get_resource_safe ();
 
 	/* load the readonly data section */
 	data = g_resource_lookup_data (resource,
@@ -1575,8 +1573,7 @@ as_utils_is_platform_triplet_oskernel (const gchar *os)
 	if (g_str_has_prefix (os, "#"))
 		return FALSE;
 
-	resource = as_get_resource ();
-	g_assert (resource != NULL);
+	resource = as_get_resource_safe ();
 
 	/* load the readonly data section */
 	data = g_resource_lookup_data (resource,
@@ -1618,8 +1615,7 @@ as_utils_is_platform_triplet_osenv (const gchar *env)
 	if (g_str_has_prefix (env, "#"))
 		return FALSE;
 
-	resource = as_get_resource ();
-	g_assert (resource != NULL);
+	resource = as_get_resource_safe ();
 
 	/* load the readonly data section */
 	data = g_resource_lookup_data (resource,
@@ -1688,8 +1684,7 @@ as_utils_is_reference_registry (const gchar *regname)
 	if (g_str_has_prefix (regname, "#"))
 		return FALSE;
 
-	resource = as_get_resource ();
-	g_assert (resource != NULL);
+	resource = as_get_resource_safe ();
 
 	/* load the readonly data section */
 	data = g_resource_lookup_data (resource,
@@ -2439,6 +2434,7 @@ as_utils_install_metadata_file_internal (const gchar *filename,
 	g_autofree gchar *path_parent = NULL;
 	g_autoptr(GFile) file_dest = NULL;
 	g_autoptr(GFile) file_src = NULL;
+	g_autoptr(GError) tmp_error = NULL;
 
 	/* create directory structure */
 	path_parent = g_strdup_printf ("%s%s", destdir, dir);
@@ -2477,19 +2473,54 @@ as_utils_install_metadata_file_internal (const gchar *filename,
 	if (!g_file_copy (file_src, file_dest, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, error))
 		return FALSE;
 
+	/* explicitly set permissions on the copied file */
+	if (!g_file_set_attribute_uint32 (file_dest,
+					  G_FILE_ATTRIBUTE_UNIX_MODE,
+					  0644,
+					  G_FILE_QUERY_INFO_NONE,
+					  NULL,
+					  &tmp_error)) {
+		g_debug ("Error setting file permissions: %s", tmp_error->message);
+		g_clear_error (&tmp_error);
+	}
+
 	/* update the origin for XML files */
 	if (origin != NULL && !is_yaml) {
 		g_autoptr(AsMetadata) mdata = as_metadata_new ();
+		g_autofree gchar *new_dest = NULL;
+		gboolean renamed = FALSE;
 		as_metadata_set_locale (mdata, "ALL");
 		as_metadata_set_format_style (mdata, AS_FORMAT_STYLE_CATALOG);
 		if (!as_metadata_parse_file (mdata, file_dest, AS_FORMAT_KIND_XML, error))
 			return FALSE;
 		as_metadata_set_origin (mdata, origin);
+		if (!g_str_has_suffix (path_dest, ".xml")) {
+			g_autofree gchar *basename_new = g_strdup_printf ("%s.xml", origin);
+			/* it's an XML file now, name it properly */
+			g_unlink (path_dest);
+			g_clear_pointer (&path_dest, g_free);
+			path_dest = g_build_filename (path_parent, basename_new, NULL);
+			renamed = TRUE;
+		}
 		if (!as_metadata_save_catalog (mdata, path_dest, AS_FORMAT_KIND_XML, error))
 			return FALSE;
+		if (renamed) {
+			g_clear_object (&file_dest);
+			file_dest = g_file_new_for_path (path_dest);
+			/* explicitly set permissions on the renamed file */
+			if (!g_file_set_attribute_uint32 (file_dest,
+							  G_FILE_ATTRIBUTE_UNIX_MODE,
+							  0644,
+							  G_FILE_QUERY_INFO_NONE,
+							  NULL,
+							  &tmp_error)) {
+				g_debug ("Error setting renamed file permissions: %s",
+					 tmp_error->message);
+				g_clear_error (&tmp_error);
+			}
+		}
 	}
 
-	g_chmod (path_dest, 0755);
 	return TRUE;
 }
 
@@ -2519,6 +2550,7 @@ as_utils_install_icon_tarball (AsMetadataLocation location,
 		return FALSE;
 	}
 
+	g_debug ("Extracting '%s' to: %s", filename, dir);
 	if (!as_utils_extract_tarball (filename, dir, error))
 		return FALSE;
 	return TRUE;
@@ -2571,7 +2603,11 @@ as_utils_install_metadata_file (AsMetadataLocation location,
 
 	switch (as_metadata_file_guess_style (filename)) {
 	case AS_FORMAT_STYLE_CATALOG:
-		if (g_strstr_len (filename, -1, ".yml.gz") != NULL) {
+		if (g_str_has_suffix (filename, ".yml") || g_str_has_suffix (filename, ".yml.gz") ||
+		    g_str_has_suffix (filename, ".yml.zst") ||
+		    g_str_has_suffix (filename, ".yaml") ||
+		    g_str_has_suffix (filename, ".yaml.gz") ||
+		    g_str_has_suffix (filename, ".yaml.zst")) {
 			path = g_build_filename (as_metadata_location_get_prefix (location),
 						 "swcatalog",
 						 "yaml",
@@ -2618,7 +2654,9 @@ as_utils_install_metadata_file (AsMetadataLocation location,
 	default:
 		basename = g_path_get_basename (filename);
 
-		if (g_str_has_suffix (basename, ".tar.gz")) {
+		if (g_str_has_suffix (basename, ".tar.gz") ||
+		    g_str_has_suffix (basename, ".tar.zst") ||
+		    g_str_has_suffix (basename, ".tar")) {
 			gchar *tmp;
 			g_autofree gchar *tmp2 = NULL;
 			/* we may have an icon tarball */
@@ -2632,12 +2670,10 @@ as_utils_install_metadata_file (AsMetadataLocation location,
 			}
 
 			if (icons_size_id == NULL) {
-				g_set_error_literal (
-				    error,
-				    AS_UTILS_ERROR,
-				    AS_UTILS_ERROR_FAILED,
-				    "Unable to find valid icon size in icon tarball name.");
-				return FALSE;
+				g_debug ("Unable to find valid icon size in icon tarball name, "
+					 "assuming tarball contains icons of all sizes in the "
+					 "right subdirectories.");
+				icons_size_id = "";
 			}
 
 			/* install icons if we know the origin name */
@@ -2651,11 +2687,15 @@ as_utils_install_metadata_file (AsMetadataLocation location,
 				break;
 			}
 
-			/* guess origin */
-			tmp2 = g_strdup_printf ("_icons-%s.tar.gz", icons_size_id);
+			/* guess origin and install with assumed origin */
+			if (as_is_empty (icons_size_id))
+				tmp2 = g_strdup ("-icons.tar");
+			else
+				tmp2 = g_strdup_printf ("-icons-%s.tar", icons_size_id);
 			tmp = g_strstr_len (basename, -1, tmp2);
 			if (tmp != NULL) {
 				*tmp = '\0';
+				g_debug ("Guessed icon tarball origin as: %s", basename);
 				ret = as_utils_install_icon_tarball (location,
 								     filename,
 								     basename,
@@ -2780,23 +2820,25 @@ as_utils_find_stock_icon_filename_full (const gchar *root_dir,
 					GError **error)
 {
 	guint min_size_idx = 0;
+	/* clang-format off */
 	const gchar *supported_ext[] = { ".png", ".svg", ".svgz", "", NULL };
 	const struct {
 		guint size;
 		const gchar *size_str;
 	} sizes[] = {
-		{48,   "48x48"   },
-		    { 64,  "64x64"	  },
-		{ 96,  "96x96"   },
-		   { 128, "128x128" },
-		{ 256, "256x256" },
-		    { 512, "512x512" },
-		{ 0,   "scalable"},
-		   { 0,	NULL	     }
+		{ 48,  "48x48"    },
+		{ 64,  "64x64"	  },
+		{ 96,  "96x96"    },
+		{ 128, "128x128"  },
+		{ 256, "256x256"  },
+		{ 512, "512x512"  },
+		{ 0,   "scalable" },
+		{ 0,	NULL	  }
 	};
 	const gchar *types[] = { "actions", "animations", "apps",	 "categories", "devices",
 				 "emblems", "emotes",	  "filesystems", "intl",       "mimetypes",
 				 "places",  "status",	  "stock",	 NULL };
+	/* clang-format on */
 	g_autofree gchar *prefix = NULL;
 
 	g_return_val_if_fail (icon_name != NULL, NULL);

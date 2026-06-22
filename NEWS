@@ -1,3 +1,78 @@
+Version 1.0.5
+~~~~~~~~~~~~~
+Released: 2025-04-24
+
+Features:
+ * qt: Expose markup conversion utils
+ * desktop-styles: Add android and iOS
+ * validator: Check for xml:lang="en" being used on description template elements
+ * validator: Flag cases of raw text in "description" elements
+ * metadata: Add more known extensions into as_metadata_file_guess_style()
+
+Specification:
+ * docs: Clarify that the style segment of a screenshot environment is optional
+ * docs: Explain consequences of defining an icon for desktop-app metainfo
+ * docs: Clarify that description content must be in p/li elements
+
+Bugfixes:
+ * validator: mark as_validator_issue_tag_list static
+ * docs: Add workaround for gi-docgen misnaming devhelp files
+ * compose: Do not permit SVG images as screenshots
+ * compose: Don't "forget" to scan remaining paths when re-encountering a dir
+ * pool: Try explicit singular term match if we only have low-quality tokens
+ * utils: Provide compatibility with Fedora icon tarballs when installing them
+ * utils: Remove leftover g_chmod()
+ * zstd-decompressor: Pass output/written data when decompression finished
+ * utils: Expect a dash in icons file name
+ * utils: Recognize .yml* and .yaml* file extension variants, and .zst extension
+ * utils: Rename the appstream file when re-saving it on install
+
+Contributors:
+ Alyssa Ross, Ismael Asensio, Kolja, Matthias Klumpp, Milan Crha
+
+Version 1.0.4
+~~~~~~~~~~~~~
+Released: 2024-12-08
+
+Features:
+ * bundle: Add AS_BUNDLE_KIND_SYSUPDATE
+ * desktop-style-ids: Add dark support for Plasma
+ * desktop-style-ids: add pantheon:dark
+ * qt: Expose branding color
+ * sysinfo: Add memory size detection support for Illumos and Solaris
+ * sysinfo: Add memory size detection support for GNU/Hurd
+ * validator: Don't fail validation if a snapshot release is missing a time
+
+Specification:
+ * docs: Note that support for some legacy path was dropped in 1.0
+ * docs: Update fd.o spec URLs
+ * docs: Better explain desktop applications
+ * Update ESRA website URL
+
+Bugfixes:
+ * validator: Make sure we read an initialised variable
+ * qt: Specify utc as the dates' timezone
+ * tests: Ignore some tests on Windows
+ * sysinfo: make uname() usage POSIX compliant
+ * Only emit legacy compat tag developer_name for catalog data
+ * compose: Allow file discovery even in symlinked directories
+ * Avoid a race condition when loading GResource data
+ * validator: Mention length limit in summary length warning message
+ * utils: Explicitly set permissions on installed metadata files
+ * as-vercmp: Fix gtkdoc to not start with '>'
+
+Miscellaneous:
+ * desktop-style-ids: Remove Endless
+ * ci: Fix FreeBSD build (update `py-gi-docgen`)
+ * ci: Update to Ubuntu 24.04 for Debian Testing builds
+ * utils: Assume 64px as size when installing an icon tarball of unknown size
+
+Contributors:
+ Adrien Plazas, Airat Makhmutov, Aleix Pol, Carl Schwan,
+ Cassidy James Blaede, Danielle Foré, Elliott Sales de Andrade,
+ James Addison, Marcel Telka, Matthias Klumpp, Roke Julian Lockhart,
+ Pino Toscano, sid
+
 Version 1.0.3
 ~~~~~~~~~~~~~~
 Released: 2024-04-24

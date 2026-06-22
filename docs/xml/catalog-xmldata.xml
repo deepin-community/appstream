@@ -37,9 +37,8 @@
 		<important>
 			<title>Legacy Path</title>
 			<para>
-				AppStream tools scan the paths <filename>/usr/share/app-info/(xml|xmls)</filename> / <filename>/var/lib/app-info/(xml|xmls)</filename> path for legacy
-				compatibility as well. If possible, the old locations and old layouts should not be used anymore.
-				Support for the legacy path will likely be dropped completely with a future AppStream 1.0 release.
+				Prior to version 1.0, AppStream tools scanned the paths <filename>/usr/share/app-info/(xml|xmls)</filename> and <filename>/var/lib/app-info/(xml|xmls)</filename> path for legacy
+				compatibility as well.  Legacy path support was dropped in version 1.0. The old locations should not be used anymore. The modern locations are supported by both the AppStream 1.x as well as AppStream 0.16.x series.
 			</para>
 		</important>
 	</section>
@@ -51,7 +50,7 @@
 			<code>&lt;component&gt;</code> tags of different <literal>type</literal>s as children.
 		</para>
 		<para>
-			Data to fill the different component elements is usually taken from their <ulink url="https://standards.freedesktop.org/desktop-entry-spec/latest/">Desktop files</ulink>
+			Data to fill the different component elements is usually taken from their <ulink url="https://specifications.freedesktop.org/desktop-entry-spec/latest/">Desktop files</ulink>
 			and package data. However, if an upstream project ships metainfo files (see <xref linkend="chap-Metadata"/>),
 			values defined there should override data from any other source.
 		</para>
@@ -179,7 +178,7 @@
 					</para>
 					<para>
 						In case of a component of type <literal>desktop-application</literal>, the application name as defined in the application's
-						<ulink url="https://standards.freedesktop.org/desktop-entry-spec/latest/">desktop file</ulink> is used.
+						<ulink url="https://specifications.freedesktop.org/desktop-entry-spec/latest/">desktop file</ulink> is used.
 					</para>
 				</listitem>
 			</varlistentry>
@@ -308,7 +307,7 @@
 					</para>
 					<para>
 						If specified, the <literal>scale</literal> property is defined as in the
-						<ulink url="https://specifications.freedesktop.org/icon-theme-spec/icon-theme-spec-latest.html#definitions">Freedesktop Icon Theme Specification</ulink>.
+						<ulink url="https://specifications.freedesktop.org/icon-theme-spec/latest/#definitions">Freedesktop Icon Theme Specification</ulink>.
 						It’s an integer value ≥1 indicating how many pixels in the image represent a logical pixel on the display, in each dimension.
 						This allows icons for hi-DPI screens to be displayed at the same logical size as on lower resolution screens, but without upscaling artifacts.
 					</para>
@@ -340,7 +339,7 @@
 						This tag can contain one or more <code><![CDATA[<category>]]></code> tags, describing the categories this component
 						is located in. This tag is usually applied to components of type <literal>desktop-application</literal>, although it might be used by others later.
 						This data is usually taken from Desktop files, a list of categories can be found in the
-						<ulink url="https://standards.freedesktop.org/menu-spec/latest/apa.html">Freedesktop menu spec</ulink>.
+						<ulink url="https://specifications.freedesktop.org/menu-spec/latest/category-registry.html">Freedesktop menu spec</ulink>.
 						Example:
 					</para>
 					<programlisting language="XML"><![CDATA[<categories>
@@ -599,6 +598,7 @@
 							<listitem><para><code>tarball</code> - For plain and possibly compressed tarballs.</para></listitem>
 							<listitem><para><code>cabinet</code> - For cabinet firmware deployments.</para></listitem>
 							<listitem><para><code>linglong</code> - For <ulink url="https://linglong.dev/">Linglong</ulink> bundles.</para></listitem>
+							<listitem><para><code>sysupdate</code> - For <ulink url="https://www.freedesktop.org/software/systemd/man/latest/systemd-sysupdate.html">systemd-sysupdate</ulink> bundles.</para></listitem>
 						</itemizedlist>
 					</para>
 					<para>

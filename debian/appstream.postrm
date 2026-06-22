@@ -5,7 +5,7 @@ set -e
 if [ "$1" = "purge" ]; then
     # remove the AppStream global cache
     rm -rf /var/cache/swcatalog/cache
-    rmdir /var/cache/swcatalog/ | true
+    rmdir /var/cache/swcatalog/ || true
 
     # remove the AppStream data fetched via APT
     rm -rf /var/lib/swcatalog

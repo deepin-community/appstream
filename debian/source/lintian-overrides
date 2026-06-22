@@ -5,3 +5,6 @@ appstream source: inconsistent-appstream-metadata-license tests/*
 
 # false positive: the sources are provided
 appstream source: source-is-missing [docs/html/*]
+
+# this is on purpose, for testing purposes
+appstream source: absolute-symbolic-link-target-in-source /nonexistent [tests/*]

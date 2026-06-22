@@ -20,6 +20,7 @@
 #ifndef APPSTREAMQT_UTILS_H
 #define APPSTREAMQT_UTILS_H
 
+#include <optional>
 #include <QStringList>
 #include "appstreamqt_export.h"
 
@@ -29,10 +30,19 @@ namespace AppStream
 namespace Utils
 {
 
+enum APPSTREAMQT_EXPORT MarkupKind {
+    MarkupUnknown = 0,
+    MarkupXML,
+    MarkupText,
+    MarkupMarkdown,
+};
+
 APPSTREAMQT_EXPORT QString currentAppStreamVersion();
 
 APPSTREAMQT_EXPORT int vercmpSimple(const QString &a, const QString &b);
 
+APPSTREAMQT_EXPORT std::optional<QString>
+markupConvert(QStringView description, MarkupKind format, QString *errorMessage = nullptr);
 }
 
 }

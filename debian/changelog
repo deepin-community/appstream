@@ -1,3 +1,31 @@
+appstream (1.0.5-1) unstable; urgency=medium
+
+  [ Matthias Klumpp ]
+  * New upstream version: 1.0.5
+  * Bump standards version: No changes needed
+
+  [ Simon McVittie ]
+  * Revert "Add build-dep on gobject-introspection-bin for GIR debhelper"
+    (Closes: #1094613)
+  * d/control: Add ${gir:Depends} to -dev packages
+  * d/control: Add ${gir:Provides} to -dev packages
+  * d/control: Add gir1.2-*-dev Build-Depends as suggested by dh_girepository
+  * d/control, d/rules: Enable gir sequence declaratively
+  * d/control, d/rules: Only require gi-docgen for arch-indep builds
+  * d/control: Don't build API documentation under nodoc build-profile
+
+ -- Matthias Klumpp <mak@debian.org>  Thu, 24 Apr 2025 17:54:04 +0200
+
+appstream (1.0.4-1) unstable; urgency=medium
+
+  [ Matthias Klumpp ]
+  * New upstream version 1.0.4 (Closes: #1078593)
+
+  [ Adam Vodopjan ]
+  * Fix typo in debian/appstream.postrm
+
+ -- Matthias Klumpp <mak@debian.org>  Sun, 08 Dec 2024 23:42:44 +0100
+
 appstream (1.0.3-1) unstable; urgency=medium
 
   * New upstream version: 1.0.3

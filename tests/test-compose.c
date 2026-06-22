@@ -513,14 +513,14 @@ test_compose_desktop_entry (void)
 	gchar *tmp;
 	AsLaunchable *launch;
 	GPtrArray *hints;
-	g_autoptr(GBytes) de_bytes = as_gbytes_from_literal (
-	    "[Desktop Entry]\n"
-	    "Type=Application\n"
-	    "Name=FooBar\n"
-	    "Name[de_DE]=FööBär\n"
-	    "Comment=A foo-ish bar.\n"
-	    "Keywords=Hobbes;Bentham;Locke;\n"
-	    "Keywords[de_DE]=Heidegger;Kant;Hegel;\n");
+	g_autoptr(GBytes)
+		      de_bytes = as_gbytes_from_literal ("[Desktop Entry]\n"
+							 "Type=Application\n"
+							 "Name=FooBar\n"
+							 "Name[de_DE]=FööBär\n"
+							 "Comment=A foo-ish bar.\n"
+							 "Keywords=Hobbes;Bentham;Locke;\n"
+							 "Keywords[de_DE]=Heidegger;Kant;Hegel;\n");
 
 	cres = asc_result_new ();
 
@@ -703,7 +703,7 @@ test_compose_directory_unit (void)
 	g_assert_true (ret);
 
 	contents = asc_unit_get_contents (ASC_UNIT (dirunit));
-	g_assert_cmpint (contents->len, ==, 15);
+	g_assert_cmpint (contents->len, ==, 16);
 	as_sort_strings (contents);
 
 	g_assert_cmpstr (g_ptr_array_index (contents, 0), ==, "/Raleway-Regular.ttf");

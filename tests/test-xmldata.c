@@ -1439,39 +1439,39 @@ test_xml_read_screenshots (void)
 	screenshots = as_component_get_screenshots_all (cpt);
 	as_component_set_context_locale (cpt, "C");
 	_assert_screenshot_captions_order (screenshots,
-					   (const gchar *[]){ "The main window displaying a thing",
-							      "Second screenshot",
-							      "Screencast",
-							      "The app, on mobile!",
-							      "The app, on KDE Plasma desktop!",
-							      NULL });
+					   (const gchar *[]) { "The main window displaying a thing",
+							       "Second screenshot",
+							       "Screencast",
+							       "The app, on mobile!",
+							       "The app, on KDE Plasma desktop!",
+							       NULL });
 
 	as_component_sort_screenshots (cpt, "plasma", "mobile", FALSE);
 	_assert_screenshot_captions_order (screenshots,
-					   (const gchar *[]){ "The app, on mobile!",
-							      "The app, on KDE Plasma desktop!",
-							      "The main window displaying a thing",
-							      "Second screenshot",
-							      "Screencast",
-							      NULL });
+					   (const gchar *[]) { "The app, on mobile!",
+							       "The app, on KDE Plasma desktop!",
+							       "The main window displaying a thing",
+							       "Second screenshot",
+							       "Screencast",
+							       NULL });
 
 	as_component_sort_screenshots (cpt, "plasma", NULL, FALSE);
 	_assert_screenshot_captions_order (screenshots,
-					   (const gchar *[]){ "The app, on KDE Plasma desktop!",
-							      "The app, on mobile!",
-							      "The main window displaying a thing",
-							      "Second screenshot",
-							      "Screencast",
-							      NULL });
+					   (const gchar *[]) { "The app, on KDE Plasma desktop!",
+							       "The app, on mobile!",
+							       "The main window displaying a thing",
+							       "Second screenshot",
+							       "Screencast",
+							       NULL });
 
 	as_component_sort_screenshots (cpt, "gnome", NULL, FALSE);
 	_assert_screenshot_captions_order (screenshots,
-					   (const gchar *[]){ "The main window displaying a thing",
-							      "Second screenshot",
-							      "Screencast",
-							      "The app, on mobile!",
-							      "The app, on KDE Plasma desktop!",
-							      NULL });
+					   (const gchar *[]) { "The main window displaying a thing",
+							       "Second screenshot",
+							       "Screencast",
+							       "The app, on mobile!",
+							       "The app, on KDE Plasma desktop!",
+							       NULL });
 
 	/* test a legacy screenshot entry that we briefly supported in an older AppStream release */
 	g_object_unref (cpt);
@@ -2293,14 +2293,12 @@ test_xml_rw_branding (void)
 static void
 test_xml_rw_developer (void)
 {
-	static const gchar
-	    *xmldata_tags = "<component>\n"
-			    "  <id>org.example.DeveloperTest</id>\n"
-			    "  <developer id=\"freedesktop.org\">\n"
-			    "    <name>FreeDesktop.org Project</name>\n"
-			    "  </developer>\n"
-			    "  <developer_name>FreeDesktop.org Project</developer_name>\n"
-			    "</component>\n";
+	static const gchar *xmldata_tags = "<component>\n"
+					   "  <id>org.example.DeveloperTest</id>\n"
+					   "  <developer id=\"freedesktop.org\">\n"
+					   "    <name>FreeDesktop.org Project</name>\n"
+					   "  </developer>\n"
+					   "</component>\n";
 	g_autoptr(AsComponent) cpt = NULL;
 	g_autofree gchar *res = NULL;
 	AsDeveloper *devp;
@@ -2386,7 +2384,7 @@ test_xml_rw_external_releases (void)
 	g_assert_cmpint (as_release_list_len (releases), ==, 4);
 	g_assert_cmpstr (as_release_list_get_url (releases),
 			 ==,
-			 "https://raw.githubusercontent.com/ximion/appstream/master/tests/samples/"
+			 "https://raw.githubusercontent.com/ximion/appstream/main/tests/samples/"
 			 "releases/org.example.pomidaq.releases.xml");
 	g_assert_cmpint (as_release_list_get_kind (releases), ==, AS_RELEASE_LIST_KIND_EXTERNAL);
 }
