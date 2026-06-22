@@ -802,7 +802,6 @@ libappstream.so.5 libappstream5 #MINVER#
  as_utils_data_id_valid@Base 1.0.0
  as_utils_delete_dir_recursive@Base 1.0.0
  as_utils_dns_to_rdns@Base 1.0.0
- as_utils_ensure_resources@Base 1.0.0
  as_utils_error_get_type@Base 1.0.0
  as_utils_error_quark@Base 1.0.0
  as_utils_extract_tarball@Base 1.0.0

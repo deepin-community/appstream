@@ -3,18 +3,19 @@ Section: admin
 Priority: optional
 Maintainer: Matthias Klumpp <mak@debian.org>
 Build-Depends: debhelper-compat (= 13),
+               dh-sequence-gir,
                docbook-xsl,
                gettext,
-               gi-docgen,
+               gir1.2-gdkpixbuf-2.0-dev,
+               gir1.2-gio-2.0-dev,
+               gir1.2-gobject-2.0-dev,
                gobject-introspection,
-               gobject-introspection-bin,
                gperf,
                itstool,
                libcairo2-dev,
-               libcurl4-gnutls-dev | libcurl-dev (>= 7.62),
+               libcurl4-gnutls-dev | libcurl4-openssl-dev | libcurl-dev (>= 7.62),
                libfontconfig-dev,
                libgdk-pixbuf-2.0-dev,
-               libgirepository1.0-dev (>= 1.62),
                libglib2.0-dev (>= 2.62),
                libjs-highlight.js,
                libpango1.0-dev,
@@ -29,8 +30,9 @@ Build-Depends: debhelper-compat (= 13),
                qtbase5-dev,
                valac,
                xsltproc
+Build-Depends-Indep: gi-docgen <!nodoc>,
 Rules-Requires-Root: no
-Standards-Version: 4.6.2
+Standards-Version: 4.7.2
 Homepage: https://www.freedesktop.org/wiki/Distributions/AppStream/
 Vcs-Git: https://salsa.debian.org/pkgutopia-team/appstream.git
 Vcs-Browser: https://salsa.debian.org/pkgutopia-team/appstream
@@ -105,7 +107,9 @@ Multi-Arch: same
 Depends: gir1.2-appstream-1.0 (= ${binary:Version}),
          libappstream5 (= ${binary:Version}),
          libglib2.0-dev,
+         ${gir:Depends},
          ${misc:Depends}
+Provides: ${gir:Provides}
 Description: Library to access AppStream services (development files)
  AppStream is a metadata specification which permits software components to
  provide information about themselves to automated systems and end-users
@@ -233,7 +237,9 @@ Depends: gir1.2-appstreamcompose-1.0 (= ${binary:Version}),
          libappstream-compose0 (= ${binary:Version}),
          libappstream-dev (= ${binary:Version}),
          libgdk-pixbuf-2.0-dev,
+         ${gir:Depends},
          ${misc:Depends}
+Provides: ${gir:Provides}
 Suggests: appstream-generator
 Description: Building blocks to compose AppStream metadata (development files)
  AppStream is a metadata specification which permits software components to
@@ -264,6 +270,7 @@ Description: Building blocks to compose AppStream metadata (introspection data)
  This package contains introspection data for the AppStream compose library.
 
 Package: appstream-doc
+Build-Profiles: <!nodoc>
 Architecture: all
 Multi-Arch: foreign
 Section: doc

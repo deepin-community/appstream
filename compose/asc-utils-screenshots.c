@@ -41,11 +41,11 @@ struct {
 	gint width;
 	gint height;
 } target_screenshot_sizes[] = {
-	{1248, 702},
-	{ 752, 423},
-	{ 624, 351},
-	{ 224, 126},
-	{ 0,   0  }
+	{ 1248, 702 },
+	{ 752,  423 },
+	{ 624,  351 },
+	{ 224,  126 },
+	{ 0,    0   }
 };
 
 static AscVideoInfo *
@@ -449,6 +449,21 @@ asc_process_screenshot_images_lang (AscResult *cres,
 	if (max_size_bytes == 0)
 		store_screenshots = FALSE;
 
+	{
+		AscImageFormat image_format = asc_image_format_from_filename (orig_img_url);
+
+		/* we do not allow vector graphics as screenshots */
+		if (image_format == ASC_IMAGE_FORMAT_SVG || image_format == ASC_IMAGE_FORMAT_SVGZ) {
+			asc_result_add_hint (cres,
+					     cpt,
+					     "screenshot-image-is-svg",
+					     "url",
+					     orig_img_url,
+					     NULL);
+			return FALSE;
+		}
+	}
+
 	/* download our image */
 	img_bytes = as_curl_download_bytes (acurl, orig_img_url, &error);
 	if (img_bytes == NULL) {
@@ -713,9 +728,9 @@ asc_process_screenshot_images (AscResult *cres,
 	GHashTableIter ht_iter;
 	gpointer ht_key, ht_value;
 	g_autoptr(GHashTable) ht_lang_img = g_hash_table_new_full (g_str_hash,
-								    g_str_equal,
-								    g_free,
-								    g_object_unref);
+								   g_str_equal,
+								   g_free,
+								   g_object_unref);
 
 	imgs = as_screenshot_get_images_all (scr);
 	if (imgs->len == 0) {

@@ -52,6 +52,9 @@ if get_option('compose')
 endif
 
 if get_option('docs') or get_option('apidocs')
+  # we need Python for the helper scripts if any doc generation is enabled at all
+  python_exe = find_program('python3', 'python')
+
   if get_option('gir')
     subdir('api/')
   endif
@@ -123,7 +126,6 @@ as_doc_src = [
 hljs_installed_file = '/usr/share/javascript/highlight.js/highlight.min.js'
 if get_option('docs')
     daps_exe = find_program('daps')
-    python_exe = find_program('python3', 'python')
 
     build_docs_cmd = [
             python_exe,
@@ -131,7 +133,7 @@ if get_option('docs')
             '--build',
             '--src', meson.current_source_dir(),
             '--builddir', meson.current_build_dir(),
-            '--valsec-gen', gen_doc_valsec_exe.path(),
+            '--valsec-gen', gen_doc_valsec_exe.full_path(),
             'AppStream'
         ]
 
@@ -166,7 +168,7 @@ if get_option('docs')
           args: [join_paths(meson.current_source_dir(), 'doc-build-helper.py'),
                  '--validate',
                  '--src', meson.current_source_dir(),
-                 '--valsec-gen', gen_doc_valsec_exe.path()],
+                 '--valsec-gen', gen_doc_valsec_exe.full_path()],
           timeout: 60
     )
 elif get_option('install-docs')

@@ -262,6 +262,10 @@
 			whole enumeration block. This means that in a translated file, only <literal>&lt;p/&gt;</literal> and <literal>&lt;li/&gt;</literal>
 			elements may carry an <literal>xml:lang</literal> property.
 		</para>
+		<para>
+			All text must be in paragraphs or list item elements - text that contained directly in a <literal>description</literal> element is not
+			permitted.
+		</para>
 		</listitem>
 		</varlistentry>
 
@@ -273,7 +277,7 @@
 						is associated with.
 						This tag is usually applied to components of type <literal>desktop-application</literal>, but can be used with any component.
 						A list of valid category names can be found in the
-						<ulink url="https://specifications.freedesktop.org/menu-spec/latest/apa.html">Freedesktop menu specification</ulink>.
+						<ulink url="https://specifications.freedesktop.org/menu-spec/latest/category-registry.html">Freedesktop menu specification</ulink>.
 						Example:
 					</para>
 					<programlisting language="XML"><![CDATA[<categories>
@@ -424,7 +428,7 @@
                     <listitem>
                       <para>
                         The application can be launched via a desktop file. The value of the tag is a
-			<ulink url="https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#desktop-file-id">desktop-file id</ulink>.
+			<ulink url="https://specifications.freedesktop.org/desktop-entry-spec/latest/file-naming.html#desktop-file-id">desktop-file id</ulink>.
                       </para>
                       <para>
                         In case a software component has multiple launchable entries,
@@ -1114,7 +1118,7 @@
 				The distributor decides which components should be made compulsory, however it is generally a good idea to follow upstream's recommendations on that matter.
 			</para>
 			<para>
-				A list of all allowed values for this tag is defined in the <ulink url="https://specifications.freedesktop.org/menu-spec/latest/apb.html">XDG Menu Specification</ulink>.
+				A list of all allowed values for this tag is defined in the <ulink url="https://specifications.freedesktop.org/menu-spec/latest/onlyshowin-registry.html">XDG Menu Specification</ulink>.
 				Software center applications will only recognize these values.
 			</para>
 		</listitem>
@@ -1215,6 +1219,7 @@
 			This string property denotes the GUI environment the screenshot was recorded in, in the form of <code>{env}:{style}</code>,
 			where <literal>{env}</literal> is a desktop-environment name in lowercase and <literal>{style}</literal> is a specific style
 			that the desktop environment recognizes, e.g. <code>light</code> and <code>dark</code> for light and dark themes.
+			The <literal>:{style}</literal> part of the environment property may be omitted if the environment's default style is used.
 			See <ulink url="https://github.com/ximion/appstream/blob/main/data/desktop-style-ids.txt">desktop-style-ids.txt</ulink> for a list
 			of currently recognized environment and style combinations.
 		</para>

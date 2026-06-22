@@ -1621,7 +1621,7 @@ asc_compose_process_task_cb (AscComposeTask *ctask, AscCompose *compose)
 				} /* end launch entry loop */
 			}
 		} /* end of desktop-entry support */
-	}	  /* end of metadata parsing loop */
+	} /* end of metadata parsing loop */
 
 	/* process the remaining .desktop files */
 	if (as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_PROCESS_UNPAIRED_DESKTOP)) {
@@ -2182,10 +2182,11 @@ asc_compose_run (AscCompose *compose, GCancellable *cancellable, GError **error)
 
 	if (as_flags_contains (priv->flags, ASC_COMPOSE_FLAG_NO_PARTIAL_URLS) &&
 	    priv->media_baseurl == NULL) {
-		g_set_error_literal (error,
-				     ASC_COMPOSE_ERROR,
-				     ASC_COMPOSE_ERROR_FAILED,
-				     _("Partial URLs are not allowed, but no base URL is set to create full URLs."));
+		g_set_error_literal (
+		    error,
+		    ASC_COMPOSE_ERROR,
+		    ASC_COMPOSE_ERROR_FAILED,
+		    _("Partial URLs are not allowed, but no base URL is set to create full URLs."));
 		return NULL;
 	}
 
@@ -2231,9 +2232,6 @@ asc_compose_run (AscCompose *compose, GCancellable *cancellable, GError **error)
 			 asc_globals_get_tmp_dir ());
 		temp_dir_created = TRUE;
 	}
-
-	/* sanity check to ensure resources can be loaded */
-	as_utils_ensure_resources ();
 
 	tasks = g_ptr_array_new_with_free_func ((GDestroyNotify) asc_compose_task_free);
 

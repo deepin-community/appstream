@@ -36,7 +36,7 @@ typedef struct {
 } AsValidatorIssueTag;
 
 /* clang-format off */
-AsValidatorIssueTag as_validator_issue_tag_list[] =  {
+static AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "type-property-required",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  N_("This tag requires a type property.")
@@ -78,7 +78,7 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "description-enum-group-translated",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  N_("The enumeration must not be translated as a whole. "
-	     "In MetaInfo files, translate indivdual items (<li/> elements) instead.")
+	     "In MetaInfo files, translate individual items (<li/> elements) instead.")
 	},
 
 	{ "description-first-para-too-short",
@@ -96,6 +96,17 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "description-has-plaintext-url",
 	  AS_ISSUE_SEVERITY_WARNING,
 	  N_("The description contains a web URL in plain text. This is not allowed, please use the <url/> tag instead to share links.")
+	},
+
+	{ "description-no-valid-content",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The description element does not contain any valid content (paragraphs, enumerations, etc.).")
+	},
+
+	{ "description-spurious-text",
+	  AS_ISSUE_SEVERITY_WARNING,
+	  N_("The description element contains raw text that is not in any paragraph or other permitted tag. "
+	     "This is not allowed and the additional text may be ignored by parsers or raise errors.")
 	},
 
 	{ "tag-not-translatable",
@@ -526,7 +537,7 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 
 	{ "summary-too-long",
 	  AS_ISSUE_SEVERITY_WARNING,
-	  N_("The summary text is very long, and will likely not be displayed properly everywhere.")
+	  N_("The summary text is very long, and will likely not be displayed properly everywhere. It should be <= 90 characters.")
 	},
 
 	{ "icon-stock-cached-has-url",
@@ -690,9 +701,15 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	  N_("It is recommended to add a long description to this component to present it better to users."),
 	},
 
-	{ "generic-description-missing",
+	{ "description-missing",
 	  AS_ISSUE_SEVERITY_PEDANTIC,
 	  N_("This generic component is missing a long description. It may be useful to add one."),
+	},
+
+	{ "untranslated-description-missing",
+	  AS_ISSUE_SEVERITY_ERROR,
+	  N_("The component is missing an untranslated long description, but has a translated one for the English locale. "
+	     "You need to provide a locale-less description in English as translation template."),
 	},
 
 	{ "desktop-app-launchable-missing",
@@ -950,7 +967,13 @@ AsValidatorIssueTag as_validator_issue_tag_list[] =  {
 	{ "release-time-missing",
 	  AS_ISSUE_SEVERITY_ERROR,
 	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
-	  N_("The release is missing either the `date` (preferred) or the `timestamp` property."),
+	  N_("The release entry is missing either the `date` (preferred) or the `timestamp` property."),
+	},
+
+	{ "release-time-missing-for-snapshot",
+	  AS_ISSUE_SEVERITY_INFO,
+	  /* TRANSLATORS: Please do not translate AppStream tag and property names (in backticks). */
+	  N_("The release entry is missing the `date` property. Ensure to add it before publishing the snapshot release."),
 	},
 
 	{ "release-timestamp-invalid",

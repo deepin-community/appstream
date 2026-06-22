@@ -236,7 +236,7 @@ hljs.configure({
 						is selected.
 					--allow-custom CUSTOM-KEY-NAMES
 						By default, all custom entries set in MetaInfo input data are removed.
-						This flag allows to whitelist custom keys to be propagated to the final catalog output data.
+						This flag allows one to whitelist custom keys to be propagated to the final catalog output data.
 						The custom-key names should be provided as a comma-separated list.
 					--components COMPONENT-IDs
 						Set a comma-separated list of AppStream component IDs that should be
@@ -279,13 +279,17 @@ hljs.configure({
 				</p></dd><dt id="asv-description-enum-item-invalid"><span class="term">description-enum-item-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-enum-item-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
 				Enumerations must only have list items (&lt;li/&gt;) as children.
 				</p></dd><dt id="asv-description-enum-group-translated"><span class="term">description-enum-group-translated</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-enum-group-translated">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
-				The enumeration must not be translated as a whole. In MetaInfo files, translate indivdual items (&lt;li/&gt; elements) instead.
+				The enumeration must not be translated as a whole. In MetaInfo files, translate individual items (&lt;li/&gt; elements) instead.
 				</p></dd><dt id="asv-description-first-para-too-short"><span class="term">description-first-para-too-short</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-first-para-too-short">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
 				The first `description/p` paragraph of this component might be too short (&lt; 80 characters). Please consider starting with a longer paragraph to improve how the description looks like in software centers and to provide more detailed information on this component immediately in the first paragraph.
 				</p></dd><dt id="asv-description-first-word-not-capitalized"><span class="term">description-first-word-not-capitalized</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-first-word-not-capitalized">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
 				The description line does not start with a capitalized word, project name or number.
 				</p></dd><dt id="asv-description-has-plaintext-url"><span class="term">description-has-plaintext-url</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-has-plaintext-url">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
 				The description contains a web URL in plain text. This is not allowed, please use the &lt;url/&gt; tag instead to share links.
+				</p></dd><dt id="asv-description-no-valid-content"><span class="term">description-no-valid-content</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-no-valid-content">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The description element does not contain any valid content (paragraphs, enumerations, etc.).
+				</p></dd><dt id="asv-description-spurious-text"><span class="term">description-spurious-text</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-spurious-text">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
+				The description element contains raw text that is not in any paragraph or other permitted tag. This is not allowed and the additional text may be ignored by parsers or raise errors.
 				</p></dd><dt id="asv-tag-not-translatable"><span class="term">tag-not-translatable</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-tag-not-translatable">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
 				This tag is not translatable.
 				</p></dd><dt id="asv-tag-duplicated"><span class="term">tag-duplicated</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-tag-duplicated">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
@@ -440,7 +444,7 @@ You may also consider to update the name of the accompanying .desktop file to fo
 				</p></dd><dt id="asv-summary-first-word-not-capitalized"><span class="term">summary-first-word-not-capitalized</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-summary-first-word-not-capitalized">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
 				The summary text does not start with a capitalized word, project name or number.
 				</p></dd><dt id="asv-summary-too-long"><span class="term">summary-too-long</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-summary-too-long">#</a></dt><dd><p>Severity: <span class="emphasis"><em>warning</em></span></p><p>
-				The summary text is very long, and will likely not be displayed properly everywhere.
+				The summary text is very long, and will likely not be displayed properly everywhere. It should be &lt;= 90 characters.
 				</p></dd><dt id="asv-icon-stock-cached-has-url"><span class="term">icon-stock-cached-has-url</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-icon-stock-cached-has-url">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
 				Icons of type `stock` or `cached` must not contain an URL, a full or an relative path to the icon. Only file basenames or stock names are allowed.
 				</p></dd><dt id="asv-icon-remote-no-url"><span class="term">icon-remote-no-url</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-icon-remote-no-url">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
@@ -497,8 +501,10 @@ You may also consider to update the name of the accompanying .desktop file to fo
 				It would be useful to add a long description to this font to present it better to users.
 				</p></dd><dt id="asv-driver-firmware-description-missing"><span class="term">driver-firmware-description-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-driver-firmware-description-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
 				It is recommended to add a long description to this component to present it better to users.
-				</p></dd><dt id="asv-generic-description-missing"><span class="term">generic-description-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-generic-description-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
+				</p></dd><dt id="asv-description-missing"><span class="term">description-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-description-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>pedantic</em></span></p><p>
 				This generic component is missing a long description. It may be useful to add one.
+				</p></dd><dt id="asv-untranslated-description-missing"><span class="term">untranslated-description-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-untranslated-description-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
+				The component is missing an untranslated long description, but has a translated one for the English locale. You need to provide a locale-less description in English as translation template.
 				</p></dd><dt id="asv-desktop-app-launchable-missing"><span class="term">desktop-app-launchable-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-app-launchable-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
 				This `desktop-application` component is missing a `desktop-id` launchable tag. This means that this application can not be launched and has no association with its desktop-entry file. It also means no icon data or category information from the desktop-entry file will be available, which will result in this application being ignored entirely.
 				</p></dd><dt id="asv-desktop-app-launchable-omitted"><span class="term">desktop-app-launchable-omitted</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-desktop-app-launchable-omitted">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
@@ -588,7 +594,9 @@ You may also consider to update the name of the accompanying .desktop file to fo
 				</p></dd><dt id="asv-release-version-missing"><span class="term">release-version-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-version-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
 				The release is missing the `version` property.
 				</p></dd><dt id="asv-release-time-missing"><span class="term">release-time-missing</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-time-missing">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
-				The release is missing either the `date` (preferred) or the `timestamp` property.
+				The release entry is missing either the `date` (preferred) or the `timestamp` property.
+				</p></dd><dt id="asv-release-time-missing-for-snapshot"><span class="term">release-time-missing-for-snapshot</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-time-missing-for-snapshot">#</a></dt><dd><p>Severity: <span class="emphasis"><em>info</em></span></p><p>
+				The release entry is missing the `date` property. Ensure to add it before publishing the snapshot release.
 				</p></dd><dt id="asv-release-timestamp-invalid"><span class="term">release-timestamp-invalid</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-timestamp-invalid">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
 				The release timestamp is invalid.
 				</p></dd><dt id="asv-release-description-outside-tag"><span class="term">release-description-outside-tag</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-release-description-outside-tag">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
@@ -678,5 +686,5 @@ You may also consider to update the name of the accompanying .desktop file to fo
 				</p></dd><dt id="asv-metainfo-localized-keywords-tag"><span class="term">metainfo-localized-keywords-tag</span> <a title="Permalink" class="permalink" href="chap-Validation.html#asv-metainfo-localized-keywords-tag">#</a></dt><dd><p>Severity: <span class="emphasis"><em>error</em></span></p><p>
 				A `keywords` tag must not be localized in metainfo files (upstream metadata). Localize the individual keyword entries instead.
 				</p></dd></dl></div></div></div></div></div><div class="page-bottom"><div id="_bottom-navigation"><a class="nav-link" href="chap-AppStream-ManualPages.html"><span class="next-icon">→</span><span class="nav-label"><span class="number">Chapter 7 </span>Manual pages</span></a><a class="nav-link" href="sect-Quickstart-Translation.html"><span class="prev-icon">←</span><span class="nav-label">Translating Metadata</span></a></div></div></div><div id="_inward"></div></div><div id="_footer-wrap"><div id="_footer"><p>©
-        2024 
+        2025 
         Freedesktop.org, the AppStream Project</p></div></div></body></html>
