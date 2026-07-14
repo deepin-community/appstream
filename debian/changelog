@@ -1,3 +1,12 @@
+appstream (1.0.5-1deepin1) unstable; urgency=medium
+
+  * Skip building doc package on architectures without compose support (e.g., sw64)
+  * appstream-doc includes appstream-compose API docs which are not generated
+    when ENABLE_COMPOSE=false
+  * Fixes dh_install error: missing files usr/share/gtk-doc/html/appstream-compose
+
+ -- lichenggang <lichenggang@uniontech.com>  Tue, 14 Jul 2026 16:48:04 +0800
+
 appstream (1.0.5-1) unstable; urgency=medium
 
   [ Matthias Klumpp ]
