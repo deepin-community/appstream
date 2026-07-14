@@ -22,6 +22,12 @@ endif
 
 ifeq ($(filter %-doc,$(built_binaries)),)
 	AS_CONFIGURE_ARGS += -Dapidocs=false
+else ifneq ($(ENABLE_COMPOSE),true)
+	# On architectures without compose support (e.g., sw64),
+	# skip building the doc package entirely since appstream-doc
+	# includes compose API documentation not available there
+	AS_CONFIGURE_ARGS += -Dapidocs=false
+	export DH_OPTIONS += -Nappstream-doc
 else
 	AS_CONFIGURE_ARGS += -Dapidocs=true
 endif
