@@ -4,7 +4,7 @@
 
 built_binaries := $(shell dh_listpackages)
 
-ifneq (,$(filter $(DEB_HOST_ARCH), amd64 arm64 armel armhf i386 loong64 mips64el mipsel ppc64el s390x powerpc ppc64 riscv64 sparc64 x32))
+ifneq (,$(filter $(DEB_HOST_ARCH), amd64 arm64 armel armhf i386 loong64 mips64el mipsel ppc64el s390x powerpc ppc64 riscv64 sparc64 sw64 x32))
 	ENABLE_COMPOSE=true
 else
 	ENABLE_COMPOSE=false

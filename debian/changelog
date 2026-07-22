@@ -1,3 +1,13 @@
+appstream (1.0.5-1deepin2) unstable; urgency=medium
+
+  * Add sw64 architecture support to compose packages
+  * Enable compose support on sw64 in debian/rules
+  * Add sw64 to appstream-compose, libappstream-compose0,
+    libappstream-compose-dev, gir1.2-appstreamcompose-1.0 Architecture
+    in debian/control
+
+ -- lichenggang <lichenggang@uniontech.com>  Wed, 22 Jul 2026 17:31:55 +0800
+
 appstream (1.0.5-1deepin1) unstable; urgency=medium
 
   * Skip building doc package on architectures without compose support (e.g., sw64)
