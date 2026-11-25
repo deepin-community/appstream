@@ -4,6 +4,9 @@ appstream (1.0.5-1deepin4) unstable; urgency=medium
     when encountering bad QM translations   Upstream:
     https://github.com/ximion/appstream/commit/aad790e555dd94f2463ef9eda
     5225f0397d3ecf8
+  * compose: Add the QM section-header bounds check from upstream
+    commit 523a45ef9a09b646556a9b3bc777586d8ffc4f32, which is missing
+    from the 1.0.5 baseline
 
  -- deepin-ci-robot <packages@deepin.org>  Wed, 25 Nov 2026 08:28:16 +0800
 
