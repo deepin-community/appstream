@@ -1,3 +1,15 @@
+appstream (1.0.5-1deepin5) unstable; urgency=medium
+
+  * fix(cve): CVE-2026-136414 (medium) - compose: division by zero when
+    computing Qt translation percentages for a .qm file that has no
+    TRANSLATION records. CVE-2026-136414 and CVE-2026-136413 are fixed
+    by the same upstream commit
+    (aad790e555dd94f2463ef9eda5225f0397d3ecf8), so the fix is already
+    backported in debian/patches/CVE-2026-136413.patch; record the CVE
+    there instead of carrying a second, identical patch.
+
+ -- deepin-ci-robot <packages@deepin.org>  Thu, 26 Nov 2026 19:20:00 +0800
+
 appstream (1.0.5-1deepin4) unstable; urgency=medium
 
   * fix(cve): CVE-2026-136413 (medium) - compose: Fix potential crashes
